@@ -1,0 +1,22 @@
+# Example: Dead Code Detection (Phase 2)
+# This configuration enables orphaned file and unused export detection
+
+root: true
+
+# Define entry points that should not be considered orphaned
+entrypoints:
+  - "src/index.ts"
+  - "src/main.ts"
+  - "src/app.ts"
+  - "**/*test.ts"
+  - "**/*test.go"
+  - "**/__tests__/**"
+
+rules:
+  # Phase 2: Dead code detection
+  disallow-orphaned-files: true
+  disallow-unused-exports: true
+
+  # Phase 0: Basic structural rules
+  max-depth: { max: 8 }
+  max-files-in-dir: { max: 25 }

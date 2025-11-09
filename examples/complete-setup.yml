@@ -1,0 +1,57 @@
+# Example: Complete structurelint Setup
+# Demonstrates all three phases working together
+
+root: true
+
+# Entry points for orphan detection
+entrypoints:
+  - "src/index.ts"
+  - "src/main.go"
+  - "**/*test*"
+
+# Architectural layers (Phase 1)
+layers:
+  - name: 'shared'
+    path: 'src/shared/**'
+    dependsOn: []
+
+  - name: 'domain'
+    path: 'src/domain/**'
+    dependsOn: ['shared']
+
+  - name: 'application'
+    path: 'src/application/**'
+    dependsOn: ['domain', 'shared']
+
+  - name: 'presentation'
+    path: 'src/presentation/**'
+    dependsOn: ['application', 'domain', 'shared']
+
+rules:
+  # Phase 0: Filesystem Structure
+  max-depth: { max: 7 }
+  max-files-in-dir: { max: 20 }
+  max-subdirs: { max: 10 }
+
+  naming-convention:
+    "src/**/*.ts": "camelCase"
+    "src/**/*.tsx": "PascalCase"
+    "src/components/**/": "PascalCase"
+
+  file-existence:
+    "index.ts|index.tsx": "exists:1"
+
+  # Phase 1: Architectural Layer Enforcement
+  enforce-layer-boundaries: true
+
+  # Phase 2: Dead Code Detection
+  disallow-orphaned-files: true
+  disallow-unused-exports: true
+
+overrides:
+  # Relaxed rules for test files
+  - files: ['**/*test*', '**/__tests__/**']
+    rules:
+      disallow-orphaned-files: 0
+      disallow-unused-exports: 0
+      naming-convention: 0

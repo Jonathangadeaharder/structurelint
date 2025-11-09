@@ -10,9 +10,17 @@ import (
 
 // Import represents an import statement found in a source file
 type Import struct {
-	SourceFile string // The file containing the import
-	ImportPath string // The imported path/module
-	IsRelative bool   // Whether this is a relative import
+	SourceFile  string   // The file containing the import
+	ImportPath  string   // The imported path/module
+	IsRelative  bool     // Whether this is a relative import
+	ImportedNames []string // Specific symbols imported (for Phase 2)
+}
+
+// Export represents an export statement found in a source file (Phase 2)
+type Export struct {
+	SourceFile string   // The file containing the export
+	Names      []string // Exported symbol names
+	IsDefault  bool     // Whether this is a default export
 }
 
 // Parser extracts imports from source files
@@ -41,6 +49,23 @@ func (p *Parser) ParseFile(filePath string) ([]Import, error) {
 	default:
 		// Unsupported file type, return empty
 		return []Import{}, nil
+	}
+}
+
+// ParseExports extracts exports from a single file (Phase 2)
+func (p *Parser) ParseExports(filePath string) ([]Export, error) {
+	ext := filepath.Ext(filePath)
+
+	switch ext {
+	case ".ts", ".tsx", ".js", ".jsx", ".mjs":
+		return p.parseTypeScriptJavaScriptExports(filePath)
+	case ".go":
+		return p.parseGoExports(filePath)
+	case ".py":
+		return p.parsePythonExports(filePath)
+	default:
+		// Unsupported file type, return empty
+		return []Export{}, nil
 	}
 }
 

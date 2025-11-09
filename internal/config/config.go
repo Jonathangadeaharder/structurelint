@@ -10,11 +10,12 @@ import (
 
 // Config represents a .structurelint.yml configuration file
 type Config struct {
-	Root      bool                   `yaml:"root"`
-	Extends   interface{}            `yaml:"extends"` // string or []string
-	Rules     map[string]interface{} `yaml:"rules"`
-	Overrides []Override             `yaml:"overrides"`
-	Layers    []Layer                `yaml:"layers"` // Phase 1: Layer definitions
+	Root        bool                   `yaml:"root"`
+	Extends     interface{}            `yaml:"extends"` // string or []string
+	Rules       map[string]interface{} `yaml:"rules"`
+	Overrides   []Override             `yaml:"overrides"`
+	Layers      []Layer                `yaml:"layers"`      // Phase 1: Layer definitions
+	Entrypoints []string               `yaml:"entrypoints"` // Phase 2: Entry points for orphan detection
 }
 
 // Override represents a configuration override for specific file patterns
@@ -160,6 +161,11 @@ func Merge(configs ...*Config) *Config {
 		// Append layers (Phase 1)
 		if len(config.Layers) > 0 {
 			result.Layers = append(result.Layers, config.Layers...)
+		}
+
+		// Append entrypoints (Phase 2)
+		if len(config.Entrypoints) > 0 {
+			result.Entrypoints = append(result.Entrypoints, config.Entrypoints...)
 		}
 
 		// Root flag is taken from the last config that sets it

@@ -42,9 +42,14 @@ func (l *Linter) Lint(path string) ([]Violation, error) {
 	files := w.GetFiles()
 	dirs := w.GetDirs()
 
-	// Build import graph if layers are configured (Phase 1)
+	// Build import graph if layers are configured (Phase 1) or Phase 2 rules are enabled
 	var importGraph *graph.ImportGraph
-	if len(l.config.Layers) > 0 {
+	needsGraph := len(l.config.Layers) > 0 ||
+		l.isRuleEnabled("enforce-layer-boundaries") ||
+		l.isRuleEnabled("disallow-orphaned-files") ||
+		l.isRuleEnabled("disallow-unused-exports")
+
+	if needsGraph {
 		builder := graph.NewBuilder(path, l.config.Layers)
 		var err error
 		importGraph, err = builder.Build(files)
@@ -164,6 +169,20 @@ func (l *Linter) createRules(files []walker.FileInfo, importGraph *graph.ImportG
 		}
 	}
 
+	// Orphaned files rule (Phase 2)
+	if _, ok := l.getRuleConfig("disallow-orphaned-files"); ok {
+		if importGraph != nil {
+			rulesList = append(rulesList, rules.NewOrphanedFilesRule(importGraph, l.config.Entrypoints))
+		}
+	}
+
+	// Unused exports rule (Phase 2)
+	if _, ok := l.getRuleConfig("disallow-unused-exports"); ok {
+		if importGraph != nil {
+			rulesList = append(rulesList, rules.NewUnusedExportsRule(importGraph))
+		}
+	}
+
 	return rulesList
 }
 
@@ -191,4 +210,10 @@ func (l *Linter) getRuleConfig(ruleName string) (interface{}, bool) {
 	}
 
 	return value, true
+}
+
+// isRuleEnabled checks if a rule is enabled in the configuration
+func (l *Linter) isRuleEnabled(ruleName string) bool {
+	_, enabled := l.getRuleConfig(ruleName)
+	return enabled
 }

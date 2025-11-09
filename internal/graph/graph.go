@@ -22,6 +22,16 @@ type ImportGraph struct {
 
 	// Layer definitions
 	Layers []config.Layer
+
+	// Phase 2: Export and reference tracking
+	// Map from file path to list of exports
+	Exports map[string][]parser.Export
+
+	// Map from file path to count of incoming references
+	IncomingRefs map[string]int
+
+	// All files in the project
+	AllFiles []string
 }
 
 // Builder builds an import graph from the filesystem
@@ -47,14 +57,20 @@ func (b *Builder) Build(files []walker.FileInfo) (*ImportGraph, error) {
 		FileLayers:   make(map[string]*config.Layer),
 		AllImports:   []parser.Import{},
 		Layers:       b.layers,
+		Exports:      make(map[string][]parser.Export), // Phase 2
+		IncomingRefs: make(map[string]int),             // Phase 2
+		AllFiles:     []string{},                       // Phase 2
 	}
 
-	// First pass: collect all imports
+	// First pass: collect all imports and exports
 	for _, file := range files {
 		if file.IsDir {
 			continue
 		}
 
+		graph.AllFiles = append(graph.AllFiles, file.Path)
+
+		// Parse imports
 		imports, err := b.parser.ParseFile(file.AbsPath)
 		if err != nil {
 			// Skip files we can't parse
@@ -73,6 +89,12 @@ func (b *Builder) Build(files []walker.FileInfo) (*ImportGraph, error) {
 
 			graph.Dependencies[file.Path] = append(graph.Dependencies[file.Path], resolvedPath)
 		}
+
+		// Phase 2: Parse exports
+		exports, err := b.parser.ParseExports(file.AbsPath)
+		if err == nil && len(exports) > 0 {
+			graph.Exports[file.Path] = exports
+		}
 	}
 
 	// Second pass: assign files to layers
@@ -84,6 +106,19 @@ func (b *Builder) Build(files []walker.FileInfo) (*ImportGraph, error) {
 		layer := b.findLayerForFile(file.Path)
 		if layer != nil {
 			graph.FileLayers[file.Path] = layer
+		}
+	}
+
+	// Phase 2: Build incoming reference count
+	for _, dependencies := range graph.Dependencies {
+		for _, dep := range dependencies {
+			// Try to resolve the dependency to an actual file
+			for _, file := range graph.AllFiles {
+				if strings.HasPrefix(file, dep) || file == dep {
+					graph.IncomingRefs[file]++
+					break
+				}
+			}
 		}
 	}
 

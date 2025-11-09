@@ -559,3 +559,98 @@ layers:
 ### Complete Example
 
 See `examples/clean-architecture.yml`, `examples/hexagonal-architecture.yml`, or `examples/feature-sliced.yml` for full working examples.
+## Phase 2: Dead Code Detection
+
+### Overview
+
+Phase 2 adds dead code detection by identifying orphaned files and unused exports. This helps eliminate project bloat and keeps your codebase clean.
+
+### Features
+
+**1. Orphaned File Detection**
+- Identifies files that are never imported by any other file
+- Respects configured entrypoints
+- Automatically excludes configuration files, test files, and documentation
+
+**2. Unused Export Detection**
+- Finds exported symbols that are never imported elsewhere in the project
+- Helps identify dead code that can be safely removed
+- Works across TypeScript, JavaScript, Go, and Python
+
+### Configuration
+
+```yaml
+root: true
+
+# Define entry points (files that don't need to be imported)
+entrypoints:
+  - "src/index.ts"
+  - "src/main.go"
+  - "**/*test*"      # All test files
+  - "**/__tests__/**" # Test directories
+
+rules:
+  # Enable Phase 2 dead code detection
+  disallow-orphaned-files: true
+  disallow-unused-exports: true
+```
+
+### Example Violations
+
+**Orphaned File:**
+```
+src/unused-util.ts: file is orphaned (not imported by any other file)
+```
+
+**Unused Exports:**
+```
+src/helpers.ts: exports 'formatDate', 'parseNumber' but is never imported
+```
+
+### Automatic Exclusions
+
+The orphaned files rule automatically excludes:
+- **Configuration files**: `.structurelint.yml`, `package.json`, `tsconfig.json`, etc.
+- **Documentation**: `*.md`, `*.txt` files
+- **Test files**: Files matching `*test*`, `*spec*`
+- **Common entrypoints**: `main.*`, `index.*`, `app.*`, `__init__.py`
+
+### Combining with Overrides
+
+You can disable dead code detection for specific paths:
+
+```yaml
+rules:
+  disallow-orphaned-files: true
+  disallow-unused-exports: true
+
+overrides:
+  # Don't check test files
+  - files: ['**/*test*', '**/__tests__/**']
+    rules:
+      disallow-orphaned-files: 0
+      disallow-unused-exports: 0
+
+  # Entrypoints can have unused exports (they're for external use)
+  - files: ['src/index.ts', 'src/main.ts']
+    rules:
+      disallow-unused-exports: 0
+```
+
+### Complete Example
+
+See `examples/dead-code-detection.yml` and `examples/complete-setup.yml` for full working examples combining all three phases.
+
+### How It Works
+
+1. **Import Graph**: Phase 2 builds on the import graph from Phase 1
+2. **Reference Counting**: Tracks how many times each file is imported
+3. **Export Parsing**: Extracts all export statements from source files
+4. **Cross-Reference**: Compares exports against import statements
+
+### Benefits
+
+- **Reduce Bundle Size**: Remove unused code that bloats your application
+- **Improve Maintainability**: Clean codebase is easier to understand
+- **Prevent Accumulation**: Catch dead code before it becomes technical debt
+- **CI/CD Integration**: Enforce cleanliness in your build pipeline
