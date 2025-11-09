@@ -1,0 +1,38 @@
+# Example configuration for a monorepo
+# This demonstrates per-package configuration
+
+root: true
+
+rules:
+  # Monorepo root should be flat
+  max-depth: { max: 2 }
+  max-subdirs: { max: 20 }
+
+  # Enforce consistent package naming
+  naming-convention:
+    "packages/**/": "kebab-case"
+    "apps/**/": "kebab-case"
+
+overrides:
+  # Each package should have its own structurelint config
+  - files: ['packages/**', 'apps/**']
+    rules:
+      # Allow packages to be deep internally
+      max-depth: { max: 10 }
+      # Each package must have package.json
+      file-existence:
+        "package.json": "exists:1"
+
+  # Shared configuration
+  - files: ['config/**']
+    rules:
+      max-depth: { max: 3 }
+      disallowed-patterns:
+        - "config/**/*.local.*"  # No local config in repo
+
+  # Documentation
+  - files: ['docs/**']
+    rules:
+      max-depth: { max: 4 }
+      naming-convention:
+        "**/*.md": "kebab-case"

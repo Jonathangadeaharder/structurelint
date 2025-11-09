@@ -1,0 +1,43 @@
+# Example configuration for a Go project
+# This follows the golang-standards/project-layout structure
+
+root: true
+
+rules:
+  # Go projects should be relatively flat
+  max-depth: { max: 6 }
+  max-files-in-dir: { max: 15 }
+  max-subdirs: { max: 8 }
+
+  # Go naming conventions
+  naming-convention:
+    "**/*.go": "snake_case"
+    "cmd/**/": "snake_case"
+    "internal/**/": "snake_case"
+    "pkg/**/": "snake_case"
+
+overrides:
+  # /cmd contains main applications
+  - files: ['cmd/**']
+    rules:
+      max-depth: { max: 3 }
+      # Each command should be in its own directory
+      max-files-in-dir: { max: 5 }
+
+  # /internal is for private code
+  - files: ['internal/**']
+    rules:
+      # Internal packages shouldn't be too deep
+      max-depth: { max: 5 }
+
+  # /pkg is for public libraries
+  - files: ['pkg/*']
+    rules:
+      # Public packages should have documentation
+      file-existence:
+        "README.md": "exists:1"
+
+  # Test files
+  - files: ['**/*_test.go']
+    rules:
+      naming-convention: 0  # Go test files follow _test.go convention

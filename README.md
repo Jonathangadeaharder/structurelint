@@ -1,0 +1,387 @@
+# structurelint
+
+**structurelint** is a next-generation linter designed to enforce project structure, organization, and architectural integrity. Unlike traditional linters that focus on code quality, structurelint ensures your project's filesystem topology remains clean, maintainable, and aligned with best practices.
+
+## Why structurelint?
+
+As projects grow, their directory structures often degrade into chaos:
+- Deeply nested folder hierarchies that are hard to navigate
+- Directories with hundreds of files lacking organization
+- Inconsistent naming conventions across the codebase
+- Missing critical files (like README.md or index files)
+
+**structurelint** prevents this entropy by providing enforceable rules for:
+- **Directory depth limits** - Prevent unmanageable folder nesting
+- **File count limits** - Keep directories focused and organized
+- **Subdirectory limits** - Control complexity at each level
+- **Naming conventions** - Enforce camelCase, kebab-case, PascalCase, etc.
+- **File existence requirements** - Ensure critical files are present
+- **Pattern restrictions** - Disallow problematic patterns
+
+## Features
+
+- **Fast**: Written in Go for blazing-fast performance, suitable for pre-commit hooks
+- **Cascading Configuration**: ESLint-style `.structurelint.yml` files with inheritance
+- **Flexible Rules**: From simple metrics to complex pattern matching
+- **Zero Dependencies**: Single binary, easy to install and distribute
+
+## Installation
+
+```bash
+# Download the binary (once released)
+# For now, build from source:
+go build -o structurelint ./cmd/structurelint
+
+# Or install directly
+go install github.com/structurelint/structurelint/cmd/structurelint@latest
+```
+
+## Quick Start
+
+1. Create a `.structurelint.yml` file in your project root:
+
+```yaml
+root: true
+
+rules:
+  # Prevent deeply nested directories
+  max-depth: { max: 7 }
+
+  # Limit files per directory
+  max-files-in-dir: { max: 20 }
+
+  # Limit subdirectories per directory
+  max-subdirs: { max: 10 }
+
+  # Enforce naming conventions
+  naming-convention:
+    "*.ts": "camelCase"
+    "src/components/**/": "PascalCase"
+```
+
+2. Run structurelint:
+
+```bash
+./structurelint .
+```
+
+## Configuration
+
+### Configuration File
+
+structurelint looks for `.structurelint.yml` or `.structurelint.yaml` files. Configuration cascades from parent directories, similar to ESLint.
+
+### Root Configuration
+
+Set `root: true` to stop the upward search for configuration files:
+
+```yaml
+root: true
+rules:
+  max-depth: { max: 5 }
+```
+
+### Cascading Configuration
+
+You can have multiple configuration files in different directories:
+
+```
+project/
+├── .structurelint.yml      # Root config
+└── src/
+    └── legacy/
+        └── .structurelint.yml  # Override rules for legacy code
+```
+
+## Rules Reference
+
+### Metric Rules
+
+#### `max-depth`
+
+Enforces a maximum directory nesting depth.
+
+```yaml
+rules:
+  max-depth: { max: 7 }
+```
+
+**Example violation**: A file at `src/components/atoms/buttons/primary/variants/large/index.ts` with depth > 7.
+
+#### `max-files-in-dir`
+
+Limits the number of files in a single directory.
+
+```yaml
+rules:
+  max-files-in-dir: { max: 20 }
+```
+
+**Example violation**: A directory containing 25 files when the limit is 20.
+
+#### `max-subdirs`
+
+Limits the number of subdirectories in a directory.
+
+```yaml
+rules:
+  max-subdirs: { max: 10 }
+```
+
+**Example violation**: A directory with 15 subdirectories when the limit is 10.
+
+### Naming Convention Rules
+
+#### `naming-convention`
+
+Enforces naming conventions for files and directories.
+
+```yaml
+rules:
+  naming-convention:
+    "*.ts": "camelCase"
+    "*.js": "kebab-case"
+    "src/components/**/": "PascalCase"
+```
+
+**Supported conventions**:
+- `camelCase` - e.g., `myFile.ts`
+- `PascalCase` - e.g., `MyComponent.tsx`
+- `kebab-case` - e.g., `my-file.js`
+- `snake_case` - e.g., `my_file.py`
+- `lowercase` - e.g., `myfile.txt`
+- `UPPERCASE` - e.g., `README.md`
+
+### Pattern Rules
+
+#### `regex-match`
+
+Validates filenames against regex patterns.
+
+```yaml
+rules:
+  regex-match:
+    # Ensure component files match their directory name
+    "src/components/*/*.tsx": "regex:${0}"
+    # Disallow filenames that are just numbers
+    "*.js": "regex:![0-9]+"
+```
+
+**Special syntax**:
+- `regex:pattern` - File must match the regex
+- `regex:!pattern` - File must NOT match the regex (negation)
+- `${0}`, `${1}` - Substitutes directory names from wildcards
+
+**Example**: `src/components/Button/Button.tsx` matches `${0}` (both are "Button")
+
+#### `file-existence`
+
+Requires specific files to exist in directories.
+
+```yaml
+rules:
+  file-existence:
+    # Every directory must have exactly one index file
+    "index.ts|index.js": "exists:1"
+    # Must have at least one test file
+    "*.test.ts": "exists:1"
+    # No subdirectories allowed
+    ".dir": "exists:0"
+    # Must have between 1 and 10 .md files
+    "*.md": "exists:1-10"
+```
+
+**Syntax**:
+- `exists:1` - Exactly 1 file must exist
+- `exists:0` - No files of this type allowed
+- `exists:1-10` - Between 1 and 10 files
+- `.dir` - Special pattern for subdirectories
+
+#### `disallowed-patterns`
+
+Blocks specific file or directory patterns.
+
+```yaml
+rules:
+  disallowed-patterns:
+    - "src/utils/**"  # Disallow generic utils folder
+    - "*.tmp"         # No temp files
+    - ".DS_Store"     # No macOS metadata
+```
+
+## Advanced Configuration
+
+### Overrides
+
+Apply different rules to specific parts of your project:
+
+```yaml
+root: true
+
+rules:
+  max-depth: { max: 7 }
+  max-files-in-dir: { max: 15 }
+
+overrides:
+  # Stricter rules for components
+  - files: ['src/components/**']
+    rules:
+      max-depth: { max: 10 }
+      file-existence:
+        "index.ts|index.tsx": "exists:1"
+      naming-convention:
+        "**/": "PascalCase"
+
+  # Relaxed rules for legacy code
+  - files: ['src/legacy/**']
+    rules:
+      max-depth: 0        # Disable rule (0 = disabled)
+      max-files-in-dir: 0
+```
+
+### Disabling Rules
+
+Set a rule to `0` or `false` to disable it:
+
+```yaml
+rules:
+  max-depth: 0           # Disabled
+  naming-convention: false  # Also disabled
+```
+
+## Example Configurations
+
+### React Project
+
+```yaml
+root: true
+
+rules:
+  max-depth: { max: 8 }
+  max-files-in-dir: { max: 20 }
+  max-subdirs: { max: 10 }
+
+  naming-convention:
+    "src/**/*.ts": "camelCase"
+    "src/**/*.tsx": "PascalCase"
+    "src/components/**/": "PascalCase"
+
+  disallowed-patterns:
+    - "src/components/atoms"      # Discourage atomic design
+    - "src/components/molecules"
+    - "src/utils/**"               # Prefer specific utility folders
+
+overrides:
+  - files: ['src/features/*']
+    rules:
+      file-existence:
+        "index.ts|index.tsx": "exists:1"
+      max-subdirs: { max: 5 }
+```
+
+### Go Project
+
+```yaml
+root: true
+
+rules:
+  max-depth: { max: 6 }
+  max-files-in-dir: { max: 15 }
+
+  naming-convention:
+    "**/*.go": "snake_case"
+    "cmd/**/": "snake_case"
+
+overrides:
+  - files: ['internal/**']
+    rules:
+      max-depth: { max: 5 }
+
+  - files: ['pkg/*']
+    rules:
+      file-existence:
+        "README.md": "exists:1"
+```
+
+### Python Project
+
+```yaml
+root: true
+
+rules:
+  max-depth: { max: 5 }
+  max-files-in-dir: { max: 20 }
+
+  naming-convention:
+    "**/*.py": "snake_case"
+    "**/": "snake_case"
+
+  file-existence:
+    "__init__.py": "exists:1"  # All packages need __init__.py
+
+disallowed-patterns:
+  - "**/__pycache__"
+  - "**/*.pyc"
+```
+
+## Integration
+
+### Pre-commit Hook
+
+Add to your `.git/hooks/pre-commit`:
+
+```bash
+#!/bin/sh
+./structurelint . || exit 1
+```
+
+### GitHub Actions
+
+```yaml
+name: Lint Project Structure
+
+on: [push, pull_request]
+
+jobs:
+  structurelint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Run structurelint
+        run: |
+          go install github.com/structurelint/structurelint/cmd/structurelint@latest
+          structurelint .
+```
+
+## Roadmap
+
+### Phase 0 (Current) - Core Filesystem Linting
+- ✅ Metric rules (max-depth, max-files, max-subdirs)
+- ✅ Naming conventions
+- ✅ File existence validation
+- ✅ Pattern matching and disallowing
+
+### Phase 1 - Architectural Layer Enforcement
+- Import graph analysis
+- Layer boundary enforcement
+- Dependency rules
+
+### Phase 2 - Dead Code Detection
+- Orphaned file detection
+- Unused export identification
+- Compiler plugin system for non-standard files
+
+## Contributing
+
+Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for details.
+
+## License
+
+MIT License - see [LICENSE](LICENSE) for details.
+
+## Acknowledgments
+
+Inspired by:
+- [ls-lint](https://ls-lint.org/) - Fast filesystem linter
+- [ESLint](https://eslint.org/) - Configuration system design
+- [Knip](https://github.com/webpro/knip) - Dead code detection

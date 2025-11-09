@@ -1,0 +1,47 @@
+# Example configuration for a Python project
+# This enforces the "src layout" with proper package structure
+
+root: true
+
+rules:
+  # Python projects benefit from flat structure
+  max-depth: { max: 5 }
+  max-files-in-dir: { max: 20 }
+  max-subdirs: { max: 10 }
+
+  # Python naming conventions
+  naming-convention:
+    "**/*.py": "snake_case"
+    "**/": "snake_case"
+
+  # All packages must have __init__.py
+  file-existence:
+    "__init__.py": "exists:1"
+
+  # Disallow Python artifacts
+  disallowed-patterns:
+    - "**/__pycache__"
+    - "**/*.pyc"
+    - "**/*.pyo"
+    - "**/.pytest_cache"
+    - "**/dist/**"
+    - "**/build/**"
+    - "**/*.egg-info"
+
+overrides:
+  # Source code in src/
+  - files: ['src/**']
+    rules:
+      max-depth: { max: 4 }
+
+  # Tests can be more flexible
+  - files: ['tests/**', '**/*_test.py', '**/test_*.py']
+    rules:
+      file-existence: 0  # Tests don't need __init__.py
+      max-depth: { max: 6 }
+
+  # Scripts can have different naming
+  - files: ['scripts/**']
+    rules:
+      naming-convention: 0
+      file-existence: 0

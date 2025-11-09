@@ -1,0 +1,24 @@
+# Basic structurelint configuration
+# This is a minimal, opinionated setup suitable for most projects
+
+root: true
+
+rules:
+  # Prevent deeply nested directories
+  max-depth: { max: 7 }
+
+  # Keep directories organized
+  max-files-in-dir: { max: 25 }
+  max-subdirs: { max: 12 }
+
+  # Basic naming conventions
+  naming-convention:
+    "src/**/*.ts": "camelCase"
+    "src/**/*.js": "camelCase"
+
+  # Disallow common problematic patterns
+  disallowed-patterns:
+    - ".DS_Store"
+    - "Thumbs.db"
+    - "*.tmp"
+    - "**/*.swp"

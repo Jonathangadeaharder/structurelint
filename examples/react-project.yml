@@ -1,0 +1,69 @@
+# Example configuration for a React/TypeScript project
+# This enforces a feature-based architecture with strict organization
+
+root: true
+
+rules:
+  # Project-wide structural limits
+  max-depth: { max: 8 }
+  max-files-in-dir: { max: 20 }
+  max-subdirs: { max: 10 }
+
+  # Naming conventions
+  naming-convention:
+    # TypeScript files use camelCase
+    "src/**/*.ts": "camelCase"
+    # React components use PascalCase
+    "src/**/*.tsx": "PascalCase"
+    # Component directories use PascalCase
+    "src/components/**/": "PascalCase"
+    # Feature directories use kebab-case
+    "src/features/**/": "kebab-case"
+
+  # Discourage anti-patterns
+  disallowed-patterns:
+    # Atomic design pattern folders
+    - "src/components/atoms"
+    - "src/components/molecules"
+    - "src/components/organisms"
+    - "src/components/templates"
+    # Generic utility folders
+    - "src/utils/**"
+    # Catch-all folders
+    - "**/misc/**"
+    - "**/other/**"
+
+overrides:
+  # Feature folders have strict requirements
+  - files: ['src/features/*']
+    rules:
+      # Each feature must have an entry point
+      file-existence:
+        "index.ts|index.tsx": "exists:1"
+      # Features shouldn't be too complex
+      max-subdirs: { max: 5 }
+      max-depth: { max: 4 }
+
+  # Component folders
+  - files: ['src/components/**']
+    rules:
+      # Components can be more nested
+      max-depth: { max: 10 }
+      # Each component folder should have an index
+      file-existence:
+        "index.ts|index.tsx": "exists:1"
+      # Component names should match their directory
+      regex-match:
+        "src/components/*/*.tsx": "regex:${0}"
+
+  # Assets can have many files but shouldn't be nested
+  - files: ['src/assets/**']
+    rules:
+      max-files-in-dir: { max: 100 }
+      max-depth: { max: 2 }
+      naming-convention: 0  # Disable naming convention for assets
+
+  # Relaxed rules for test files
+  - files: ['**/__tests__/**', '**/*.test.ts', '**/*.test.tsx']
+    rules:
+      naming-convention: 0
