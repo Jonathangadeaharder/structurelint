@@ -72,6 +72,8 @@ func (l *Linter) Lint(path string) ([]Violation, error) {
 }
 
 // createRules instantiates rules based on the configuration
+//
+//nolint:gocognit,gocyclo // Factory function with many rule types - complexity is acceptable
 func (l *Linter) createRules(files []walker.FileInfo, importGraph *graph.ImportGraph) []rules.Rule {
 	var rulesList []rules.Rule
 

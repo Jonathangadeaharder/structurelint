@@ -1,0 +1,20 @@
+version: 2
+
+linters:
+  enable:
+    - errcheck
+    - govet
+    - ineffassign
+    - staticcheck
+    - unused
+    - gocyclo
+    - gocognit
+
+linters-settings:
+  gocyclo:
+    min-complexity: 17
+  gocognit:
+    min-complexity: 85
+
+run:
+  tests: false
