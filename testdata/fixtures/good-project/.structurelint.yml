@@ -1,0 +1,29 @@
+root: true
+
+rules:
+  max-depth:
+    max: 3
+    patterns:
+      - "**"
+
+  max-files-in-dir:
+    max: 10
+    patterns:
+      - "**"
+
+  naming-convention:
+    patterns:
+      - pattern: "**/*.js"
+        convention: kebab-case
+
+layers:
+  - name: domain
+    path: src/domain/**
+    dependsOn: []
+
+  - name: services
+    path: src/services/**
+    dependsOn: [domain]
+
+entrypoints:
+  - src/index.js

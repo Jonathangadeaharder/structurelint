@@ -62,6 +62,14 @@ func (w *Walker) Walk() error {
 			return nil
 		}
 
+		// Skip common directories that should be ignored
+		if d.IsDir() {
+			baseName := filepath.Base(relPath)
+			if baseName == ".git" || baseName == "node_modules" || baseName == "vendor" {
+				return filepath.SkipDir
+			}
+		}
+
 		// Calculate depth
 		depth := strings.Count(relPath, string(filepath.Separator))
 		if d.IsDir() {

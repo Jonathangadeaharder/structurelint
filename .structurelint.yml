@@ -1,0 +1,53 @@
+root: true
+
+rules:
+  # Phase 0: Basic filesystem rules
+  max-depth:
+    max: 5
+    patterns:
+      - "**"
+      - "!.git/**"
+      - "!node_modules/**"
+      - "!vendor/**"
+
+  max-files-in-dir:
+    max: 15
+    patterns:
+      - "**"
+      - "!.git/**"
+      - "!node_modules/**"
+      - "!vendor/**"
+
+  max-subdirs:
+    max: 10
+    patterns:
+      - "**"
+      - "!.git/**"
+      - "!node_modules/**"
+      - "!vendor/**"
+
+  naming-convention:
+    patterns:
+      - pattern: "**/*.go"
+        convention: snake_case
+
+  disallowed-patterns:
+    patterns:
+      - "*.tmp"
+      - "*.bak"
+      - ".DS_Store"
+
+# Phase 1: Architectural layers for Go project
+layers:
+  - name: cmd
+    path: cmd/**
+    dependsOn: [internal]
+
+  - name: internal
+    path: internal/**
+    dependsOn: []
+
+# Phase 2: Dead code detection
+entrypoints:
+  - cmd/structurelint/main.go
+  - "**/*_test.go"

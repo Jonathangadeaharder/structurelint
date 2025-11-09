@@ -1,0 +1,21 @@
+root: true
+
+rules:
+  enforce-layer-boundaries:
+    enabled: true
+
+layers:
+  - name: domain
+    path: src/domain/**
+    dependsOn: []
+
+  - name: application
+    path: src/application/**
+    dependsOn: [domain]
+
+  - name: presentation
+    path: src/presentation/**
+    dependsOn: [application, domain]
+
+entrypoints:
+  - src/index.ts

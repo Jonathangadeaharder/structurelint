@@ -1,0 +1,17 @@
+root: true
+
+rules:
+  max-depth:
+    max: 2
+    patterns:
+      - "**"
+
+  max-files-in-dir:
+    max: 3
+    patterns:
+      - "**"
+
+  naming-convention:
+    patterns:
+      - pattern: "**/*.js"
+        convention: kebab-case
