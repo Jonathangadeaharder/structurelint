@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/structurelint/structurelint/internal/config"
+	"github.com/structurelint/structurelint/internal/graph"
 	"github.com/structurelint/structurelint/internal/rules"
 	"github.com/structurelint/structurelint/internal/walker"
 )
@@ -41,8 +42,19 @@ func (l *Linter) Lint(path string) ([]Violation, error) {
 	files := w.GetFiles()
 	dirs := w.GetDirs()
 
+	// Build import graph if layers are configured (Phase 1)
+	var importGraph *graph.ImportGraph
+	if len(l.config.Layers) > 0 {
+		builder := graph.NewBuilder(path, l.config.Layers)
+		var err error
+		importGraph, err = builder.Build(files)
+		if err != nil {
+			return nil, fmt.Errorf("failed to build import graph: %w", err)
+		}
+	}
+
 	// Create rules based on configuration
-	rulesList := l.createRules()
+	rulesList := l.createRules(files, importGraph)
 
 	// Execute all rules and collect violations
 	var violations []Violation
@@ -55,7 +67,7 @@ func (l *Linter) Lint(path string) ([]Violation, error) {
 }
 
 // createRules instantiates rules based on the configuration
-func (l *Linter) createRules() []rules.Rule {
+func (l *Linter) createRules(files []walker.FileInfo, importGraph *graph.ImportGraph) []rules.Rule {
 	var rulesList []rules.Rule
 
 	// Max depth rule
@@ -142,6 +154,13 @@ func (l *Linter) createRules() []rules.Rule {
 			if len(stringPatterns) > 0 {
 				rulesList = append(rulesList, rules.NewRegexMatchRule(stringPatterns))
 			}
+		}
+	}
+
+	// Layer boundaries rule (Phase 1)
+	if _, ok := l.getRuleConfig("enforce-layer-boundaries"); ok {
+		if importGraph != nil && len(l.config.Layers) > 0 {
+			rulesList = append(rulesList, rules.NewLayerBoundariesRule(importGraph))
 		}
 	}
 

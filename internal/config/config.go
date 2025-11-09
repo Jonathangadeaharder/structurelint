@@ -14,12 +14,20 @@ type Config struct {
 	Extends   interface{}            `yaml:"extends"` // string or []string
 	Rules     map[string]interface{} `yaml:"rules"`
 	Overrides []Override             `yaml:"overrides"`
+	Layers    []Layer                `yaml:"layers"` // Phase 1: Layer definitions
 }
 
 // Override represents a configuration override for specific file patterns
 type Override struct {
 	Files []string               `yaml:"files"`
 	Rules map[string]interface{} `yaml:"rules"`
+}
+
+// Layer represents an architectural layer definition (Phase 1)
+type Layer struct {
+	Name      string   `yaml:"name"`
+	Path      string   `yaml:"path"`
+	DependsOn []string `yaml:"dependsOn"`
 }
 
 // MaxDepthRule represents the max-depth rule configuration
@@ -148,6 +156,11 @@ func Merge(configs ...*Config) *Config {
 
 		// Append overrides (they are processed in order)
 		result.Overrides = append(result.Overrides, config.Overrides...)
+
+		// Append layers (Phase 1)
+		if len(config.Layers) > 0 {
+			result.Layers = append(result.Layers, config.Layers...)
+		}
 
 		// Root flag is taken from the last config that sets it
 		if config.Root {

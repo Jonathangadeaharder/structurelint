@@ -1,0 +1,44 @@
+# Example: Clean Architecture with Layer Enforcement
+# This demonstrates Phase 1 layer boundary validation
+
+root: true
+
+# Define architectural layers
+layers:
+  - name: 'domain'
+    path: 'src/domain/**'
+    # Domain layer has no dependencies (pure business logic)
+    dependsOn: []
+
+  - name: 'application'
+    path: 'src/application/**'
+    # Application layer can depend on domain
+    dependsOn: ['domain']
+
+  - name: 'infrastructure'
+    path: 'src/infrastructure/**'
+    # Infrastructure can depend on domain and application
+    dependsOn: ['domain', 'application']
+
+  - name: 'presentation'
+    path: 'src/presentation/**'
+    # Presentation can depend on application and domain (but not infrastructure directly)
+    dependsOn: ['application', 'domain']
+
+  - name: 'shared'
+    path: 'src/shared/**'
+    # Shared utilities - all layers can depend on this
+    dependsOn: []
+
+rules:
+  # Enable layer boundary enforcement
+  enforce-layer-boundaries: true
+
+  # Standard structural rules
+  max-depth: { max: 8 }
+  max-files-in-dir: { max: 20 }
+
+  # Naming conventions
+  naming-convention:
+    "src/**/*.ts": "camelCase"
+    "src/**/*.tsx": "PascalCase"

@@ -11,6 +11,8 @@ As projects grow, their directory structures often degrade into chaos:
 - Missing critical files (like README.md or index files)
 
 **structurelint** prevents this entropy by providing enforceable rules for:
+
+**Phase 0 - Filesystem Linting:**
 - **Directory depth limits** - Prevent unmanageable folder nesting
 - **File count limits** - Keep directories focused and organized
 - **Subdirectory limits** - Control complexity at each level
@@ -18,11 +20,18 @@ As projects grow, their directory structures often degrade into chaos:
 - **File existence requirements** - Ensure critical files are present
 - **Pattern restrictions** - Disallow problematic patterns
 
+**Phase 1 - Architectural Layer Enforcement:** ✨ NEW
+- **Import graph analysis** - Parse source files to build dependency graphs
+- **Layer boundary validation** - Enforce architectural patterns (Clean Architecture, Hexagonal, Feature-Sliced Design, etc.)
+- **Dependency rules** - Prevent violations like "domain importing from presentation"
+
 ## Features
 
 - **Fast**: Written in Go for blazing-fast performance, suitable for pre-commit hooks
 - **Cascading Configuration**: ESLint-style `.structurelint.yml` files with inheritance
 - **Flexible Rules**: From simple metrics to complex pattern matching
+- **Architectural Enforcement**: Layer boundaries and import graph validation
+- **Multi-Language Support**: TypeScript, JavaScript, Go, Python
 - **Zero Dependencies**: Single binary, easy to install and distribute
 
 ## Installation
@@ -385,3 +394,168 @@ Inspired by:
 - [ls-lint](https://ls-lint.org/) - Fast filesystem linter
 - [ESLint](https://eslint.org/) - Configuration system design
 - [Knip](https://github.com/webpro/knip) - Dead code detection
+## Phase 1: Layer Boundary Enforcement
+
+### Overview
+
+Phase 1 adds powerful architectural validation by analyzing import/dependency graphs and enforcing layer boundaries. This allows you to define and enforce architectural patterns like Clean Architecture, Hexagonal Architecture, or Feature-Sliced Design.
+
+### Configuration
+
+Define layers in your `.structurelint.yml`:
+
+```yaml
+root: true
+
+# Define architectural layers
+layers:
+  - name: 'domain'
+    path: 'src/domain/**'
+    dependsOn: []  # Domain has no dependencies
+
+  - name: 'application'
+    path: 'src/application/**'
+    dependsOn: ['domain']  # Can depend on domain
+
+  - name: 'presentation'
+    path: 'src/presentation/**'
+    dependsOn: ['application', 'domain']  # Can depend on application and domain
+
+rules:
+  # Enable layer boundary enforcement
+  enforce-layer-boundaries: true
+```
+
+### How It Works
+
+1. **Import Parsing**: structurelint parses source files (TypeScript, JavaScript, Go, Python) to extract import statements
+2. **Graph Building**: Creates a dependency graph showing which files import which
+3. **Layer Assignment**: Assigns each file to a layer based on the `path` patterns
+4. **Boundary Validation**: Checks that imports respect the `dependsOn` rules
+
+### Example: Preventing Layer Violations
+
+Given this configuration:
+
+```yaml
+layers:
+  - name: 'domain'
+    path: 'src/domain/**'
+    dependsOn: []
+
+  - name: 'presentation'
+    path: 'src/presentation/**'
+    dependsOn: ['domain']
+```
+
+This violation will be detected:
+
+```typescript
+// src/domain/user.ts
+import { UserComponent } from '../presentation/userComponent'  // ❌ VIOLATION!
+// Domain cannot import from presentation (dependsOn: [])
+```
+
+Output:
+```
+src/domain/user.ts: layer 'domain' cannot import from layer 'presentation' (imported: src/presentation/userComponent.ts)
+```
+
+### Example Architectures
+
+#### Clean Architecture
+
+```yaml
+layers:
+  - name: 'domain'
+    path: 'src/domain/**'
+    dependsOn: []
+
+  - name: 'application'
+    path: 'src/application/**'
+    dependsOn: ['domain']
+
+  - name: 'infrastructure'
+    path: 'src/infrastructure/**'
+    dependsOn: ['domain', 'application']
+
+  - name: 'presentation'
+    path: 'src/presentation/**'
+    dependsOn: ['application', 'domain']
+
+rules:
+  enforce-layer-boundaries: true
+```
+
+#### Hexagonal (Ports & Adapters)
+
+```yaml
+layers:
+  - name: 'core'
+    path: 'src/core/**'
+    dependsOn: []
+
+  - name: 'ports'
+    path: 'src/ports/**'
+    dependsOn: ['core']
+
+  - name: 'adapters-in'
+    path: 'src/adapters/in/**'
+    dependsOn: ['ports', 'core']
+
+  - name: 'adapters-out'
+    path: 'src/adapters/out/**'
+    dependsOn: ['ports', 'core']
+
+rules:
+  enforce-layer-boundaries: true
+```
+
+#### Feature-Sliced Design
+
+```yaml
+layers:
+  - name: 'shared'
+    path: 'src/shared/**'
+    dependsOn: []
+
+  - name: 'entities'
+    path: 'src/entities/**'
+    dependsOn: ['shared']
+
+  - name: 'features'
+    path: 'src/features/**'
+    dependsOn: ['shared', 'entities']
+
+  - name: 'widgets'
+    path: 'src/widgets/**'
+    dependsOn: ['shared', 'entities', 'features']
+
+  - name: 'pages'
+    path: 'src/pages/**'
+    dependsOn: ['shared', 'entities', 'features', 'widgets']
+
+rules:
+  enforce-layer-boundaries: true
+```
+
+### Wildcard Dependencies
+
+Use `'*'` to allow a layer to depend on all others (useful for app/config layers):
+
+```yaml
+layers:
+  - name: 'app'
+    path: 'src/app/**'
+    dependsOn: ['*']  # Can import from any layer
+```
+
+### Supported Languages
+
+- **TypeScript/JavaScript**: `.ts`, `.tsx`, `.js`, `.jsx`, `.mjs`
+- **Go**: `.go`
+- **Python**: `.py`
+
+### Complete Example
+
+See `examples/clean-architecture.yml`, `examples/hexagonal-architecture.yml`, or `examples/feature-sliced.yml` for full working examples.

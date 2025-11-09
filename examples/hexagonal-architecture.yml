@@ -1,0 +1,37 @@
+# Example: Hexagonal (Ports and Adapters) Architecture
+# Demonstrates layer enforcement for hexagonal architecture
+
+root: true
+
+layers:
+  - name: 'core'
+    path: 'src/core/**'
+    # Core domain - no external dependencies
+    dependsOn: []
+
+  - name: 'ports'
+    path: 'src/ports/**'
+    # Ports define interfaces - depend only on core
+    dependsOn: ['core']
+
+  - name: 'adapters-in'
+    path: 'src/adapters/in/**'
+    # Inbound adapters (API, UI) - depend on ports and core
+    dependsOn: ['ports', 'core']
+
+  - name: 'adapters-out'
+    path: 'src/adapters/out/**'
+    # Outbound adapters (DB, external services) - depend on ports and core
+    dependsOn: ['ports', 'core']
+
+  - name: 'config'
+    path: 'src/config/**'
+    # Configuration layer can access everything for dependency injection
+    dependsOn: ['*']
+
+rules:
+  enforce-layer-boundaries: true
+  max-depth: { max: 7 }
+
+  naming-convention:
+    "src/**/*.ts": "camelCase"

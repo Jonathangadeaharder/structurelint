@@ -341,16 +341,19 @@ Go was chosen for several critical reasons:
 - **Caching**: Cache directory metrics between runs
 - **Ignore patterns**: Skip `.git`, `node_modules`, etc.
 
-## Future Roadmap
+## Roadmap
 
-### Phase 1: Architectural Layer Enforcement
+### Phase 1: Architectural Layer Enforcement ✅ IMPLEMENTED
 
-Add import graph analysis to enforce layer boundaries:
+Layer boundary enforcement is now fully implemented! structurelint can parse source files, build import graphs, and validate architectural boundaries.
+
+**Configuration**:
 
 ```yaml
 layers:
   - name: 'domain'
     path: 'src/domain/**'
+    dependsOn: []
   - name: 'application'
     path: 'src/application/**'
     dependsOn: ['domain']
@@ -362,11 +365,36 @@ rules:
   enforce-layer-boundaries: true
 ```
 
-**Implementation approach**:
-- Parse source files to extract import statements
-- Build dependency graph
-- Validate imports against layer definitions
-- Report violations (e.g., "presentation cannot import domain directly")
+**Implementation**:
+
+The Phase 1 implementation includes:
+
+1. **Multi-Language Parser** (`internal/parser/`):
+   - TypeScript/JavaScript: Parses `import` and `require()` statements
+   - Go: Parses `import` blocks and single imports
+   - Python: Parses `import` and `from...import` statements
+   - Resolves relative imports to project paths
+
+2. **Import Graph Builder** (`internal/graph/`):
+   - Builds dependency map from file paths to imported paths
+   - Assigns files to layers based on path patterns
+   - Validates layer dependency rules
+
+3. **Layer Boundaries Rule** (`internal/rules/layer_boundaries.go`):
+   - Checks each file's imports against layer rules
+   - Resolves import paths to actual files in the project
+   - Reports clear violation messages with layer names
+
+4. **Example Configurations**:
+   - `examples/clean-architecture.yml`: Clean Architecture pattern
+   - `examples/hexagonal-architecture.yml`: Ports & Adapters pattern
+   - `examples/feature-sliced.yml`: Feature-Sliced Design pattern
+
+**Example Violation Detection**:
+
+```
+src/domain/product.ts: layer 'domain' cannot import from layer 'presentation' (imported: src/presentation/userComponent.ts)
+```
 
 ### Phase 2: Dead Code Detection
 
@@ -433,16 +461,29 @@ Example presets to create:
 
 ## Conclusion
 
-**structurelint** Phase 0 implementation successfully delivers:
+**structurelint** has successfully delivered both Phase 0 and Phase 1:
 
-✅ All core filesystem metric rules (max-depth, max-files, max-subdirs)
-✅ Comprehensive naming convention enforcement
-✅ Powerful pattern matching and regex validation
-✅ File existence requirements with flexible syntax
-✅ ESLint-style cascading configuration
-✅ Fast, efficient Go implementation
-✅ Example configurations for multiple project types
+### Phase 0 ✅ COMPLETE
+- ✅ All core filesystem metric rules (max-depth, max-files, max-subdirs)
+- ✅ Comprehensive naming convention enforcement
+- ✅ Powerful pattern matching and regex validation
+- ✅ File existence requirements with flexible syntax
+- ✅ ESLint-style cascading configuration
+- ✅ Fast, efficient Go implementation
+- ✅ Example configurations for multiple project types
 
-The tool is production-ready for Phase 0 functionality and provides a solid foundation for Phase 1 (layers) and Phase 2 (orphans) enhancements.
+### Phase 1 ✅ COMPLETE
+- ✅ Multi-language import parser (TypeScript, JavaScript, Go, Python)
+- ✅ Import graph builder with dependency mapping
+- ✅ Layer boundary enforcement rule
+- ✅ Support for Clean Architecture, Hexagonal, Feature-Sliced Design
+- ✅ Clear violation reporting with layer names
+- ✅ Example architectural configurations
 
-By filling the gap in the current linter ecosystem, structurelint enables teams to maintain architectural sanity, enforce conventions, and prevent structural degradation at scale.
+The tool is production-ready for both filesystem linting (Phase 0) and architectural layer enforcement (Phase 1). It provides a solid foundation for Phase 2 (dead code detection) enhancements.
+
+By filling critical gaps in the current linter ecosystem, structurelint enables teams to:
+- Maintain architectural sanity with enforced layer boundaries
+- Prevent structural degradation at scale
+- Enforce both filesystem organization and code architecture
+- Support multiple architectural patterns across different languages

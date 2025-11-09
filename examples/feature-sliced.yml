@@ -1,0 +1,47 @@
+# Example: Feature-Sliced Design Architecture
+# Popular frontend architecture pattern with layer enforcement
+
+root: true
+
+layers:
+  - name: 'shared'
+    path: 'src/shared/**'
+    # Shared layer - no dependencies on other layers
+    dependsOn: []
+
+  - name: 'entities'
+    path: 'src/entities/**'
+    # Entities can only depend on shared
+    dependsOn: ['shared']
+
+  - name: 'features'
+    path: 'src/features/**'
+    # Features can depend on shared and entities
+    dependsOn: ['shared', 'entities']
+
+  - name: 'widgets'
+    path: 'src/widgets/**'
+    # Widgets can depend on shared, entities, and features
+    dependsOn: ['shared', 'entities', 'features']
+
+  - name: 'pages'
+    path: 'src/pages/**'
+    # Pages can depend on shared, entities, features, and widgets
+    dependsOn: ['shared', 'entities', 'features', 'widgets']
+
+  - name: 'app'
+    path: 'src/app/**'
+    # App layer can depend on everything (composition root)
+    dependsOn: ['*']
+
+rules:
+  enforce-layer-boundaries: true
+  max-depth: { max: 6 }
+
+  naming-convention:
+    "src/**/*.tsx": "PascalCase"
+    "src/**/*.ts": "camelCase"
+
+  # Each feature should have an index
+  file-existence:
+    "index.ts|index.tsx": "exists:1"
