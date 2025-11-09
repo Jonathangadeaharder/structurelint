@@ -14,9 +14,9 @@ func TestOrphanedFilesRule_DetectsOrphans(t *testing.T) {
 			"src/orphaned.ts",
 		},
 		IncomingRefs: map[string]int{
-			"src/index.ts": 0,      // Entrypoint, should not be flagged
-			"src/used.ts":  2,      // Used by others
-			"src/orphaned.ts": 0,   // Orphaned!
+			"src/index.ts":    0, // Entrypoint, should not be flagged
+			"src/used.ts":     2, // Used by others
+			"src/orphaned.ts": 0, // Orphaned!
 		},
 	}
 
@@ -40,7 +40,7 @@ func TestOrphanedFilesRule_RespectsEntrypoints(t *testing.T) {
 		},
 		IncomingRefs: map[string]int{
 			"src/main.ts": 0,
-			"src/app.ts": 0,
+			"src/app.ts":  0,
 		},
 	}
 

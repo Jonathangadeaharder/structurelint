@@ -8,26 +8,26 @@ import (
 
 // FileInfo represents information about a file or directory
 type FileInfo struct {
-	Path        string // Relative path from root
-	AbsPath     string // Absolute path
-	IsDir       bool
-	Depth       int    // Nesting depth from root
-	ParentPath  string // Path of parent directory
+	Path       string // Relative path from root
+	AbsPath    string // Absolute path
+	IsDir      bool
+	Depth      int    // Nesting depth from root
+	ParentPath string // Path of parent directory
 }
 
 // DirInfo represents aggregated information about a directory
 type DirInfo struct {
-	Path      string
-	FileCount int
+	Path        string
+	FileCount   int
 	SubdirCount int
-	Depth     int
+	Depth       int
 }
 
 // Walker walks a filesystem and collects information
 type Walker struct {
-	rootPath  string
-	files     []FileInfo
-	dirs      map[string]*DirInfo
+	rootPath string
+	files    []FileInfo
+	dirs     map[string]*DirInfo
 }
 
 // New creates a new Walker

@@ -72,9 +72,9 @@ import "strings"
 	}
 
 	expectedPaths := map[string]bool{
-		"fmt":                   true,
+		"fmt":                  true,
 		"github.com/user/repo": true,
-		"strings":               true,
+		"strings":              true,
 	}
 
 	for _, imp := range imports {

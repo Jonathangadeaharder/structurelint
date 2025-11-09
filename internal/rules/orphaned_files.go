@@ -42,8 +42,8 @@ func (r *OrphanedFilesRule) Check(files []walker.FileInfo, dirs map[string]*walk
 		refCount, exists := r.Graph.IncomingRefs[filePath]
 		if !exists || refCount == 0 {
 			violations = append(violations, Violation{
-				Rule: r.Name(),
-				Path: filePath,
+				Rule:    r.Name(),
+				Path:    filePath,
 				Message: "file is orphaned (not imported by any other file)",
 			})
 		}
@@ -82,7 +82,7 @@ func (r *OrphanedFilesRule) isEntrypoint(filePath string) bool {
 
 	// Test files are entrypoints
 	if strings.Contains(filePath, "_test.") || strings.Contains(filePath, ".test.") ||
-	   strings.Contains(filePath, ".spec.") || strings.HasSuffix(filePath, "_test.go") {
+		strings.Contains(filePath, ".spec.") || strings.HasSuffix(filePath, "_test.go") {
 		return true
 	}
 

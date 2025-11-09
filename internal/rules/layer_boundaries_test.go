@@ -19,8 +19,8 @@ func TestLayerBoundariesRule_ValidDependencies(t *testing.T) {
 			"src/app/service.ts": {"src/domain/user.ts"},
 		},
 		FileLayers: map[string]*config.Layer{
-			"src/app/service.ts":  &layers[1],
-			"src/domain/user.ts":  &layers[0],
+			"src/app/service.ts": &layers[1],
+			"src/domain/user.ts": &layers[0],
 		},
 		Layers: layers,
 	}
@@ -49,7 +49,7 @@ func TestLayerBoundariesRule_InvalidDependency(t *testing.T) {
 			"src/domain/user.ts": {"src/presentation/userComponent.ts"}, // Invalid!
 		},
 		FileLayers: map[string]*config.Layer{
-			"src/domain/user.ts":               &layers[0],
+			"src/domain/user.ts":                &layers[0],
 			"src/presentation/userComponent.ts": &layers[1],
 		},
 		Layers: layers,

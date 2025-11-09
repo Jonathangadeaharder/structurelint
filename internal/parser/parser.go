@@ -10,9 +10,9 @@ import (
 
 // Import represents an import statement found in a source file
 type Import struct {
-	SourceFile  string   // The file containing the import
-	ImportPath  string   // The imported path/module
-	IsRelative  bool     // Whether this is a relative import
+	SourceFile    string   // The file containing the import
+	ImportPath    string   // The imported path/module
+	IsRelative    bool     // Whether this is a relative import
 	ImportedNames []string // Specific symbols imported (for Phase 2)
 }
 
@@ -75,7 +75,7 @@ func (p *Parser) parseTypeScriptJavaScript(filePath string) ([]Import, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	var imports []Import
 	scanner := bufio.NewScanner(file)
@@ -122,7 +122,7 @@ func (p *Parser) parseGo(filePath string) ([]Import, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	var imports []Import
 	scanner := bufio.NewScanner(file)
@@ -183,7 +183,7 @@ func (p *Parser) parsePython(filePath string) ([]Import, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	var imports []Import
 	scanner := bufio.NewScanner(file)

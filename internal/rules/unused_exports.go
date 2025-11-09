@@ -66,8 +66,8 @@ func (r *UnusedExportsRule) Check(files []walker.FileInfo, dirs map[string]*walk
 
 			if len(exportNames) > 0 {
 				violations = append(violations, Violation{
-					Rule: r.Name(),
-					Path: filePath,
+					Rule:    r.Name(),
+					Path:    filePath,
 					Message: fmt.Sprintf("exports %s but is never imported", formatNames(exportNames)),
 				})
 			}

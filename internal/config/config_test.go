@@ -64,7 +64,7 @@ func TestMerge(t *testing.T) {
 	config2 := &Config{
 		Root: true,
 		Rules: map[string]interface{}{
-			"max-depth":  map[string]interface{}{"max": 7}, // Override
+			"max-depth": map[string]interface{}{"max": 7},  // Override
 			"max-files": map[string]interface{}{"max": 10}, // New rule
 		},
 	}

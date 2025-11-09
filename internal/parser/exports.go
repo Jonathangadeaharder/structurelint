@@ -13,7 +13,7 @@ func (p *Parser) parseTypeScriptJavaScriptExports(filePath string) ([]Export, er
 	if err != nil {
 		return nil, err
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	var exports []Export
 	scanner := bufio.NewScanner(file)
@@ -82,7 +82,7 @@ func (p *Parser) parseGoExports(filePath string) ([]Export, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	var exports []Export
 	scanner := bufio.NewScanner(file)
@@ -126,7 +126,7 @@ func (p *Parser) parsePythonExports(filePath string) ([]Export, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	var exports []Export
 	scanner := bufio.NewScanner(file)

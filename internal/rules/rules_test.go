@@ -94,7 +94,7 @@ func TestNamingConventionRule_CamelCase(t *testing.T) {
 
 	files := []walker.FileInfo{
 		{Path: "validName.ts"},
-		{Path: "InvalidName.ts"}, // Violates (PascalCase)
+		{Path: "InvalidName.ts"},     // Violates (PascalCase)
 		{Path: "another-invalid.ts"}, // Violates (kebab-case)
 	}
 
@@ -133,7 +133,7 @@ func TestNamingConventionRule_KebabCase(t *testing.T) {
 
 	files := []walker.FileInfo{
 		{Path: "valid-name.css"},
-		{Path: "InvalidName.css"}, // Violates (has uppercase)
+		{Path: "InvalidName.css"},  // Violates (has uppercase)
 		{Path: "invalid_name.css"}, // Violates (snake_case)
 	}
 
@@ -153,7 +153,7 @@ func TestDisallowedPatternsRule(t *testing.T) {
 	files := []walker.FileInfo{
 		{Path: "src/components/Button.tsx"},
 		{Path: "src/utils/helper.ts"}, // Violates
-		{Path: ".DS_Store"},            // Violates
+		{Path: ".DS_Store"},           // Violates
 	}
 
 	violations := rule.Check(files, nil)
