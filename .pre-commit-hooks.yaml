@@ -1,0 +1,7 @@
+- id: structurelint
+  name: structurelint
+  description: Lint project structure and architecture
+  entry: structurelint
+  language: golang
+  pass_filenames: false
+  always_run: true

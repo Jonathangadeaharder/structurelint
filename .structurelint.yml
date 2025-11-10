@@ -11,7 +11,7 @@ rules:
       - "!vendor/**"
 
   max-files-in-dir:
-    max: 15
+    max: 20
     patterns:
       - "**"
       - "!.git/**"

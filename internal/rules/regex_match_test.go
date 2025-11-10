@@ -221,3 +221,159 @@ func TestRegexMatchRule_Name(t *testing.T) {
 		t.Errorf("Expected rule name 'regex-match', got '%s'", rule.Name())
 	}
 }
+
+// Mutation killing tests - target specific lived mutations
+
+func TestRegexMatchRule_EmptyWildcardArray(t *testing.T) {
+	// Test when pattern has no wildcards - tests line 97 conditions
+	rule := NewRegexMatchRule(map[string]string{
+		"src/domain/user.ts": "^user$", // No wildcards, exact path match
+	})
+
+	files := []walker.FileInfo{
+		{Path: "src/domain/user.ts", IsDir: false},      // Should match (filename is "user")
+		{Path: "src/domain/admin.ts", IsDir: false},     // Pattern doesn't apply
+		{Path: "src/application/user.ts", IsDir: false}, // Pattern doesn't apply
+	}
+
+	violations := rule.Check(files, nil)
+
+	// Should have 0 violations - the one matching file passes regex
+	if len(violations) != 0 {
+		t.Errorf("Expected 0 violations with no wildcards, got %d", len(violations))
+	}
+}
+
+func TestRegexMatchRule_SingleWildcardBoundary(t *testing.T) {
+	// Tests line 97:11 - part == "*" condition
+	rule := NewRegexMatchRule(map[string]string{
+		"src/*/file.ts": "^${0}File$", // Single wildcard
+	})
+
+	files := []walker.FileInfo{
+		{Path: "src/domain/domainFile.ts", IsDir: false}, // ${0} = domain, should match
+		{Path: "src/app/appFile.ts", IsDir: false},       // ${0} = app, should match
+		{Path: "src/user/file.ts", IsDir: false},         // ${0} = user, should NOT match (no "File" suffix)
+	}
+
+	violations := rule.Check(files, nil)
+
+	// Should have 1 violation for the mismatched file
+	if len(violations) != 1 {
+		t.Errorf("Expected 1 violation, got %d", len(violations))
+	}
+
+	if len(violations) > 0 && violations[0].Path != "src/user/file.ts" {
+		t.Errorf("Expected violation for src/user/file.ts, got %s", violations[0].Path)
+	}
+}
+
+func TestRegexMatchRule_DoubleWildcardBoundary(t *testing.T) {
+	// Tests line 97:26 - part == "**" condition
+	rule := NewRegexMatchRule(map[string]string{
+		"src/**/file.ts": "^file$", // Double wildcard (glob)
+	})
+
+	files := []walker.FileInfo{
+		{Path: "src/file.ts", IsDir: false},               // Matches
+		{Path: "src/domain/file.ts", IsDir: false},        // Matches
+		{Path: "src/domain/models/file.ts", IsDir: false}, // Matches
+		{Path: "src/domain/wrong.ts", IsDir: false},       // Doesn't match pattern
+	}
+
+	violations := rule.Check(files, nil)
+
+	// All matching files should pass (filename is "file")
+	if len(violations) != 0 {
+		t.Errorf("Expected 0 violations with ** wildcard, got %d", len(violations))
+		for _, v := range violations {
+			t.Logf("Violation: %s", v.Path)
+		}
+	}
+}
+
+func TestRegexMatchRule_IndexOutOfBounds(t *testing.T) {
+	// Tests line 105:10 - idx < len(pathParts) boundary condition
+	// Pattern has wildcard at position that doesn't exist in some file paths
+	rule := NewRegexMatchRule(map[string]string{
+		"src/*/*/file.ts": "^${0}-${1}$", // Expects 3 path segments before filename
+	})
+
+	files := []walker.FileInfo{
+		{Path: "src/domain/models/file.ts", IsDir: false}, // Has enough segments: domain-models
+		{Path: "src/app/wrong.ts", IsDir: false},          // Shorter path - pattern won't match anyway
+	}
+
+	violations := rule.Check(files, nil)
+
+	// At least one violation should occur since paths don't match the expected pattern
+	if len(violations) < 1 {
+		t.Errorf("Expected at least 1 violation, got %d", len(violations))
+	}
+}
+
+func TestRegexMatchRule_WildcardIndexBoundary(t *testing.T) {
+	// Tests the boundary condition when wildcard index equals array length
+	rule := NewRegexMatchRule(map[string]string{
+		"src/*/file.ts": "^${0}File$",
+	})
+
+	files := []walker.FileInfo{
+		{Path: "src/domain/domainFile.ts", IsDir: false}, // idx=1, pathParts=["src","domain","domainFile.ts"], 1 < 3 = true
+		{Path: "src/x/xFile.ts", IsDir: false},           // Short path
+	}
+
+	violations := rule.Check(files, nil)
+
+	// Both should pass (domainFile matches pattern, xFile matches pattern)
+	if len(violations) != 0 {
+		t.Errorf("Expected 0 violations, got %d", len(violations))
+	}
+}
+
+func TestRegexMatchRule_MultipleWildcardsEdgeCase(t *testing.T) {
+	// Tests multiple wildcards with boundary conditions
+	rule := NewRegexMatchRule(map[string]string{
+		"*/*/*/file.ts": "^${0}-${1}-${2}$",
+	})
+
+	files := []walker.FileInfo{
+		{Path: "a/b/c/a-b-c.ts", IsDir: false},     // Should match
+		{Path: "x/y/z/file.ts", IsDir: false},      // Should NOT match (wrong filename)
+		{Path: "short/path.ts", IsDir: false},      // Pattern won't apply
+	}
+
+	violations := rule.Check(files, nil)
+
+	// Should have 1 violation for x/y/z/file.ts (filename is "file" but should be "x-y-z")
+	foundViolation := false
+	for _, v := range violations {
+		if v.Path == "x/y/z/file.ts" {
+			foundViolation = true
+		}
+	}
+
+	if !foundViolation {
+		t.Error("Expected violation for x/y/z/file.ts")
+	}
+}
+
+func TestRegexMatchRule_NoSubstitutionNeeded(t *testing.T) {
+	// Test when regex pattern has no ${n} placeholders
+	rule := NewRegexMatchRule(map[string]string{
+		"src/*/file.ts": "^file$", // No ${0} substitution
+	})
+
+	files := []walker.FileInfo{
+		{Path: "src/domain/file.ts", IsDir: false},
+		{Path: "src/app/file.ts", IsDir: false},
+		{Path: "src/wrong/other.ts", IsDir: false}, // Doesn't match pattern
+	}
+
+	violations := rule.Check(files, nil)
+
+	// All should pass (filename is "file")
+	if len(violations) != 0 {
+		t.Errorf("Expected 0 violations, got %d", len(violations))
+	}
+}
