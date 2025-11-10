@@ -6,7 +6,7 @@ import (
 	"github.com/structurelint/structurelint/internal/walker"
 )
 
-func TestMaxSubdirsRule_Check(t *testing.T) {
+func TestMaxSubdirsRule_WhenChecking(t *testing.T) {
 	tests := []struct {
 		name          string
 		maxSubdirs    int
@@ -14,7 +14,7 @@ func TestMaxSubdirsRule_Check(t *testing.T) {
 		wantViolCount int
 	}{
 		{
-			name:       "no violations when subdir count within limit",
+			name:       "GivenSubdirCountWithinLimit_WhenChecking_ThenReturnsNoViolations",
 			maxSubdirs: 10,
 			dirs: map[string]*walker.DirInfo{
 				"src": {SubdirCount: 5},
@@ -23,7 +23,7 @@ func TestMaxSubdirsRule_Check(t *testing.T) {
 			wantViolCount: 0,
 		},
 		{
-			name:       "violation when subdir count exceeds limit",
+			name:       "GivenSubdirCountExceedsLimit_WhenChecking_ThenReturnsMultipleViolations",
 			maxSubdirs: 5,
 			dirs: map[string]*walker.DirInfo{
 				"src":  {SubdirCount: 10},
@@ -33,7 +33,7 @@ func TestMaxSubdirsRule_Check(t *testing.T) {
 			wantViolCount: 2,
 		},
 		{
-			name:       "exact count at limit",
+			name:       "GivenSubdirCountAtLimit_WhenChecking_ThenReturnsNoViolations",
 			maxSubdirs: 5,
 			dirs: map[string]*walker.DirInfo{
 				"src": {SubdirCount: 5},
@@ -41,7 +41,7 @@ func TestMaxSubdirsRule_Check(t *testing.T) {
 			wantViolCount: 0,
 		},
 		{
-			name:       "root directory violation",
+			name:       "GivenRootDirectoryExceedsLimit_WhenChecking_ThenReturnsViolation",
 			maxSubdirs: 3,
 			dirs: map[string]*walker.DirInfo{
 				"": {SubdirCount: 5},
@@ -49,7 +49,7 @@ func TestMaxSubdirsRule_Check(t *testing.T) {
 			wantViolCount: 1,
 		},
 		{
-			name:          "empty dirs",
+			name:          "WhenDirsEmpty_ThenReturnsNoViolations",
 			maxSubdirs:    5,
 			dirs:          map[string]*walker.DirInfo{},
 			wantViolCount: 0,
@@ -58,9 +58,13 @@ func TestMaxSubdirsRule_Check(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			// Arrange
 			rule := NewMaxSubdirsRule(tt.maxSubdirs)
+
+			// Act
 			violations := rule.Check(nil, tt.dirs)
 
+			// Assert
 			if len(violations) != tt.wantViolCount {
 				t.Errorf("Check() got %d violations, want %d", len(violations), tt.wantViolCount)
 			}
@@ -74,9 +78,15 @@ func TestMaxSubdirsRule_Check(t *testing.T) {
 	}
 }
 
-func TestMaxSubdirsRule_Name(t *testing.T) {
+func TestMaxSubdirsRule_WhenGettingName(t *testing.T) {
+	// Arrange
 	rule := NewMaxSubdirsRule(10)
-	if got := rule.Name(); got != "max-subdirs" {
+
+	// Act
+	got := rule.Name()
+
+	// Assert
+	if got != "max-subdirs" {
 		t.Errorf("Name() = %v, want max-subdirs", got)
 	}
 }

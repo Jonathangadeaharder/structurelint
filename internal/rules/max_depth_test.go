@@ -6,7 +6,7 @@ import (
 	"github.com/structurelint/structurelint/internal/walker"
 )
 
-func TestMaxDepthRule_Check(t *testing.T) {
+func TestMaxDepthRule_WhenChecking(t *testing.T) {
 	tests := []struct {
 		name          string
 		maxDepth      int
@@ -14,7 +14,7 @@ func TestMaxDepthRule_Check(t *testing.T) {
 		wantViolCount int
 	}{
 		{
-			name:     "no violations when depth within limit",
+			name:     "GivenDepthWithinLimit_WhenChecking_ThenReturnsNoViolations",
 			maxDepth: 5,
 			files: []walker.FileInfo{
 				{Path: "a/b/c/file.go", Depth: 3},
@@ -24,7 +24,7 @@ func TestMaxDepthRule_Check(t *testing.T) {
 			wantViolCount: 0,
 		},
 		{
-			name:     "violation when depth exceeds limit",
+			name:     "GivenDepthExceedsLimit_WhenChecking_ThenReturnsViolation",
 			maxDepth: 2,
 			files: []walker.FileInfo{
 				{Path: "a/b/c/file.go", Depth: 3},
@@ -33,7 +33,7 @@ func TestMaxDepthRule_Check(t *testing.T) {
 			wantViolCount: 1,
 		},
 		{
-			name:     "multiple violations",
+			name:     "GivenMultipleExcessiveDepths_WhenChecking_ThenReturnsMultipleViolations",
 			maxDepth: 1,
 			files: []walker.FileInfo{
 				{Path: "a/b/c/file.go", Depth: 3},
@@ -43,7 +43,7 @@ func TestMaxDepthRule_Check(t *testing.T) {
 			wantViolCount: 2,
 		},
 		{
-			name:     "exact depth at limit",
+			name:     "GivenDepthAtLimit_WhenChecking_ThenReturnsNoViolations",
 			maxDepth: 3,
 			files: []walker.FileInfo{
 				{Path: "a/b/c/file.go", Depth: 3},
@@ -51,7 +51,7 @@ func TestMaxDepthRule_Check(t *testing.T) {
 			wantViolCount: 0,
 		},
 		{
-			name:          "empty file list",
+			name:          "WhenFileListEmpty_ThenReturnsNoViolations",
 			maxDepth:      5,
 			files:         []walker.FileInfo{},
 			wantViolCount: 0,
@@ -60,9 +60,13 @@ func TestMaxDepthRule_Check(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			// Arrange
 			rule := NewMaxDepthRule(tt.maxDepth)
+
+			// Act
 			violations := rule.Check(tt.files, nil)
 
+			// Assert
 			if len(violations) != tt.wantViolCount {
 				t.Errorf("Check() got %d violations, want %d", len(violations), tt.wantViolCount)
 			}
@@ -76,9 +80,15 @@ func TestMaxDepthRule_Check(t *testing.T) {
 	}
 }
 
-func TestMaxDepthRule_Name(t *testing.T) {
+func TestMaxDepthRule_WhenGettingName(t *testing.T) {
+	// Arrange
 	rule := NewMaxDepthRule(5)
-	if got := rule.Name(); got != "max-depth" {
+
+	// Act
+	got := rule.Name()
+
+	// Assert
+	if got != "max-depth" {
 		t.Errorf("Name() = %v, want max-depth", got)
 	}
 }
