@@ -55,7 +55,7 @@ func run() error {
 		return fmt.Errorf("found %d violation(s)", len(violations))
 	}
 
-	fmt.Println("No violations found")
+	fmt.Println("✓ All checks passed")
 	return nil
 }
 
