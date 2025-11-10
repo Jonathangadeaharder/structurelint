@@ -7,6 +7,7 @@ import (
 )
 
 func TestWalker(t *testing.T) {
+	// Arrange
 	tmpDir := t.TempDir()
 
 	// Create test directory structure
@@ -39,6 +40,7 @@ func TestWalker(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	// Act
 	w := New(tmpDir)
 	if err := w.Walk(); err != nil {
 		t.Fatalf("Walk failed: %v", err)
@@ -46,6 +48,7 @@ func TestWalker(t *testing.T) {
 
 	files := w.GetFiles()
 
+	// Assert
 	// Should find 3 files and 2 directories
 	fileCount := 0
 	dirCount := 0

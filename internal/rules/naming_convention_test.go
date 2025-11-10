@@ -105,9 +105,13 @@ func TestNamingConventionRule_Check(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			// Arrange
 			rule := NewNamingConventionRule(tt.patterns)
+
+			// Act
 			violations := rule.Check(tt.files, nil)
 
+			// Assert
 			if len(violations) != tt.wantViolCount {
 				t.Errorf("Check() got %d violations, want %d", len(violations), tt.wantViolCount)
 				for _, v := range violations {
