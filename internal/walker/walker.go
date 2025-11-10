@@ -68,90 +68,113 @@ func (w *Walker) Walk() error {
 			return err
 		}
 
-		// Calculate relative path
 		relPath, err := filepath.Rel(absRoot, path)
 		if err != nil {
 			return err
 		}
 
-		// Skip the root itself
-		if relPath == "." {
-			return nil
-		}
-
-		// Check if this path is excluded
-		if w.isExcluded(relPath) {
-			if d.IsDir() {
-				return filepath.SkipDir
-			}
-			return nil
-		}
-
-		// Skip common directories that should be ignored
-		if d.IsDir() {
-			baseName := filepath.Base(relPath)
-			if baseName == ".git" || baseName == "node_modules" || baseName == "vendor" {
-				return filepath.SkipDir
-			}
-		}
-
-		// Calculate depth
-		depth := strings.Count(relPath, string(filepath.Separator))
-		if d.IsDir() {
-			depth++ // Directories count themselves
-		}
-
-		// Get parent path
-		parentPath := filepath.Dir(relPath)
-		if parentPath == "." {
-			parentPath = ""
-		}
-
-		// Create FileInfo
-		info := FileInfo{
-			Path:       relPath,
-			AbsPath:    path,
-			IsDir:      d.IsDir(),
-			Depth:      depth,
-			ParentPath: parentPath,
-		}
-
-		w.files = append(w.files, info)
-
-		// Update directory statistics
-		if d.IsDir() {
-			// Initialize this directory
-			if _, exists := w.dirs[relPath]; !exists {
-				w.dirs[relPath] = &DirInfo{
-					Path:  relPath,
-					Depth: depth,
-				}
-			}
-		}
-
-		// Update parent directory statistics
-		if parentPath != "" || parentPath == "." {
-			parent := parentPath
-			if parent == "." {
-				parent = ""
-			}
-
-			if _, exists := w.dirs[parent]; !exists {
-				w.dirs[parent] = &DirInfo{
-					Path:  parent,
-					Depth: depth - 1,
-				}
-			}
-
-			if d.IsDir() {
-				w.dirs[parent].SubdirCount++
-			} else {
-				w.dirs[parent].FileCount++
-			}
-		}
-
-		return nil
+		return w.processPath(relPath, path, d)
 	})
+}
+
+// processPath handles a single path entry during the walk
+func (w *Walker) processPath(relPath, absPath string, d fs.DirEntry) error {
+	// Skip the root itself
+	if relPath == "." {
+		return nil
+	}
+
+	// Check for exclusions and skippable directories
+	if skipAction := w.shouldSkip(relPath, d); skipAction != nil {
+		return skipAction
+	}
+
+	depth := w.calculateDepth(relPath, d.IsDir())
+	parentPath := w.normalizeParentPath(relPath)
+
+	info := FileInfo{
+		Path:       relPath,
+		AbsPath:    absPath,
+		IsDir:      d.IsDir(),
+		Depth:      depth,
+		ParentPath: parentPath,
+	}
+
+	w.files = append(w.files, info)
+	w.updateDirectoryStats(relPath, parentPath, depth, d.IsDir())
+
+	return nil
+}
+
+// shouldSkip determines if a path should be skipped and returns the appropriate action
+func (w *Walker) shouldSkip(relPath string, d fs.DirEntry) error {
+	if w.isExcluded(relPath) {
+		if d.IsDir() {
+			return filepath.SkipDir
+		}
+		return nil
+	}
+
+	if d.IsDir() && w.isIgnoredDir(relPath) {
+		return filepath.SkipDir
+	}
+
+	return nil
+}
+
+// isIgnoredDir checks if a directory should be ignored
+func (w *Walker) isIgnoredDir(relPath string) bool {
+	baseName := filepath.Base(relPath)
+	return baseName == ".git" || baseName == "node_modules" || baseName == "vendor"
+}
+
+// calculateDepth calculates the depth of a path
+func (w *Walker) calculateDepth(relPath string, isDir bool) int {
+	depth := strings.Count(relPath, string(filepath.Separator))
+	if isDir {
+		depth++ // Directories count themselves
+	}
+	return depth
+}
+
+// normalizeParentPath returns the normalized parent path
+func (w *Walker) normalizeParentPath(relPath string) string {
+	parentPath := filepath.Dir(relPath)
+	if parentPath == "." {
+		return ""
+	}
+	return parentPath
+}
+
+// updateDirectoryStats updates statistics for both the current directory and its parent
+func (w *Walker) updateDirectoryStats(relPath, parentPath string, depth int, isDir bool) {
+	if isDir {
+		w.ensureDirExists(relPath, depth)
+	}
+
+	if parentPath != "" {
+		w.ensureDirExists(parentPath, depth-1)
+		w.updateParentCounts(parentPath, isDir)
+	}
+}
+
+// ensureDirExists ensures a directory entry exists in the stats map
+func (w *Walker) ensureDirExists(dirPath string, depth int) {
+	if _, exists := w.dirs[dirPath]; !exists {
+		w.dirs[dirPath] = &DirInfo{
+			Path:  dirPath,
+			Depth: depth,
+		}
+	}
+}
+
+// updateParentCounts updates file or subdir count for a parent directory
+func (w *Walker) updateParentCounts(parentPath string, isDir bool) {
+	if isDir {
+		w.dirs[parentPath].SubdirCount++
+	} else {
+		w.dirs[parentPath].FileCount++
+	}
 }
 
 // GetFiles returns all files found during the walk
