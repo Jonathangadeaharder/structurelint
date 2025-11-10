@@ -1,0 +1,24 @@
+# Template for Python test files (pytest/unittest)
+# Enforces Arrange-Act-Assert (AAA) pattern for better test readability
+
+required-patterns:
+  # Must have at least one test function
+  - "def test_\\w+\\(|class Test\\w+"
+
+  # AAA pattern comments (at least one test should follow this pattern)
+  - "# Arrange|# Act|# Assert"
+
+forbidden-patterns:
+  # Discourage testing without assertions
+  - "def test_\\w+\\(.*\\):\\s*pass"
+
+  # Discourage too many assertions (suggests testing multiple things)
+  # This is a simplified check
+  - "assert.*\\n.*assert.*\\n.*assert.*\\n.*assert.*\\n.*assert"
+
+# Best practices:
+# - Use descriptive test names: test_function_does_x_when_y
+# - One logical assertion per test
+# - Clear AAA separation with comments
+# - Use fixtures for common setup
+# - Use pytest parametrize for similar test cases

@@ -911,6 +911,11 @@ Phase 4 enables validation of file contents using templates. This ensures docume
 - Validate file must start/end with specific content
 - Ensure proper formatting
 
+**4. Test Pattern Enforcement**
+- Enforce Arrange-Act-Assert (AAA) pattern in test files
+- Improve test readability and consistency across teams
+- Support for Go, TypeScript/JavaScript, Python tests
+
 ### Configuration
 
 Define templates in `.structurelint/templates/`:
@@ -977,6 +982,48 @@ required-sections:
 
 must-end-with: "## License"
 ```
+
+#### Test File Templates (AAA Pattern)
+
+Enforce the Arrange-Act-Assert pattern for better test readability:
+
+```yaml
+rules:
+  file-content:
+    templates:
+      # Go tests
+      "**/*_test.go": "test-go"
+
+      # TypeScript/JavaScript tests
+      "**/*.test.ts": "test-typescript"
+      "**/*.spec.js": "test-typescript"
+
+      # Python tests
+      "**/test_*.py": "test-python"
+```
+
+**Example compliant Go test:**
+```go
+func TestCalculator_Add_ReturnsSum(t *testing.T) {
+    // Arrange
+    calc := NewCalculator()
+    a, b := 2, 3
+
+    // Act
+    result := calc.Add(a, b)
+
+    // Assert
+    assert.Equal(t, 5, result)
+}
+```
+
+Available test templates:
+- `test-go.yml` - Lenient AAA enforcement for Go
+- `test-typescript.yml` - Lenient AAA enforcement for TypeScript/JavaScript
+- `test-python.yml` - Lenient AAA enforcement for Python
+- `test-strict-aaa.yml` - Strict AAA enforcement (all languages)
+
+See [docs/TEST_AAA_PATTERN.md](docs/TEST_AAA_PATTERN.md) for complete guide.
 
 ### Example Violations
 

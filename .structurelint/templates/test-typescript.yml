@@ -1,0 +1,22 @@
+# Template for TypeScript/JavaScript test files
+# Enforces Arrange-Act-Assert (AAA) pattern for better test readability
+
+required-patterns:
+  # Must have at least one test block
+  - "it\\(|test\\(|describe\\("
+
+  # AAA pattern comments (at least one test should follow this pattern)
+  - "// Arrange|// Act|// Assert"
+
+forbidden-patterns:
+  # Discourage testing without expectations
+  - "^(?!.*expect\\().*it\\("
+
+  # Discourage overly nested describes
+  - "describe\\(.*describe\\(.*describe\\("
+
+# Best practices:
+# - Use descriptive test names: it('should do X when Y')
+# - One assertion concept per test
+# - Clear separation between Arrange, Act, and Assert phases
+# - Use beforeEach/afterEach for common setup/teardown

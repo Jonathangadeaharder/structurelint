@@ -8,11 +8,24 @@ This directory contains YAML template files that define content structure requir
 
 ## Available Templates
 
+### Documentation Templates
+
 | Template | Purpose | Used For |
 |----------|---------|----------|
 | `readme.yml` | README structure | All README.md files |
 | `contributing.yml` | Contributing guidelines | CONTRIBUTING.md |
 | `design-doc.yml` | Design document structure | Technical design docs |
+
+### Test Templates (AAA Pattern)
+
+| Template | Purpose | Used For |
+|----------|---------|----------|
+| `test-go.yml` | Go test AAA pattern | `*_test.go` files |
+| `test-typescript.yml` | TypeScript/JS test AAA pattern | `*.test.ts`, `*.spec.js` files |
+| `test-python.yml` | Python test AAA pattern | `test_*.py`, `*_test.py` files |
+| `test-strict-aaa.yml` | Strict AAA enforcement | Any test files (multi-language) |
+
+The test templates enforce the Arrange-Act-Assert (AAA) pattern for better test readability and consistency. See [Test AAA Pattern](../../docs/TEST_AAA_PATTERN.md) for details.
 
 ## Template Format
 

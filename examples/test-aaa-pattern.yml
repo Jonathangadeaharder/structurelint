@@ -1,0 +1,67 @@
+# Example: Enforce Arrange-Act-Assert (AAA) Pattern in Tests
+# This configuration ensures all test files follow the AAA pattern
+# for better readability and maintainability
+
+root: true
+
+rules:
+  # Basic filesystem rules
+  max-depth: { max: 6 }
+  max-files-in-dir: { max: 20 }
+
+  # Phase 3: Ensure tests exist
+  test-adjacency:
+    pattern: "adjacent"
+    file-patterns:
+      - "**/*.go"
+      - "**/*.ts"
+      - "**/*.tsx"
+    exemptions:
+      - "cmd/**/*.go"
+      - "**/*.d.ts"
+      - "**/index.ts"
+
+  # Phase 4: Enforce AAA pattern in test files
+  file-content:
+    template-dir: ".structurelint/templates"
+    templates:
+      # Go tests - lenient AAA enforcement
+      "**/*_test.go": "test-go"
+
+      # TypeScript/JavaScript tests - lenient AAA enforcement
+      "**/*.test.ts": "test-typescript"
+      "**/*.test.tsx": "test-typescript"
+      "**/*.spec.ts": "test-typescript"
+      "**/*.test.js": "test-typescript"
+      "**/*.spec.js": "test-typescript"
+
+      # Python tests - lenient AAA enforcement
+      "**/test_*.py": "test-python"
+      "**/*_test.py": "test-python"
+
+exclude:
+  - node_modules/**
+  - vendor/**
+  - dist/**
+  - build/**
+  - .git/**
+
+overrides:
+  # Strict AAA enforcement for core business logic tests
+  - files: ['src/core/**/*_test.go', 'src/services/**/*.test.ts']
+    rules:
+      file-content:
+        template-dir: ".structurelint/templates"
+        templates:
+          "**/*_test.go": "test-strict-aaa"
+          "**/*.test.ts": "test-strict-aaa"
+
+  # No AAA enforcement for integration tests (they're often more complex)
+  - files: ['tests/integration/**', '**/*.integration.test.ts']
+    rules:
+      file-content: 0
+
+  # No AAA enforcement for test fixtures or mocks
+  - files: ['**/__fixtures__/**', '**/__mocks__/**', '**/testdata/**']
+    rules:
+      file-content: 0

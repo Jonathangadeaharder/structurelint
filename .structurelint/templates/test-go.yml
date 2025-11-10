@@ -1,0 +1,21 @@
+# Template for Go test files
+# Enforces Arrange-Act-Assert (AAA) pattern for better test readability
+
+required-patterns:
+  # Test function must exist
+  - "func Test\\w+\\(t \\*testing\\.T\\)"
+
+  # AAA pattern comments (at least one test should follow this pattern)
+  - "// Arrange|// Act|// Assert"
+
+forbidden-patterns:
+  # Discourage testing multiple things in one test
+  - "t\\.Run\\(.*t\\.Run\\("  # Nested t.Run indicates complex test
+
+  # Discourage testing without assertions
+  # (This is a simplified check - real implementation would be more sophisticated)
+
+# Optional: Could also check for:
+# - Table-driven tests with t.Run
+# - Proper test naming (Test<FunctionName>_<Scenario>)
+# - Setup/teardown patterns

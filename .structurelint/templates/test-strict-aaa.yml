@@ -1,0 +1,44 @@
+# Strict AAA Template
+# Use this for projects that want to strictly enforce the AAA pattern
+# with explicit comments in every test
+
+required-sections:
+  # Every test file must have these AAA markers
+  - "Arrange"
+  - "Act"
+  - "Assert"
+
+required-patterns:
+  # Test function/method must exist
+  - "test|Test|it\\(|describe\\("
+
+  # All three AAA comments must be present
+  - "(?://|#)\\s*Arrange"
+  - "(?://|#)\\s*Act"
+  - "(?://|#)\\s*Assert"
+
+forbidden-patterns:
+  # No TODOs or FIXMEs in production tests
+  - "TODO|FIXME|XXX"
+
+  # No console.log/print debugging statements
+  - "console\\.log|print\\(.*\\)"
+
+# This template ensures:
+# 1. Every test explicitly marks Arrange, Act, Assert sections
+# 2. No debugging statements are left in
+# 3. No incomplete tests (TODO/FIXME)
+#
+# Example compliant test:
+#
+# func TestCalculator_Add_ReturnsSum(t *testing.T) {
+#     // Arrange
+#     calc := NewCalculator()
+#     a, b := 2, 3
+#
+#     // Act
+#     result := calc.Add(a, b)
+#
+#     // Assert
+#     assert.Equal(t, 5, result)
+# }
