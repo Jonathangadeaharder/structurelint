@@ -2,43 +2,31 @@ root: true
 
 exclude:
   - testdata/**
+  - .git/**
+  - .github/**
+  - docs/**
 
 rules:
   # Phase 0: Basic filesystem rules
   max-depth:
     max: 5
-    patterns:
-      - "**"
-      - "!.git/**"
-      - "!node_modules/**"
-      - "!vendor/**"
 
   max-files-in-dir:
     max: 20
-    patterns:
-      - "**"
-      - "!.git/**"
-      - "!node_modules/**"
-      - "!vendor/**"
 
   max-subdirs:
     max: 10
-    patterns:
-      - "**"
-      - "!.git/**"
-      - "!node_modules/**"
-      - "!vendor/**"
 
-  naming-convention:
-    patterns:
-      - pattern: "**/*.go"
-        convention: snake_case
+  # README.md Documentation Requirements
+  # Every directory is like a building lobby - it needs a directory/guide
+  # Format: "filename": "exists:count"
+  file-existence:
+    "README.md": "exists:1"
 
   disallowed-patterns:
-    patterns:
-      - "*.tmp"
-      - "*.bak"
-      - ".DS_Store"
+    - "*.tmp"
+    - "*.bak"
+    - ".DS_Store"
 
 # Phase 1: Architectural layers for Go project
 layers:
