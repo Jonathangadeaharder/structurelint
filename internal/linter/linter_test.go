@@ -11,10 +11,12 @@ import (
 
 func TestNew(t *testing.T) {
 	// Arrange
+	// (no arrangement needed)
+
 	// Act
-	// Assert
 	linter := New()
 
+	// Assert
 	if linter == nil {
 		t.Fatal("New() returned nil")
 	}

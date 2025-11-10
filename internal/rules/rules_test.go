@@ -8,8 +8,6 @@ import (
 
 func TestMaxDepthRule(t *testing.T) {
 	// Arrange
-	// Act
-	// Assert
 	rule := NewMaxDepthRule(3)
 
 	files := []walker.FileInfo{
@@ -19,8 +17,10 @@ func TestMaxDepthRule(t *testing.T) {
 		{Path: "g/h/i/j.txt", Depth: 4}, // Violates
 	}
 
+	// Act
 	violations := rule.Check(files, nil)
 
+	// Assert
 	if len(violations) != 1 {
 		t.Errorf("Expected 1 violation, got %d", len(violations))
 	}

@@ -9,9 +9,6 @@ import (
 )
 
 func TestTestAdjacencyRule_Check_Adjacent(t *testing.T) {
-	// Arrange
-	// Act
-	// Assert
 	tests := []struct {
 		name          string
 		filePatterns  []string
@@ -76,9 +73,13 @@ func TestTestAdjacencyRule_Check_Adjacent(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			// Arrange
 			rule := NewTestAdjacencyRule("adjacent", "", tt.filePatterns, tt.exemptions)
+
+			// Act
 			violations := rule.Check(tt.files, nil)
 
+			// Assert
 			if len(violations) != tt.wantViolCount {
 				t.Errorf("Check() got %d violations, want %d", len(violations), tt.wantViolCount)
 				for _, v := range violations {

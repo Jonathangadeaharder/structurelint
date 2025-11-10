@@ -8,8 +8,6 @@ import (
 
 func Test_extensionToLanguage(t *testing.T) {
 	// Arrange
-	// Act
-	// Assert
 	tests := []struct {
 		ext  string
 		want string
@@ -29,7 +27,11 @@ func Test_extensionToLanguage(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.ext, func(t *testing.T) {
-			if got := extensionToLanguage(tt.ext); got != tt.want {
+			// Act
+			got := extensionToLanguage(tt.ext)
+
+			// Assert
+			if got != tt.want {
 				t.Errorf("extensionToLanguage(%q) = %q, want %q", tt.ext, got, tt.want)
 			}
 		})

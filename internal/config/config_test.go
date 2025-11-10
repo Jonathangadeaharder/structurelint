@@ -8,8 +8,6 @@ import (
 
 func TestLoad(t *testing.T) {
 	// Arrange
-	// Act
-	// Assert
 	tmpDir := t.TempDir()
 	configFile := filepath.Join(tmpDir, ".structurelint.yml")
 
@@ -25,8 +23,10 @@ rules:
 		t.Fatal(err)
 	}
 
+	// Act
 	config, err := Load(configFile)
 
+	// Assert
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)
 	}

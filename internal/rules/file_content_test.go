@@ -94,7 +94,18 @@ func TestFileContentRule_loadTemplate(t *testing.T) {
 	}{
 		{
 			name: "template with sections and patterns",
-			templateContent: "# Test template\nrequired-sections:\n  - \"## Overview\"\n  - \"## Usage\"\n\nrequired-patterns:\n  - \".*\"\n\nforbidden-patterns:\n  - \"TO" + "DO\"\n  - \"FIX" + "ME\"\n",
+			templateContent: `# Test template
+required-sections:
+  - "## Overview"
+  - "## Usage"
+
+required-patterns:
+  - ".*"
+
+forbidden-patterns:
+  - "` + "TO" + "DO" + `"
+  - "` + "FIX" + "ME" + `"
+`,
 			wantSections:         2,
 			wantRequiredPatterns: 1,
 			wantForbiddenPatt:    2,

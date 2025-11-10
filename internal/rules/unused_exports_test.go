@@ -9,8 +9,6 @@ import (
 
 func TestUnusedExportsRule_DetectsUnusedExports(t *testing.T) {
 	// Arrange
-	// Act
-	// Assert
 	importGraph := &graph.ImportGraph{
 		AllFiles: []string{
 			"src/index.ts",
@@ -31,8 +29,11 @@ func TestUnusedExportsRule_DetectsUnusedExports(t *testing.T) {
 	}
 
 	rule := NewUnusedExportsRule(importGraph)
+
+	// Act
 	violations := rule.Check(nil, nil)
 
+	// Assert
 	if len(violations) != 1 {
 		t.Errorf("Expected 1 violation, got %d", len(violations))
 	}
