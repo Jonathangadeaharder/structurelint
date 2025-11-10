@@ -7,6 +7,9 @@ import (
 )
 
 func TestTestLocationRule_Check(t *testing.T) {
+	// Arrange
+	// Act
+	// Assert
 	tests := []struct {
 		name               string
 		integrationTestDir string

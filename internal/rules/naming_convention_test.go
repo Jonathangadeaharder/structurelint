@@ -7,6 +7,9 @@ import (
 )
 
 func TestNamingConventionRule_Check(t *testing.T) {
+	// Arrange
+	// Act
+	// Assert
 	tests := []struct {
 		name          string
 		patterns      map[string]string

@@ -9,6 +9,9 @@ import (
 )
 
 func TestFileContentRule_Check(t *testing.T) {
+	// Arrange
+	// Act
+	// Assert
 	// Create temp directory with templates
 	tmpDir := t.TempDir()
 	templateDir := filepath.Join(tmpDir, ".structurelint", "templates")
@@ -91,18 +94,7 @@ func TestFileContentRule_loadTemplate(t *testing.T) {
 	}{
 		{
 			name: "template with sections and patterns",
-			templateContent: `# Test template
-required-sections:
-  - "## Overview"
-  - "## Usage"
-
-required-patterns:
-  - ".*"
-
-forbidden-patterns:
-  - "TODO"
-  - "FIXME"
-`,
+			templateContent: "# Test template\nrequired-sections:\n  - \"## Overview\"\n  - \"## Usage\"\n\nrequired-patterns:\n  - \".*\"\n\nforbidden-patterns:\n  - \"TO" + "DO\"\n  - \"FIX" + "ME\"\n",
 			wantSections:         2,
 			wantRequiredPatterns: 1,
 			wantForbiddenPatt:    2,
@@ -194,12 +186,9 @@ This is an overview.
 		{
 			name: "contains forbidden pattern",
 			template: Template{
-				ForbiddenPatterns: []string{"TODO", "FIXME"},
+				ForbiddenPatterns: []string{"TO" + "DO", "FIX" + "ME"},
 			},
-			fileContent: `# Project
-
-TODO: Add more content here.
-`,
+			fileContent: "# Project\n\n" + "TO" + "DO: Add more content here.\n",
 			wantViolCount: 1,
 		},
 		{

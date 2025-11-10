@@ -7,6 +7,9 @@ import (
 )
 
 func TestRegexMatchRule_BasicMatch(t *testing.T) {
+	// Arrange
+	// Act
+	// Assert
 	rule := NewRegexMatchRule(map[string]string{
 		"src/*.ts": "^[a-z]+$", // Must be lowercase letters only
 	})

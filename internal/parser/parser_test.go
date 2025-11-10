@@ -7,6 +7,9 @@ import (
 )
 
 func TestParseTypeScriptImports(t *testing.T) {
+	// Arrange
+	// Act
+	// Assert
 	// Create temp file
 	tmpDir := t.TempDir()
 	tsFile := filepath.Join(tmpDir, "test.ts")

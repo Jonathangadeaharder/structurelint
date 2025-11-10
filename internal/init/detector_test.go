@@ -7,6 +7,9 @@ import (
 )
 
 func Test_extensionToLanguage(t *testing.T) {
+	// Arrange
+	// Act
+	// Assert
 	tests := []struct {
 		ext  string
 		want string

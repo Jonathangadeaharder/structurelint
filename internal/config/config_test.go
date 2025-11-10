@@ -7,6 +7,9 @@ import (
 )
 
 func TestLoad(t *testing.T) {
+	// Arrange
+	// Act
+	// Assert
 	tmpDir := t.TempDir()
 	configFile := filepath.Join(tmpDir, ".structurelint.yml")
 

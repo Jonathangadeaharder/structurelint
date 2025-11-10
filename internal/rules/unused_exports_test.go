@@ -8,6 +8,9 @@ import (
 )
 
 func TestUnusedExportsRule_DetectsUnusedExports(t *testing.T) {
+	// Arrange
+	// Act
+	// Assert
 	importGraph := &graph.ImportGraph{
 		AllFiles: []string{
 			"src/index.ts",

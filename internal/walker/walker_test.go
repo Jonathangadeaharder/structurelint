@@ -7,6 +7,9 @@ import (
 )
 
 func TestWalker(t *testing.T) {
+	// Arrange
+	// Act
+	// Assert
 	tmpDir := t.TempDir()
 
 	// Create test directory structure

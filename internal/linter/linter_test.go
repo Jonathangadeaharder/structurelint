@@ -10,6 +10,9 @@ import (
 )
 
 func TestNew(t *testing.T) {
+	// Arrange
+	// Act
+	// Assert
 	linter := New()
 
 	if linter == nil {

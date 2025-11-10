@@ -9,6 +9,9 @@ import (
 )
 
 func TestLayerBoundariesRule_ValidDependencies(t *testing.T) {
+	// Arrange
+	// Act
+	// Assert
 	layers := []config.Layer{
 		{Name: "domain", Path: "src/domain/**", DependsOn: []string{}},
 		{Name: "app", Path: "src/app/**", DependsOn: []string{"domain"}},

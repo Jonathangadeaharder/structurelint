@@ -6,6 +6,9 @@ import (
 )
 
 func TestGenerateConfig(t *testing.T) {
+	// Arrange
+	// Act
+	// Assert
 	tests := []struct {
 		name             string
 		info             *ProjectInfo

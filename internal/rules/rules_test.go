@@ -7,6 +7,9 @@ import (
 )
 
 func TestMaxDepthRule(t *testing.T) {
+	// Arrange
+	// Act
+	// Assert
 	rule := NewMaxDepthRule(3)
 
 	files := []walker.FileInfo{

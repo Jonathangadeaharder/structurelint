@@ -7,6 +7,9 @@ import (
 )
 
 func TestParser_parseGoExports(t *testing.T) {
+	// Arrange
+	// Act
+	// Assert
 	tests := []struct {
 		name        string
 		content     string

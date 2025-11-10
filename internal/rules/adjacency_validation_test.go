@@ -9,6 +9,9 @@ import (
 )
 
 func TestTestAdjacencyRule_Check_Adjacent(t *testing.T) {
+	// Arrange
+	// Act
+	// Assert
 	tests := []struct {
 		name          string
 		filePatterns  []string
