@@ -36,13 +36,34 @@ As projects grow, their directory structures often degrade into chaos:
 
 ## Installation
 
-```bash
-# Download the binary (once released)
-# For now, build from source:
-go build -o structurelint ./cmd/structurelint
+### Go Install (Recommended)
 
-# Or install directly
+```bash
 go install github.com/structurelint/structurelint/cmd/structurelint@latest
+```
+
+### Download Binary
+
+Download pre-built binaries from the [releases page](https://github.com/structurelint/structurelint/releases):
+
+```bash
+# Linux (amd64)
+curl -L https://github.com/structurelint/structurelint/releases/latest/download/structurelint-linux-amd64 -o structurelint
+chmod +x structurelint
+sudo mv structurelint /usr/local/bin/
+
+# macOS (Apple Silicon)
+curl -L https://github.com/structurelint/structurelint/releases/latest/download/structurelint-darwin-arm64 -o structurelint
+chmod +x structurelint
+sudo mv structurelint /usr/local/bin/
+```
+
+### Build from Source
+
+```bash
+git clone https://github.com/structurelint/structurelint.git
+cd structurelint
+go build -o structurelint ./cmd/structurelint
 ```
 
 ## Quick Start
@@ -654,3 +675,50 @@ See `examples/dead-code-detection.yml` and `examples/complete-setup.yml` for ful
 - **Improve Maintainability**: Clean codebase is easier to understand
 - **Prevent Accumulation**: Catch dead code before it becomes technical debt
 - **CI/CD Integration**: Enforce cleanliness in your build pipeline
+
+
+## Documentation & Resources
+
+### Getting Started
+
+- 📖 **[Getting Started Guide](docs/GETTING_STARTED.md)** - Comprehensive tutorial from installation to advanced usage
+- 🎯 **[Quick Start](#quick-start)** - Get up and running in 5 minutes
+
+### Integration
+
+- 🔗 **[Pre-commit Hooks](docs/PRE_COMMIT.md)** - Integrate with pre-commit framework
+- 🤖 **[GitHub Actions](docs/GITHUB_ACTION.md)** - CI/CD integration examples
+- ⚙️ **[Configuration Reference](#configuration)** - Full configuration documentation
+
+### Contributing
+
+- 🤝 **[Contributing Guide](CONTRIBUTING.md)** - How to contribute to structurelint
+- 🐛 **[Issue Tracker](https://github.com/structurelint/structurelint/issues)** - Report bugs or request features
+- 📋 **[Pull Request Template](.github/pull_request_template.md)** - Submit changes
+
+### Project Information
+
+- 📊 **[Test Coverage](MUTATION_TESTING.md)** - Mutation testing results (75.76% efficacy)
+- 📈 **[Complexity Metrics](COMPLEXITY.md)** - Cyclomatic and cognitive complexity
+- 📜 **[License](LICENSE)** - MIT License
+
+### Examples
+
+- 🎨 **[Integration Test Fixtures](testdata/fixtures/)** - Real examples:
+  - `good-project/` - Clean structure (0 violations)
+  - `bad-project/` - Phase 0 violations
+  - `layer-violations/` - Architectural violations
+
+## License
+
+MIT License - see [LICENSE](LICENSE) for details
+
+## Support
+
+- 💬 Ask questions in [GitHub Issues](https://github.com/structurelint/structurelint/issues)
+- 📖 Read the [documentation](docs/)
+- 🤝 Contribute via [pull requests](https://github.com/structurelint/structurelint/pulls)
+
+---
+
+**Made with ❤️ for better codebases**

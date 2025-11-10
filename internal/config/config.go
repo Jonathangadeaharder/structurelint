@@ -12,6 +12,7 @@ import (
 type Config struct {
 	Root        bool                   `yaml:"root"`
 	Extends     interface{}            `yaml:"extends"` // string or []string
+	Exclude     []string               `yaml:"exclude"` // Patterns to exclude from linting
 	Rules       map[string]interface{} `yaml:"rules"`
 	Overrides   []Override             `yaml:"overrides"`
 	Layers      []Layer                `yaml:"layers"`      // Phase 1: Layer definitions
@@ -157,6 +158,11 @@ func Merge(configs ...*Config) *Config {
 
 		// Append overrides (they are processed in order)
 		result.Overrides = append(result.Overrides, config.Overrides...)
+
+		// Append exclude patterns
+		if len(config.Exclude) > 0 {
+			result.Exclude = append(result.Exclude, config.Exclude...)
+		}
 
 		// Append layers (Phase 1)
 		if len(config.Layers) > 0 {

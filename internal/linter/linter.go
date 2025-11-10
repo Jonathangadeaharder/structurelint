@@ -34,7 +34,7 @@ func (l *Linter) Lint(path string) ([]Violation, error) {
 	l.config = config.Merge(configs...)
 
 	// Walk the filesystem
-	w := walker.New(path)
+	w := walker.New(path).WithExclude(l.config.Exclude)
 	if err := w.Walk(); err != nil {
 		return nil, fmt.Errorf("failed to walk filesystem: %w", err)
 	}

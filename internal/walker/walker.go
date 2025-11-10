@@ -25,9 +25,10 @@ type DirInfo struct {
 
 // Walker walks a filesystem and collects information
 type Walker struct {
-	rootPath string
-	files    []FileInfo
-	dirs     map[string]*DirInfo
+	rootPath        string
+	files           []FileInfo
+	dirs            map[string]*DirInfo
+	excludePatterns []string
 }
 
 // New creates a new Walker
@@ -37,6 +38,22 @@ func New(rootPath string) *Walker {
 		files:    []FileInfo{},
 		dirs:     make(map[string]*DirInfo),
 	}
+}
+
+// WithExclude sets exclude patterns for the walker
+func (w *Walker) WithExclude(patterns []string) *Walker {
+	w.excludePatterns = patterns
+	return w
+}
+
+// isExcluded checks if a path matches any exclude pattern
+func (w *Walker) isExcluded(relPath string) bool {
+	for _, pattern := range w.excludePatterns {
+		if MatchesPattern(relPath, pattern) {
+			return true
+		}
+	}
+	return false
 }
 
 // Walk traverses the filesystem starting from the root path
@@ -59,6 +76,14 @@ func (w *Walker) Walk() error {
 
 		// Skip the root itself
 		if relPath == "." {
+			return nil
+		}
+
+		// Check if this path is excluded
+		if w.isExcluded(relPath) {
+			if d.IsDir() {
+				return filepath.SkipDir
+			}
 			return nil
 		}
 

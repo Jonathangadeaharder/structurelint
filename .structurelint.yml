@@ -1,5 +1,8 @@
 root: true
 
+exclude:
+  - testdata/**
+
 rules:
   # Phase 0: Basic filesystem rules
   max-depth:
