@@ -27,6 +27,15 @@ rules:
     - "*.tmp"
     - "*.bak"
     - ".DS_Store"
+    # Markdown Documentation Policy:
+    # - README.md files: Required in every directory (see file-existence rule)
+    # - Root-level exceptions: README.md, CONTRIBUTING.md, LICENSE.md
+    # - All other .md files: Must be in docs/ folder
+    # Disallow .md files in subdirectories, except README.md
+    - "internal/**/*.md"
+    - "cmd/**/*.md"
+    - "examples/**/*.md"
+    - "!**/README.md"  # Allow README.md files everywhere
 
 # Phase 1: Architectural layers for Go project
 layers:

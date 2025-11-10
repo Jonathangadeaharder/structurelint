@@ -163,6 +163,47 @@ func TestDisallowedPatternsRule(t *testing.T) {
 	}
 }
 
+func TestDisallowedPatternsRule_WithNegation(t *testing.T) {
+	// Test negation patterns (!) to allow exceptions
+	rule := NewDisallowedPatternsRule([]string{
+		"internal/**/*.md",   // Disallow all .md files in internal/
+		"!**/README.md",      // Except README.md files
+	})
+
+	files := []walker.FileInfo{
+		{Path: "internal/config/README.md"},     // Should be allowed (negation)
+		{Path: "internal/linter/README.md"},     // Should be allowed (negation)
+		{Path: "internal/config/DESIGN.md"},     // Should violate
+		{Path: "internal/linter/ARCHITECTURE.md"}, // Should violate
+		{Path: "README.md"},                      // Not in internal/, so no violation
+		{Path: "docs/GUIDE.md"},                  // Not in internal/, so no violation
+	}
+
+	violations := rule.Check(files, nil)
+
+	// Should have 2 violations: DESIGN.md and ARCHITECTURE.md
+	if len(violations) != 2 {
+		t.Errorf("Expected 2 violations, got %d", len(violations))
+		for _, v := range violations {
+			t.Logf("Violation: %s - %s", v.Path, v.Message)
+		}
+	}
+
+	// Check that the right files violated
+	violatedPaths := make(map[string]bool)
+	for _, v := range violations {
+		violatedPaths[v.Path] = true
+	}
+
+	if !violatedPaths["internal/config/DESIGN.md"] {
+		t.Errorf("Expected violation for internal/config/DESIGN.md")
+	}
+
+	if !violatedPaths["internal/linter/ARCHITECTURE.md"] {
+		t.Errorf("Expected violation for internal/linter/ARCHITECTURE.md")
+	}
+}
+
 func TestFileExistenceRule(t *testing.T) {
 	rule := NewFileExistenceRule(map[string]string{
 		"index.ts": "exists:1",

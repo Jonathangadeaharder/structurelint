@@ -22,14 +22,37 @@ func (r *DisallowedPatternsRule) Name() string {
 func (r *DisallowedPatternsRule) Check(files []walker.FileInfo, dirs map[string]*walker.DirInfo) []Violation {
 	var violations []Violation
 
+	// Separate patterns into disallowed and allowed (negations)
+	var disallowedPatterns []string
+	var allowedPatterns []string
+
+	for _, pattern := range r.Patterns {
+		if strings.HasPrefix(pattern, "!") {
+			allowedPatterns = append(allowedPatterns, strings.TrimPrefix(pattern, "!"))
+		} else {
+			disallowedPatterns = append(disallowedPatterns, pattern)
+		}
+	}
+
 	for _, file := range files {
-		for _, pattern := range r.Patterns {
+		for _, pattern := range disallowedPatterns {
 			if matchesGlobPattern(file.Path, pattern) {
-				violations = append(violations, Violation{
-					Rule:    r.Name(),
-					Path:    file.Path,
-					Message: fmt.Sprintf("matches disallowed pattern '%s'", pattern),
-				})
+				// Check if this file matches any allowed pattern (exceptions)
+				isAllowed := false
+				for _, allowPattern := range allowedPatterns {
+					if matchesGlobPattern(file.Path, allowPattern) {
+						isAllowed = true
+						break
+					}
+				}
+
+				if !isAllowed {
+					violations = append(violations, Violation{
+						Rule:    r.Name(),
+						Path:    file.Path,
+						Message: fmt.Sprintf("matches disallowed pattern '%s'", pattern),
+					})
+				}
 			}
 		}
 	}
