@@ -7,6 +7,7 @@ import (
 )
 
 func TestParseTypeScriptImports(t *testing.T) {
+	// Arrange
 	// Create temp file
 	tmpDir := t.TempDir()
 	tsFile := filepath.Join(tmpDir, "test.ts")
@@ -22,8 +23,11 @@ const qux = require('./qux');
 	}
 
 	parser := New(tmpDir)
+
+	// Act
 	imports, err := parser.ParseFile(tsFile)
 
+	// Assert
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)
 	}

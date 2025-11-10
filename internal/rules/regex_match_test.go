@@ -7,6 +7,7 @@ import (
 )
 
 func TestRegexMatchRule_BasicMatch(t *testing.T) {
+	// Arrange
 	rule := NewRegexMatchRule(map[string]string{
 		"src/*.ts": "^[a-z]+$", // Must be lowercase letters only
 	})
@@ -19,8 +20,10 @@ func TestRegexMatchRule_BasicMatch(t *testing.T) {
 		{Path: "other/test.ts", IsDir: false},    // Should be ignored (wrong directory)
 	}
 
+	// Act
 	violations := rule.Check(files, nil)
 
+	// Assert
 	// Should have 2 violations: UserAuth.ts and file-1.ts
 	if len(violations) != 2 {
 		t.Errorf("Expected 2 violations, got %d", len(violations))

@@ -9,6 +9,7 @@ import (
 )
 
 func TestLayerBoundariesRule_ValidDependencies(t *testing.T) {
+	// Arrange
 	layers := []config.Layer{
 		{Name: "domain", Path: "src/domain/**", DependsOn: []string{}},
 		{Name: "app", Path: "src/app/**", DependsOn: []string{"domain"}},
@@ -31,8 +32,10 @@ func TestLayerBoundariesRule_ValidDependencies(t *testing.T) {
 		{Path: "src/domain/user.ts"},
 	}
 
+	// Act
 	violations := rule.Check(files, nil)
 
+	// Assert
 	if len(violations) != 0 {
 		t.Errorf("Expected no violations for valid dependency, got %d", len(violations))
 	}

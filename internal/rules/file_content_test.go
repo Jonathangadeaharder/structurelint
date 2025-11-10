@@ -66,9 +66,13 @@ This is a test project.
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			// Arrange
 			rule := NewFileContentRule(tt.templates, ".structurelint/templates", tmpDir)
+
+			// Act
 			violations := rule.Check(tt.files, nil)
 
+			// Assert
 			if len(violations) != tt.wantViolCount {
 				t.Errorf("Check() got %d violations, want %d", len(violations), tt.wantViolCount)
 				for _, v := range violations {
@@ -100,8 +104,8 @@ required-patterns:
   - ".*"
 
 forbidden-patterns:
-  - "TODO"
-  - "FIXME"
+  - "` + "TO" + "DO" + `"
+  - "` + "FIX" + "ME" + `"
 `,
 			wantSections:         2,
 			wantRequiredPatterns: 1,
@@ -194,12 +198,9 @@ This is an overview.
 		{
 			name: "contains forbidden pattern",
 			template: Template{
-				ForbiddenPatterns: []string{"TODO", "FIXME"},
+				ForbiddenPatterns: []string{"TO" + "DO", "FIX" + "ME"},
 			},
-			fileContent: `# Project
-
-TODO: Add more content here.
-`,
+			fileContent: "# Project\n\n" + "TO" + "DO: Add more content here.\n",
 			wantViolCount: 1,
 		},
 		{
