@@ -10,48 +10,85 @@ func TestMaxFilesRule_Check(t *testing.T) {
 	tests := []struct {
 		name          string
 		maxFiles      int
+		files         []walker.FileInfo
 		dirs          map[string]*walker.DirInfo
 		wantViolCount int
 	}{
 		{
 			name:     "no violations when file count within limit",
 			maxFiles: 10,
+			files: []walker.FileInfo{
+				{Path: "src/file1.go", ParentPath: "src", IsDir: false},
+				{Path: "src/file2.go", ParentPath: "src", IsDir: false},
+				{Path: "src/file3.go", ParentPath: "src", IsDir: false},
+			},
 			dirs: map[string]*walker.DirInfo{
-				"src": {FileCount: 5},
-				"lib": {FileCount: 8},
+				"src": {},
 			},
 			wantViolCount: 0,
 		},
 		{
-			name:     "violation when file count exceeds limit",
+			name:     "test files excluded from count",
 			maxFiles: 5,
-			dirs: map[string]*walker.DirInfo{
-				"src":  {FileCount: 10},
-				"lib":  {FileCount: 3},
-				"test": {FileCount: 6},
+			files: []walker.FileInfo{
+				{Path: "src/file1.go", ParentPath: "src", IsDir: false},
+				{Path: "src/file2.go", ParentPath: "src", IsDir: false},
+				{Path: "src/file3.go", ParentPath: "src", IsDir: false},
+				{Path: "src/file1_test.go", ParentPath: "src", IsDir: false},
+				{Path: "src/file2_test.go", ParentPath: "src", IsDir: false},
+				{Path: "src/file3_test.go", ParentPath: "src", IsDir: false},
 			},
-			wantViolCount: 2,
+			dirs: map[string]*walker.DirInfo{
+				"src": {},
+			},
+			wantViolCount: 0, // 3 non-test files, tests don't count
 		},
 		{
-			name:     "exact count at limit",
-			maxFiles: 5,
-			dirs: map[string]*walker.DirInfo{
-				"src": {FileCount: 5},
+			name:     "violation when non-test file count exceeds limit",
+			maxFiles: 2,
+			files: []walker.FileInfo{
+				{Path: "src/file1.go", ParentPath: "src", IsDir: false},
+				{Path: "src/file2.go", ParentPath: "src", IsDir: false},
+				{Path: "src/file3.go", ParentPath: "src", IsDir: false},
+				{Path: "src/file1_test.go", ParentPath: "src", IsDir: false},
 			},
-			wantViolCount: 0,
+			dirs: map[string]*walker.DirInfo{
+				"src": {},
+			},
+			wantViolCount: 1, // 3 non-test files exceeds limit of 2
 		},
 		{
-			name:     "root directory violation",
+			name:     "TypeScript test files excluded",
 			maxFiles: 3,
-			dirs: map[string]*walker.DirInfo{
-				"": {FileCount: 5},
+			files: []walker.FileInfo{
+				{Path: "src/component.tsx", ParentPath: "src", IsDir: false},
+				{Path: "src/utils.ts", ParentPath: "src", IsDir: false},
+				{Path: "src/component.test.tsx", ParentPath: "src", IsDir: false},
+				{Path: "src/utils.spec.ts", ParentPath: "src", IsDir: false},
 			},
-			wantViolCount: 1,
+			dirs: map[string]*walker.DirInfo{
+				"src": {},
+			},
+			wantViolCount: 0, // 2 non-test files
 		},
 		{
-			name:          "empty dirs",
+			name:     "Python test files excluded",
+			maxFiles: 2,
+			files: []walker.FileInfo{
+				{Path: "src/module.py", ParentPath: "src", IsDir: false},
+				{Path: "src/test_module.py", ParentPath: "src", IsDir: false},
+				{Path: "src/module_test.py", ParentPath: "src", IsDir: false},
+			},
+			dirs: map[string]*walker.DirInfo{
+				"src": {},
+			},
+			wantViolCount: 0, // 1 non-test file
+		},
+		{
+			name:          "empty directory",
 			maxFiles:      5,
-			dirs:          map[string]*walker.DirInfo{},
+			files:         []walker.FileInfo{},
+			dirs:          map[string]*walker.DirInfo{"src": {}},
 			wantViolCount: 0,
 		},
 	}
@@ -59,16 +96,62 @@ func TestMaxFilesRule_Check(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			rule := NewMaxFilesRule(tt.maxFiles)
-			violations := rule.Check(nil, tt.dirs)
+			violations := rule.Check(tt.files, tt.dirs)
 
 			if len(violations) != tt.wantViolCount {
 				t.Errorf("Check() got %d violations, want %d", len(violations), tt.wantViolCount)
+				for _, v := range violations {
+					t.Logf("  - %s: %s", v.Path, v.Message)
+				}
 			}
 
 			for _, v := range violations {
 				if v.Rule != "max-files-in-dir" {
 					t.Errorf("violation rule = %v, want max-files-in-dir", v.Rule)
 				}
+			}
+		})
+	}
+}
+
+func TestMaxFilesRule_isTestFile(t *testing.T) {
+	rule := &MaxFilesRule{}
+
+	tests := []struct {
+		path string
+		want bool
+	}{
+		// Go
+		{"file_test.go", true},
+		{"file.go", false},
+
+		// TypeScript/JavaScript
+		{"component.test.ts", true},
+		{"component.test.tsx", true},
+		{"utils.spec.js", true},
+		{"utils.spec.jsx", true},
+		{"component.ts", false},
+
+		// Python
+		{"test_module.py", true},
+		{"module_test.py", true},
+		{"module.py", false},
+
+		// Ruby
+		{"file_spec.rb", true},
+		{"file.rb", false},
+
+		// Java
+		{"FileTest.java", true},
+		{"FileIT.java", true},
+		{"File.java", false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.path, func(t *testing.T) {
+			got := rule.isTestFile(tt.path)
+			if got != tt.want {
+				t.Errorf("isTestFile(%q) = %v, want %v", tt.path, got, tt.want)
 			}
 		})
 	}

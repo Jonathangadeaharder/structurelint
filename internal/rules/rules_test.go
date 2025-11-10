@@ -50,19 +50,29 @@ func TestMaxDepthRule_NoViolations(t *testing.T) {
 func TestMaxFilesRule(t *testing.T) {
 	rule := NewMaxFilesRule(2)
 
-	dirs := map[string]*walker.DirInfo{
-		"dir1": {Path: "dir1", FileCount: 2},
-		"dir2": {Path: "dir2", FileCount: 3}, // Violates
-		"dir3": {Path: "dir3", FileCount: 1},
+	files := []walker.FileInfo{
+		{Path: "dir1/file1.go", ParentPath: "dir1", IsDir: false},
+		{Path: "dir1/file2.go", ParentPath: "dir1", IsDir: false},
+		{Path: "dir2/file1.go", ParentPath: "dir2", IsDir: false},
+		{Path: "dir2/file2.go", ParentPath: "dir2", IsDir: false},
+		{Path: "dir2/file3.go", ParentPath: "dir2", IsDir: false}, // Violates (3 > 2)
+		{Path: "dir2/file_test.go", ParentPath: "dir2", IsDir: false}, // Test file - doesn't count
+		{Path: "dir3/file1.go", ParentPath: "dir3", IsDir: false},
 	}
 
-	violations := rule.Check(nil, dirs)
+	dirs := map[string]*walker.DirInfo{
+		"dir1": {Path: "dir1"},
+		"dir2": {Path: "dir2"}, // Has 3 non-test files
+		"dir3": {Path: "dir3"},
+	}
+
+	violations := rule.Check(files, dirs)
 
 	if len(violations) != 1 {
 		t.Errorf("Expected 1 violation, got %d", len(violations))
 	}
 
-	if violations[0].Path != "dir2" {
+	if len(violations) > 0 && violations[0].Path != "dir2" {
 		t.Errorf("Expected violation for dir2, got %s", violations[0].Path)
 	}
 }

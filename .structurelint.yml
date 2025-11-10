@@ -12,7 +12,7 @@ rules:
     max: 5
 
   max-files-in-dir:
-    max: 30  # Increased for test files
+    max: 20
 
   max-subdirs:
     max: 10
@@ -52,11 +52,7 @@ rules:
     allow-adjacent: true             # Allow tests next to source code
     exemptions:
       - "testdata/**"
-      - "internal/rules/rules_test.go"         # Integration test for all rules
-      - "internal/rules/test_adjacency.go"     # Not a test - rule implementation
-      - "internal/rules/test_location.go"      # Not a test - rule implementation
-      - "internal/rules/test_adjacency_test.go" # Has corresponding source
-      - "internal/rules/test_location_test.go"  # Has corresponding source
+      - "internal/rules/rules_test.go"  # Integration test for all rules
 
   # Phase 4: File Content Templates
   file-content:
