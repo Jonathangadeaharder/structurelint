@@ -6,7 +6,7 @@ import (
 	"github.com/structurelint/structurelint/internal/walker"
 )
 
-func TestMaxFilesRule_Check(t *testing.T) {
+func TestMaxFilesRule_WhenChecking(t *testing.T) {
 	tests := []struct {
 		name          string
 		maxFiles      int
@@ -15,7 +15,7 @@ func TestMaxFilesRule_Check(t *testing.T) {
 		wantViolCount int
 	}{
 		{
-			name:     "no violations when file count within limit",
+			name:     "GivenFileCountWithinLimit_ThenReturnsNoViolations",
 			maxFiles: 10,
 			files: []walker.FileInfo{
 				{Path: "src/file1.go", ParentPath: "src", IsDir: false},
@@ -28,7 +28,7 @@ func TestMaxFilesRule_Check(t *testing.T) {
 			wantViolCount: 0,
 		},
 		{
-			name:     "test files excluded from count",
+			name:     "GivenTestFiles_ThenExcludedFromCount",
 			maxFiles: 5,
 			files: []walker.FileInfo{
 				{Path: "src/file1.go", ParentPath: "src", IsDir: false},
@@ -44,7 +44,7 @@ func TestMaxFilesRule_Check(t *testing.T) {
 			wantViolCount: 0, // 3 non-test files, tests don't count
 		},
 		{
-			name:     "violation when non-test file count exceeds limit",
+			name:     "GivenExcessiveNonTestFiles_ThenReturnsViolation",
 			maxFiles: 2,
 			files: []walker.FileInfo{
 				{Path: "src/file1.go", ParentPath: "src", IsDir: false},
@@ -58,7 +58,7 @@ func TestMaxFilesRule_Check(t *testing.T) {
 			wantViolCount: 1, // 3 non-test files exceeds limit of 2
 		},
 		{
-			name:     "TypeScript test files excluded",
+			name:     "GivenTypeScriptTestFiles_ThenExcludedFromCount",
 			maxFiles: 3,
 			files: []walker.FileInfo{
 				{Path: "src/component.tsx", ParentPath: "src", IsDir: false},
@@ -72,7 +72,7 @@ func TestMaxFilesRule_Check(t *testing.T) {
 			wantViolCount: 0, // 2 non-test files
 		},
 		{
-			name:     "Python test files excluded",
+			name:     "GivenPythonTestFiles_ThenExcludedFromCount",
 			maxFiles: 2,
 			files: []walker.FileInfo{
 				{Path: "src/module.py", ParentPath: "src", IsDir: false},
@@ -85,7 +85,7 @@ func TestMaxFilesRule_Check(t *testing.T) {
 			wantViolCount: 0, // 1 non-test file
 		},
 		{
-			name:          "empty directory",
+			name:          "GivenEmptyDirectory_ThenReturnsNoViolations",
 			maxFiles:      5,
 			files:         []walker.FileInfo{},
 			dirs:          map[string]*walker.DirInfo{"src": {}},
@@ -95,9 +95,13 @@ func TestMaxFilesRule_Check(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			// Arrange
 			rule := NewMaxFilesRule(tt.maxFiles)
+
+			// Act
 			violations := rule.Check(tt.files, tt.dirs)
 
+			// Assert
 			if len(violations) != tt.wantViolCount {
 				t.Errorf("Check() got %d violations, want %d", len(violations), tt.wantViolCount)
 				for _, v := range violations {
@@ -114,9 +118,7 @@ func TestMaxFilesRule_Check(t *testing.T) {
 	}
 }
 
-func TestMaxFilesRule_isTestFile(t *testing.T) {
-	rule := &MaxFilesRule{}
-
+func TestMaxFilesRule_WhenCheckingIfTestFile(t *testing.T) {
 	tests := []struct {
 		path string
 		want bool
@@ -149,7 +151,13 @@ func TestMaxFilesRule_isTestFile(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.path, func(t *testing.T) {
+			// Arrange
+			rule := &MaxFilesRule{}
+
+			// Act
 			got := rule.isTestFile(tt.path)
+
+			// Assert
 			if got != tt.want {
 				t.Errorf("isTestFile(%q) = %v, want %v", tt.path, got, tt.want)
 			}
@@ -157,9 +165,15 @@ func TestMaxFilesRule_isTestFile(t *testing.T) {
 	}
 }
 
-func TestMaxFilesRule_Name(t *testing.T) {
+func TestMaxFilesRule_WhenGettingName(t *testing.T) {
+	// Arrange
 	rule := NewMaxFilesRule(10)
-	if got := rule.Name(); got != "max-files-in-dir" {
+
+	// Act
+	got := rule.Name()
+
+	// Assert
+	if got != "max-files-in-dir" {
 		t.Errorf("Name() = %v, want max-files-in-dir", got)
 	}
 }

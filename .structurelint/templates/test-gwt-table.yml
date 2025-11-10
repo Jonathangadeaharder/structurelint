@@ -1,0 +1,48 @@
+# Template for Go test files using table-driven tests with GWT naming
+# Enforces AAA pattern AND descriptive GWT naming in subtests
+
+required-patterns:
+  # Test functions must follow GWT naming
+  # Either: Test...Given...When...Then or Test...When for table-driven tests
+  - "func Test[a-zA-Z0-9_]+_When[a-zA-Z0-9_]+\\(t"
+
+  # AAA pattern comments must be present
+  - "// Arrange"
+  - "// Act"
+  - "// Assert"
+
+forbidden-patterns:
+  # Forbid tests with no descriptive naming at all
+  - "func Test[A-Z][a-z]*\\(t \\*testing\\.T\\)"
+
+  # No debugging statements
+  - "fmt\\.Println|log\\.Println"
+
+  # No TODOs in production tests
+  - "TODO|FIXME|XXX"
+
+# This template supports both:
+#
+# 1. Simple GWT tests:
+# func TestCalculator_GivenTwoPositiveNumbers_WhenAdding_ThenReturnsSum(t *testing.T) {
+#     // Arrange
+#     // Act
+#     // Assert
+# }
+#
+# 2. Table-driven tests with GWT in subtests:
+# func TestCalculator_WhenAdding(t *testing.T) {
+#     tests := []struct {
+#         name string
+#     }{
+#         {name: "GivenTwoPositiveNumbers_ThenReturnsSum"},
+#         {name: "GivenNegativeNumbers_ThenReturnsNegativeSum"},
+#     }
+#     for _, tt := range tests {
+#         t.Run(tt.name, func(t *testing.T) {
+#             // Arrange
+#             // Act
+#             // Assert
+#         })
+#     }
+# }

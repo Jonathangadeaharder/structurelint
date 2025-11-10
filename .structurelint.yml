@@ -58,8 +58,9 @@ rules:
   file-content:
     template-dir: ".structurelint/templates"
     templates:
-      "**/README.md": "readme"         # Enforce README structure
-      "CONTRIBUTING.md": "contributing" # Enforce contributing guidelines
+      "**/README.md": "readme"            # Enforce README structure
+      "CONTRIBUTING.md": "contributing"    # Enforce contributing guidelines
+      "**/*_test.go": "test-gwt-table"    # Enforce GWT naming + AAA for Go tests (supports table-driven)
 
 # Phase 1: Architectural layers for Go project
 layers:
