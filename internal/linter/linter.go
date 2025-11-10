@@ -72,96 +72,42 @@ func (l *Linter) Lint(path string) ([]Violation, error) {
 }
 
 // createRules instantiates rules based on the configuration
-//
-//nolint:gocognit,gocyclo // Factory function with many rule types - complexity is acceptable
 func (l *Linter) createRules(files []walker.FileInfo, importGraph *graph.ImportGraph) []rules.Rule {
 	var rulesList []rules.Rule
 
 	// Max depth rule
-	if maxDepthConfig, ok := l.getRuleConfig("max-depth"); ok {
-		if maxDepth, ok := maxDepthConfig.(map[string]interface{}); ok {
-			if max, ok := maxDepth["max"].(int); ok {
-				rulesList = append(rulesList, rules.NewMaxDepthRule(max))
-			}
-		}
+	if max, ok := l.getIntConfig("max-depth", "max"); ok {
+		rulesList = append(rulesList, rules.NewMaxDepthRule(max))
 	}
 
 	// Max files rule
-	if maxFilesConfig, ok := l.getRuleConfig("max-files-in-dir"); ok {
-		if maxFiles, ok := maxFilesConfig.(map[string]interface{}); ok {
-			if max, ok := maxFiles["max"].(int); ok {
-				rulesList = append(rulesList, rules.NewMaxFilesRule(max))
-			}
-		}
+	if max, ok := l.getIntConfig("max-files-in-dir", "max"); ok {
+		rulesList = append(rulesList, rules.NewMaxFilesRule(max))
 	}
 
 	// Max subdirs rule
-	if maxSubdirsConfig, ok := l.getRuleConfig("max-subdirs"); ok {
-		if maxSubdirs, ok := maxSubdirsConfig.(map[string]interface{}); ok {
-			if max, ok := maxSubdirs["max"].(int); ok {
-				rulesList = append(rulesList, rules.NewMaxSubdirsRule(max))
-			}
-		}
+	if max, ok := l.getIntConfig("max-subdirs", "max"); ok {
+		rulesList = append(rulesList, rules.NewMaxSubdirsRule(max))
 	}
 
 	// Naming convention rule
-	if namingConfig, ok := l.getRuleConfig("naming-convention"); ok {
-		if patterns, ok := namingConfig.(map[string]interface{}); ok {
-			stringPatterns := make(map[string]string)
-			for k, v := range patterns {
-				if strVal, ok := v.(string); ok {
-					stringPatterns[k] = strVal
-				}
-			}
-			if len(stringPatterns) > 0 {
-				rulesList = append(rulesList, rules.NewNamingConventionRule(stringPatterns))
-			}
-		}
+	if patterns, ok := l.getStringMapConfig("naming-convention"); ok {
+		rulesList = append(rulesList, rules.NewNamingConventionRule(patterns))
 	}
 
 	// Disallowed patterns rule
-	if disallowedConfig, ok := l.getRuleConfig("disallowed-patterns"); ok {
-		if patterns, ok := disallowedConfig.([]interface{}); ok {
-			stringPatterns := make([]string, 0, len(patterns))
-			for _, p := range patterns {
-				if strVal, ok := p.(string); ok {
-					stringPatterns = append(stringPatterns, strVal)
-				}
-			}
-			if len(stringPatterns) > 0 {
-				rulesList = append(rulesList, rules.NewDisallowedPatternsRule(stringPatterns))
-			}
-		}
+	if patterns, ok := l.getStringSliceConfig("disallowed-patterns"); ok {
+		rulesList = append(rulesList, rules.NewDisallowedPatternsRule(patterns))
 	}
 
 	// File existence rule
-	if existenceConfig, ok := l.getRuleConfig("file-existence"); ok {
-		if requirements, ok := existenceConfig.(map[string]interface{}); ok {
-			stringRequirements := make(map[string]string)
-			for k, v := range requirements {
-				if strVal, ok := v.(string); ok {
-					stringRequirements[k] = strVal
-				}
-			}
-			if len(stringRequirements) > 0 {
-				rulesList = append(rulesList, rules.NewFileExistenceRule(stringRequirements))
-			}
-		}
+	if requirements, ok := l.getStringMapConfig("file-existence"); ok {
+		rulesList = append(rulesList, rules.NewFileExistenceRule(requirements))
 	}
 
 	// Regex match rule
-	if regexConfig, ok := l.getRuleConfig("regex-match"); ok {
-		if patterns, ok := regexConfig.(map[string]interface{}); ok {
-			stringPatterns := make(map[string]string)
-			for k, v := range patterns {
-				if strVal, ok := v.(string); ok {
-					stringPatterns[k] = strVal
-				}
-			}
-			if len(stringPatterns) > 0 {
-				rulesList = append(rulesList, rules.NewRegexMatchRule(stringPatterns))
-			}
-		}
+	if patterns, ok := l.getStringMapConfig("regex-match"); ok {
+		rulesList = append(rulesList, rules.NewRegexMatchRule(patterns))
 	}
 
 	// Layer boundaries rule (Phase 1)
@@ -186,6 +132,74 @@ func (l *Linter) createRules(files []walker.FileInfo, importGraph *graph.ImportG
 	}
 
 	return rulesList
+}
+
+// getIntConfig extracts an integer value from a rule's configuration map
+func (l *Linter) getIntConfig(ruleName, key string) (int, bool) {
+	config, ok := l.getRuleConfig(ruleName)
+	if !ok {
+		return 0, false
+	}
+
+	configMap, ok := config.(map[string]interface{})
+	if !ok {
+		return 0, false
+	}
+
+	value, ok := configMap[key].(int)
+	return value, ok
+}
+
+// getStringMapConfig extracts a string-to-string map from a rule's configuration
+func (l *Linter) getStringMapConfig(ruleName string) (map[string]string, bool) {
+	config, ok := l.getRuleConfig(ruleName)
+	if !ok {
+		return nil, false
+	}
+
+	configMap, ok := config.(map[string]interface{})
+	if !ok {
+		return nil, false
+	}
+
+	result := make(map[string]string)
+	for k, v := range configMap {
+		if strVal, ok := v.(string); ok {
+			result[k] = strVal
+		}
+	}
+
+	if len(result) == 0 {
+		return nil, false
+	}
+
+	return result, true
+}
+
+// getStringSliceConfig extracts a slice of strings from a rule's configuration
+func (l *Linter) getStringSliceConfig(ruleName string) ([]string, bool) {
+	config, ok := l.getRuleConfig(ruleName)
+	if !ok {
+		return nil, false
+	}
+
+	configSlice, ok := config.([]interface{})
+	if !ok {
+		return nil, false
+	}
+
+	result := make([]string, 0, len(configSlice))
+	for _, v := range configSlice {
+		if strVal, ok := v.(string); ok {
+			result = append(result, strVal)
+		}
+	}
+
+	if len(result) == 0 {
+		return nil, false
+	}
+
+	return result, true
 }
 
 // getRuleConfig safely extracts a rule configuration
