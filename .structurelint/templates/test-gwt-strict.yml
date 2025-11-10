@@ -1,0 +1,80 @@
+# Strict Given-When-Then Template
+# Enforces both AAA structure AND GWT naming across all languages
+# Use this for teams wanting maximum test quality and consistency
+
+required-sections:
+  # All three AAA sections must be present
+  - "Arrange"
+  - "Act"
+  - "Assert"
+
+required-patterns:
+  # Test function must exist
+  - "test|Test|it\\(|def test_"
+
+  # All three AAA comments must be present
+  - "(?://|#)\\s*Arrange"
+  - "(?://|#)\\s*Act"
+  - "(?://|#)\\s*Assert"
+
+  # GWT naming pattern (one of these must match)
+  # Go: TestFunction_GivenX_WhenY_ThenZ
+  # Python: test_function_given_x_when_y_then_z
+  # TypeScript: "given X, when Y, then Z"
+  - "(?:Test\\w+_Given\\w+_When\\w+_Then\\w+|test_\\w+_given_\\w+_when_\\w+_then_\\w+|['\"](?:given|Given).*(?:when|When).*(?:then|Then))"
+
+forbidden-patterns:
+  # No TODOs, FIXMEs, or XXX markers
+  - "TODO|FIXME|XXX"
+
+  # No debugging statements
+  - "console\\.log|print\\(|fmt\\.Println|log\\.Println|pdb\\.set_trace|breakpoint\\("
+
+  # No test skipping in committed code
+  - "@pytest\\.skip|it\\.skip|describe\\.skip|test\\.skip|t\\.Skip"
+
+  # No .only (focuses on single test)
+  - "it\\.only|describe\\.only|test\\.only"
+
+# This strict template ensures:
+# 1. Every test has AAA structure with explicit comments
+# 2. Every test follows GWT naming convention
+# 3. No debugging code or incomplete tests
+# 4. No test skipping or focusing
+#
+# Example compliant tests:
+#
+# // Go
+# func TestCalculator_GivenTwoNumbers_WhenAdding_ThenReturnsSum(t *testing.T) {
+#     // Arrange
+#     calc := NewCalculator()
+#
+#     // Act
+#     result := calc.Add(2, 3)
+#
+#     // Assert
+#     assert.Equal(t, 5, result)
+# }
+#
+# // TypeScript
+# it('given two numbers, when adding, then returns sum', () => {
+#   // Arrange
+#   const calc = new Calculator();
+#
+#   // Act
+#   const result = calc.add(2, 3);
+#
+#   // Assert
+#   expect(result).toBe(5);
+# });
+#
+# // Python
+# def test_calculator_given_two_numbers_when_adding_then_returns_sum():
+#     # Arrange
+#     calc = Calculator()
+#
+#     # Act
+#     result = calc.add(2, 3)
+#
+#     # Assert
+#     assert result == 5

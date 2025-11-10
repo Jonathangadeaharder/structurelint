@@ -10,6 +10,8 @@ The Arrange-Act-Assert (AAA) pattern is a widely-used testing pattern that impro
 
 structurelint can enforce this pattern through file content templates, ensuring all tests follow consistent, readable structure.
 
+> **Note**: For even more descriptive tests, combine AAA structure with [Given-When-Then naming](TEST_GWT_NAMING.md) to make test names self-documenting.
+
 ## Benefits
 
 ✅ **Improved Readability**: Tests become self-documenting with clear phases
@@ -140,6 +142,62 @@ rules:
       "**/test_*.py": "test-strict-aaa"
 ```
 
+### Given-When-Then (GWT) Templates
+
+For self-documenting test names combined with AAA structure:
+
+#### `test-gwt-go.yml`
+- **Requires** GWT naming: `TestFunction_GivenContext_WhenAction_ThenOutcome`
+- **Requires** all three AAA comments
+- Forbids non-descriptive test names
+- Best for Go projects wanting maximum clarity
+
+#### `test-gwt-typescript.yml`
+- **Requires** GWT naming: `"given X, when Y, then Z"`
+- **Requires** all three AAA comments
+- Forbids `it.only`, `it.skip`, debugging statements
+- Best for TypeScript/JavaScript projects
+
+#### `test-gwt-python.yml`
+- **Requires** GWT naming: `test_function_given_x_when_y_then_z`
+- **Requires** all three AAA comments
+- Forbids test skipping and debugging statements
+- Best for Python projects with pytest
+
+#### `test-gwt-strict.yml`
+- **Requires** GWT naming (multi-language)
+- **Requires** AAA structure
+- **Forbids** all debugging, TODOs, test skipping
+- Ultra-strict for maximum quality
+
+**Usage:**
+
+```yaml
+rules:
+  file-content:
+    templates:
+      # Language-specific GWT templates
+      "**/*_test.go": "test-gwt-go"
+      "**/*.test.ts": "test-gwt-typescript"
+      "**/test_*.py": "test-gwt-python"
+```
+
+**Example with GWT naming:**
+```go
+func TestCalculator_GivenTwoPositiveNumbers_WhenAdding_ThenReturnsSum(t *testing.T) {
+    // Arrange
+    calc := NewCalculator()
+
+    // Act
+    result := calc.Add(2, 3)
+
+    // Assert
+    assert.Equal(t, 5, result)
+}
+```
+
+See [Given-When-Then Naming](TEST_GWT_NAMING.md) for complete GWT documentation.
+
 ## Template Configuration Options
 
 ### Choosing the Right Template
@@ -150,6 +208,10 @@ rules:
 | `test-typescript` | General JS/TS projects | Lenient - encourages AAA |
 | `test-python` | General Python projects | Lenient - encourages AAA |
 | `test-strict-aaa` | Teams wanting consistency | Strict - requires AAA |
+| `test-gwt-go` | Go with descriptive names | Strict - requires GWT + AAA |
+| `test-gwt-typescript` | TS/JS with descriptive names | Strict - requires GWT + AAA |
+| `test-gwt-python` | Python with descriptive names | Strict - requires GWT + AAA |
+| `test-gwt-strict` | Ultra-strict multi-language | Maximum - requires GWT + AAA |
 
 ### Custom Templates
 

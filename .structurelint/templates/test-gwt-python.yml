@@ -1,0 +1,39 @@
+# Template for Python test files with Given-When-Then naming
+# Enforces both AAA pattern AND descriptive GWT test naming
+
+required-patterns:
+  # Test function with GWT naming pattern
+  # Format: test_function_given_context_when_action_then_outcome
+  - "def test_\\w+_given_\\w+_when_\\w+_then_\\w+"
+
+  # AAA pattern comments must be present
+  - "# Arrange"
+  - "# Act"
+  - "# Assert"
+
+forbidden-patterns:
+  # Forbid tests without descriptive names
+  - "def test_\\w+\\(.*\\):\\s*pass"
+
+  # No debugging statements
+  - "print\\(|pdb\\.set_trace|breakpoint\\("
+
+  # No TODOs in production tests
+  - "TODO|FIXME|XXX"
+
+  # No pytest.skip decorators in committed tests
+  - "@pytest\\.skip"
+
+# Example compliant test:
+#
+# def test_calculator_given_two_positive_numbers_when_adding_then_returns_sum():
+#     # Arrange
+#     calc = Calculator()
+#     a = 2
+#     b = 3
+#
+#     # Act
+#     result = calc.add(a, b)
+#
+#     # Assert
+#     assert result == 5

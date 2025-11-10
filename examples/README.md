@@ -38,7 +38,8 @@ The `examples` directory contains example projects and configuration files demon
 |------|-------------|--------------|
 | `complete-setup.yml` | All 5 phases enabled | Full structurelint capabilities |
 | `dead-code-detection.yml` | Phase 2 features | Orphaned files, unused exports |
-| `test-aaa-pattern.yml` | AAA pattern enforcement | Test quality and consistency |
+| `test-aaa-pattern.yml` | AAA pattern enforcement | Test structure consistency |
+| `test-gwt-naming.yml` | Given-When-Then naming | Descriptive test names + AAA |
 
 ## Using Examples
 

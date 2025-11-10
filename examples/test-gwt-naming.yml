@@ -1,0 +1,103 @@
+# Example: Enforce Given-When-Then (GWT) Test Naming Pattern
+# This configuration ensures test names are self-documenting
+# and test structure follows AAA pattern
+
+root: true
+
+rules:
+  # Basic filesystem rules
+  max-depth: { max: 6 }
+  max-files-in-dir: { max: 20 }
+
+  # Phase 3: Ensure tests exist
+  test-adjacency:
+    pattern: "adjacent"
+    file-patterns:
+      - "**/*.go"
+      - "**/*.ts"
+      - "**/*.tsx"
+      - "**/*.py"
+    exemptions:
+      - "cmd/**/*.go"
+      - "**/*.d.ts"
+      - "**/index.ts"
+      - "**/__init__.py"
+
+  # Phase 4: Enforce GWT naming + AAA structure
+  file-content:
+    template-dir: ".structurelint/templates"
+    templates:
+      # Go tests - GWT naming required
+      "**/*_test.go": "test-gwt-go"
+
+      # TypeScript/JavaScript tests - GWT naming required
+      "**/*.test.ts": "test-gwt-typescript"
+      "**/*.test.tsx": "test-gwt-typescript"
+      "**/*.spec.ts": "test-gwt-typescript"
+      "**/*.test.js": "test-gwt-typescript"
+      "**/*.spec.js": "test-gwt-typescript"
+
+      # Python tests - GWT naming required
+      "**/test_*.py": "test-gwt-python"
+      "**/*_test.py": "test-gwt-python"
+
+exclude:
+  - node_modules/**
+  - vendor/**
+  - dist/**
+  - build/**
+  - __pycache__/**
+  - .git/**
+
+overrides:
+  # Ultra-strict enforcement for core business logic
+  - files: [
+      'src/core/**/*_test.go',
+      'src/services/**/*.test.ts',
+      'src/domain/**/*.test.ts',
+    ]
+    rules:
+      file-content:
+        template-dir: ".structurelint/templates"
+        templates:
+          "**/*_test.go": "test-gwt-strict"
+          "**/*.test.ts": "test-gwt-strict"
+
+  # Lenient for integration tests (complex setup)
+  - files: [
+      'tests/integration/**',
+      '**/*.integration.test.ts',
+      '**/integration_test.go',
+    ]
+    rules:
+      file-content: 0  # Disable GWT enforcement
+
+  # No enforcement for test fixtures or mocks
+  - files: [
+      '**/__fixtures__/**',
+      '**/__mocks__/**',
+      '**/testdata/**',
+      '**/mocks/**',
+    ]
+    rules:
+      file-content: 0
+
+# Example compliant test names:
+#
+# Go:
+#   func TestCalculator_GivenTwoPositiveNumbers_WhenAdding_ThenReturnsSum(t *testing.T)
+#   func TestUser_GivenInvalidEmail_WhenCreating_ThenReturnsValidationError(t *testing.T)
+#
+# TypeScript:
+#   it('given two positive numbers, when adding, then returns sum', () => {})
+#   it('given invalid email, when creating user, then throws validation error', () => {})
+#
+# Python:
+#   def test_calculator_given_two_positive_numbers_when_adding_then_returns_sum():
+#   def test_user_given_invalid_email_when_creating_then_raises_validation_error():
+#
+# Benefits:
+# - Test names are self-documenting
+# - Easy to search for specific scenarios
+# - Reviewers understand tests from names alone
+# - Tests serve as living documentation

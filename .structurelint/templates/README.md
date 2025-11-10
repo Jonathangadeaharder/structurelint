@@ -27,6 +27,17 @@ This directory contains YAML template files that define content structure requir
 
 The test templates enforce the Arrange-Act-Assert (AAA) pattern for better test readability and consistency. See [Test AAA Pattern](../../docs/TEST_AAA_PATTERN.md) for details.
 
+### Test Templates (Given-When-Then Naming)
+
+| Template | Purpose | Used For |
+|----------|---------|----------|
+| `test-gwt-go.yml` | Go test with GWT naming + AAA | `*_test.go` files |
+| `test-gwt-typescript.yml` | TypeScript/JS test with GWT naming + AAA | `*.test.ts`, `*.spec.js` files |
+| `test-gwt-python.yml` | Python test with GWT naming + AAA | `test_*.py`, `*_test.py` files |
+| `test-gwt-strict.yml` | Ultra-strict GWT + AAA enforcement | Any test files (multi-language) |
+
+The GWT templates combine descriptive Given-When-Then naming with AAA structure for maximum test clarity. See [Given-When-Then Naming](../../docs/TEST_GWT_NAMING.md) for details.
+
 ## Template Format
 
 Templates are YAML files with the following structure:

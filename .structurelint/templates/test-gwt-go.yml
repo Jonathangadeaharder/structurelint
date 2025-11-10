@@ -1,0 +1,36 @@
+# Template for Go test files with Given-When-Then naming
+# Enforces both AAA pattern AND descriptive GWT test naming
+
+required-patterns:
+  # Test function with GWT naming pattern
+  # Format: TestFunction_GivenContext_WhenAction_ThenOutcome
+  - "func Test\\w+_Given\\w+_When\\w+_Then\\w+\\(t \\*testing\\.T\\)"
+
+  # AAA pattern comments must be present
+  - "// Arrange"
+  - "// Act"
+  - "// Assert"
+
+forbidden-patterns:
+  # Forbid tests without descriptive names
+  - "func Test\\w+\\(t \\*testing\\.T\\)"
+
+  # No debugging statements
+  - "fmt\\.Println|log\\.Println"
+
+  # No TODOs in production tests
+  - "TODO|FIXME|XXX"
+
+# Example compliant test:
+#
+# func TestCalculator_GivenTwoPositiveNumbers_WhenAdding_ThenReturnsSum(t *testing.T) {
+#     // Arrange
+#     calc := NewCalculator()
+#     a, b := 2, 3
+#
+#     // Act
+#     result := calc.Add(a, b)
+#
+#     // Assert
+#     assert.Equal(t, 5, result)
+# }

@@ -1,0 +1,43 @@
+# Template for TypeScript/JavaScript test files with Given-When-Then naming
+# Enforces both AAA pattern AND descriptive GWT test naming
+
+required-patterns:
+  # Test blocks with GWT naming pattern
+  # Format: "given X, when Y, then Z"
+  - "(?:it|test)\\(['\"](?:given|Given).*(?:when|When).*(?:then|Then)"
+
+  # AAA pattern comments must be present
+  - "// Arrange"
+  - "// Act"
+  - "// Assert"
+
+forbidden-patterns:
+  # Forbid tests without descriptive names
+  - "it\\(['\"]should"
+
+  # No debugging statements
+  - "console\\.log|console\\.debug"
+
+  # No TODOs in production tests
+  - "TODO|FIXME|XXX"
+
+  # No .only or .skip in committed tests
+  - "it\\.only|describe\\.only|test\\.only"
+  - "it\\.skip|describe\\.skip|test\\.skip"
+
+# Example compliant test:
+#
+# describe('Calculator', () => {
+#   it('given two positive numbers, when adding, then returns sum', () => {
+#     // Arrange
+#     const calc = new Calculator();
+#     const a = 2;
+#     const b = 3;
+#
+#     // Act
+#     const result = calc.add(a, b);
+#
+#     // Assert
+#     expect(result).toBe(5);
+#   });
+# });

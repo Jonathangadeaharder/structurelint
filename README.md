@@ -1018,12 +1018,20 @@ func TestCalculator_Add_ReturnsSum(t *testing.T) {
 ```
 
 Available test templates:
+
+**AAA Pattern** (structure only):
 - `test-go.yml` - Lenient AAA enforcement for Go
 - `test-typescript.yml` - Lenient AAA enforcement for TypeScript/JavaScript
 - `test-python.yml` - Lenient AAA enforcement for Python
 - `test-strict-aaa.yml` - Strict AAA enforcement (all languages)
 
-See [docs/TEST_AAA_PATTERN.md](docs/TEST_AAA_PATTERN.md) for complete guide.
+**Given-When-Then** (naming + structure):
+- `test-gwt-go.yml` - GWT naming + AAA for Go
+- `test-gwt-typescript.yml` - GWT naming + AAA for TypeScript/JavaScript
+- `test-gwt-python.yml` - GWT naming + AAA for Python
+- `test-gwt-strict.yml` - Ultra-strict GWT + AAA (all languages)
+
+See [docs/TEST_AAA_PATTERN.md](docs/TEST_AAA_PATTERN.md) and [docs/TEST_GWT_NAMING.md](docs/TEST_GWT_NAMING.md) for complete guides.
 
 ### Example Violations
 
