@@ -6,7 +6,7 @@ import (
 	"github.com/structurelint/structurelint/internal/walker"
 )
 
-func TestDisallowedPatternsRule_Check(t *testing.T) {
+func TestDisallowedPatternsRule_WhenChecking(t *testing.T) {
 	tests := []struct {
 		name          string
 		patterns      []string
@@ -15,7 +15,7 @@ func TestDisallowedPatternsRule_Check(t *testing.T) {
 		wantPaths     []string
 	}{
 		{
-			name:     "simple pattern match",
+			name:     "GivenSimplePattern_WhenMatching_ThenFindsViolation",
 			patterns: []string{"*.tmp"},
 			files: []walker.FileInfo{
 				{Path: "file.tmp"},
@@ -25,7 +25,7 @@ func TestDisallowedPatternsRule_Check(t *testing.T) {
 			wantPaths:     []string{"file.tmp"},
 		},
 		{
-			name:     "glob pattern with **",
+			name:     "GivenGlobPatternWithDoubleStar_WhenMatching_ThenFindsMultipleViolations",
 			patterns: []string{"**/*.log"},
 			files: []walker.FileInfo{
 				{Path: "logs/app.log"},
@@ -35,7 +35,7 @@ func TestDisallowedPatternsRule_Check(t *testing.T) {
 			wantViolCount: 2,
 		},
 		{
-			name:     "exact match - basename matching",
+			name:     "GivenBasenamePattern_WhenMatchingAcrossDirectories_ThenFindsAllMatches",
 			patterns: []string{".DS_Store"},
 			files: []walker.FileInfo{
 				{Path: ".DS_Store"},
@@ -45,7 +45,7 @@ func TestDisallowedPatternsRule_Check(t *testing.T) {
 			wantViolCount: 2, // Matches basename in both locations
 		},
 		{
-			name:     "negation pattern allows exceptions",
+			name:     "GivenNegationPattern_WhenEvaluating_ThenAllowsExceptions",
 			patterns: []string{"*.md", "!README.md"},
 			files: []walker.FileInfo{
 				{Path: "README.md"},
@@ -55,7 +55,7 @@ func TestDisallowedPatternsRule_Check(t *testing.T) {
 			wantViolCount: 2,
 		},
 		{
-			name:     "directory pattern",
+			name:     "GivenDirectoryPattern_WhenMatching_ThenFindsViolation",
 			patterns: []string{"node_modules/**"},
 			files: []walker.FileInfo{
 				{Path: "node_modules/package/index.js"},
@@ -64,7 +64,7 @@ func TestDisallowedPatternsRule_Check(t *testing.T) {
 			wantViolCount: 1,
 		},
 		{
-			name:     "multiple patterns",
+			name:     "GivenMultiplePatterns_WhenMatching_ThenFindsAllViolations",
 			patterns: []string{"*.tmp", "*.bak", ".DS_Store"},
 			files: []walker.FileInfo{
 				{Path: "file.tmp"},
@@ -75,7 +75,7 @@ func TestDisallowedPatternsRule_Check(t *testing.T) {
 			wantViolCount: 3,
 		},
 		{
-			name:          "no violations",
+			name:          "WhenNoMatches_ThenReturnsNoViolations",
 			patterns:      []string{"*.tmp"},
 			files:         []walker.FileInfo{{Path: "file.go"}},
 			wantViolCount: 0,
@@ -84,9 +84,13 @@ func TestDisallowedPatternsRule_Check(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			// Arrange
 			rule := NewDisallowedPatternsRule(tt.patterns)
+
+			// Act
 			violations := rule.Check(tt.files, nil)
 
+			// Assert
 			if len(violations) != tt.wantViolCount {
 				t.Errorf("Check() got %d violations, want %d", len(violations), tt.wantViolCount)
 				for _, v := range violations {
@@ -107,33 +111,43 @@ func TestDisallowedPatternsRule_Check(t *testing.T) {
 	}
 }
 
-func TestDisallowedPatternsRule_Name(t *testing.T) {
+func TestDisallowedPatternsRule_WhenGettingName(t *testing.T) {
+	// Arrange
 	rule := NewDisallowedPatternsRule([]string{"*.tmp"})
-	if got := rule.Name(); got != "disallowed-patterns" {
+
+	// Act
+	got := rule.Name()
+
+	// Assert
+	if got != "disallowed-patterns" {
 		t.Errorf("Name() = %v, want disallowed-patterns", got)
 	}
 }
 
-func Test_matchesGlobPattern(t *testing.T) {
+func Test_WhenMatchingGlobPattern(t *testing.T) {
 	tests := []struct {
 		name    string
 		path    string
 		pattern string
 		want    bool
 	}{
-		{"exact match", "file.tmp", "file.tmp", true},
-		{"glob match", "file.tmp", "*.tmp", true},
-		{"glob no match", "file.go", "*.tmp", false},
-		{"double star prefix", "src/test/file.go", "**/file.go", true},
-		{"double star middle", "src/test/file.go", "src/**/file.go", true},
-		{"double star no match", "other/file.go", "src/**/*.go", false},
-		{"full path pattern", "src/components/Button.tsx", "src/components/*.tsx", true},
-		{"basename only", "deep/nested/file.tmp", "*.tmp", true},
+		{"WhenExactMatch_ThenReturnsTrue", "file.tmp", "file.tmp", true},
+		{"WhenGlobMatches_ThenReturnsTrue", "file.tmp", "*.tmp", true},
+		{"WhenGlobDoesNotMatch_ThenReturnsFalse", "file.go", "*.tmp", false},
+		{"WhenDoubleStarPrefix_ThenMatchesNestedPath", "src/test/file.go", "**/file.go", true},
+		{"WhenDoubleStarMiddle_ThenMatchesPath", "src/test/file.go", "src/**/file.go", true},
+		{"WhenDoubleStarNoMatch_ThenReturnsFalse", "other/file.go", "src/**/*.go", false},
+		{"WhenFullPathPattern_ThenMatches", "src/components/Button.tsx", "src/components/*.tsx", true},
+		{"WhenBasenameOnly_ThenMatchesInAnyDirectory", "deep/nested/file.tmp", "*.tmp", true},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := matchesGlobPattern(tt.path, tt.pattern); got != tt.want {
+			// Arrange & Act
+			got := matchesGlobPattern(tt.path, tt.pattern)
+
+			// Assert
+			if got != tt.want {
 				t.Errorf("matchesGlobPattern(%q, %q) = %v, want %v", tt.path, tt.pattern, got, tt.want)
 			}
 		})
