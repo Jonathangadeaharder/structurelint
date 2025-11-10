@@ -1,3 +1,6 @@
+// Package rules provides rule implementations for structurelint.
+//
+// @structurelint:no-test Rule implementation tested via rules_test.go integration test
 package rules
 
 import (

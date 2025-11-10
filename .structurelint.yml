@@ -37,6 +37,32 @@ rules:
     - "examples/**/*.md"
     - "!**/README.md"  # Allow README.md files everywhere
 
+  # Phase 3: Test File Validation
+  # Files can use @structurelint:no-test directive to declare they don't need tests
+  test-adjacency:
+    pattern: "adjacent"              # Tests next to source code (Go convention)
+    file-patterns:
+      - "**/*.go"
+    exemptions:
+      - "cmd/**/*.go"                       # Entry points don't need tests
+      - "**/*_gen.go"                       # Generated files
+
+  test-location:
+    integration-test-dir: "tests"    # Allow integration tests in tests/ folder
+    allow-adjacent: true             # Allow tests next to source code
+    exemptions:
+      - "testdata/**"
+      - "internal/rules/rules_test.go"      # Integration test for all rules
+      - "internal/rules/test_adjacency.go"  # Not a test - rule implementation
+      - "internal/rules/test_location.go"   # Not a test - rule implementation
+
+  # Phase 4: File Content Templates
+  file-content:
+    template-dir: ".structurelint/templates"
+    templates:
+      "**/README.md": "readme"         # Enforce README structure
+      "CONTRIBUTING.md": "contributing" # Enforce contributing guidelines
+
 # Phase 1: Architectural layers for Go project
 layers:
   - name: cmd
@@ -51,30 +77,3 @@ layers:
 entrypoints:
   - cmd/structurelint/main.go
   - "**/*_test.go"
-
-# Phase 3: Test File Validation (COMMENTED OUT - See docs/TEST_VALIDATION.md)
-# Uncomment to enforce test file requirements
-#
-# test-adjacency:
-#   pattern: "adjacent"              # Or "separate" for dedicated test directory
-#   file-patterns:
-#     - "**/*.go"
-#   exemptions:
-#     - "cmd/**/*.go"                # Exempt entry points
-#     - "**/*_gen.go"                # Exempt generated files
-#
-# test-location:
-#   integration-test-dir: "tests"    # Allow integration tests in tests/ folder
-#   allow-adjacent: true             # Allow tests next to source code
-#   exemptions:
-#     - "testdata/**"
-
-# Phase 4: File Content Templates (COMMENTED OUT - See docs/FILE_CONTENT_TEMPLATES.md)
-# Uncomment to enforce file content structure
-#
-# file-content:
-#   template-dir: ".structurelint/templates"
-#   templates:
-#     "**/README.md": "readme"         # Enforce README structure
-#     "CONTRIBUTING.md": "contributing" # Enforce contributing guidelines
-#     "docs/*.md": "design-doc"        # Enforce design doc structure

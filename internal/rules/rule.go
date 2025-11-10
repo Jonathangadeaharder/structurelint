@@ -1,3 +1,6 @@
+// Package rules defines the linting rule interface and implementations.
+//
+// @structurelint:no-test Interface definitions and types only, tested through rule implementations
 package rules
 
 import (

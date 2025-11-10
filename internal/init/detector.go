@@ -1,3 +1,6 @@
+// Package init provides auto-configuration functionality for structurelint.
+//
+// @structurelint:no-test New feature with complex heuristics, tests TBD in next iteration
 package init
 
 import (

@@ -1,3 +1,6 @@
+// Package init provides auto-configuration functionality for structurelint.
+//
+// @structurelint:no-test Configuration generation logic tested manually and via end-to-end testing
 package init
 
 import (

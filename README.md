@@ -755,6 +755,12 @@ Phase 3 ensures comprehensive test coverage by validating that every source file
 - Enforces proper test directory structure
 - Supports integration test directories
 
+**3. Self-Documenting Exemptions with `@structurelint:no-test`** ✨ NEW
+- Declare test exemptions directly in source code with `// @structurelint:no-test <reason>`
+- Self-documenting: reason for no tests is visible in the code
+- Consistency validation: warns if file claims "no test needed" but has a test file
+- Reduces need for long exemption lists in configuration
+
 ### Configuration
 
 #### Adjacent Test Pattern
@@ -800,6 +806,42 @@ rules:
     exemptions:
       - "testdata/**"                 # Test fixtures
 ```
+
+#### Using @structurelint:no-test Directive
+
+Instead of adding files to exemption lists, declare exemptions directly in source code:
+
+**Example - Interface definition (Go):**
+```go
+// Package rules defines the linting rule interface.
+//
+// @structurelint:no-test Interface definitions only, tested through implementations
+package rules
+
+type Rule interface {
+    Name() string
+    Check(files []FileInfo) []Violation
+}
+```
+
+**Example - Simple utility (TypeScript):**
+```typescript
+// Re-export module for convenient imports
+//
+// @structurelint:no-test Simple re-export, tested via consuming code
+package utils
+
+export * from './helpers';
+export * from './validators';
+```
+
+**Benefits over configuration exemptions:**
+- ✅ Self-documenting: reason visible in code
+- ✅ Consistency validation: warns if directive conflicts with test file existence
+- ✅ Code review friendly: reviewers see justification
+- ✅ Cleaner config: no long exemption lists
+
+**See [NO_TEST_DIRECTIVE.md](docs/NO_TEST_DIRECTIVE.md) for complete documentation.**
 
 ### Example Violations
 
