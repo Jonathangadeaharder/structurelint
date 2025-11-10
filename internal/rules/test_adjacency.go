@@ -1,6 +1,4 @@
 // Package rules provides rule implementations for structurelint.
-//
-// @structurelint:no-test Rule implementation tested via rules_test.go integration test
 package rules
 
 import (
@@ -74,7 +72,6 @@ func (r *TestAdjacencyRule) checkAdjacentPattern(files []walker.FileInfo) []Viol
 			continue
 		}
 
-		// Check for @structurelint:no-test directive
 		hasNoTestDirective, reason := r.hasNoTestDirective(file.AbsPath)
 
 		// Look for corresponding test file
@@ -254,10 +251,6 @@ func (r *TestAdjacencyRule) hasNoTestDirective(absPath string) (bool, string) {
 		lineCount++
 
 		// Look for @structurelint:no-test directive
-		// Formats:
-		// // @structurelint:no-test
-		// // @structurelint:no-test Interface definition only
-		// # @structurelint:no-test (Python)
 		if strings.Contains(line, "@structurelint:no-test") {
 			// Extract reason after the directive
 			parts := strings.SplitN(line, "@structurelint:no-test", 2)

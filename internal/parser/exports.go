@@ -1,6 +1,4 @@
 // Package parser provides functionality for parsing source code exports.
-//
-// @structurelint:no-test Simple parsing utilities tested via integration tests
 package parser
 
 import (
