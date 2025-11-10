@@ -1,0 +1,12 @@
+# Template for README.md files
+# This ensures all READMEs follow the "building lobby" pattern
+
+required-sections:
+  - "# "
+  - "## Overview"
+
+required-patterns:
+  - "^#\\s+\\w+"
+
+# Non-root README files should link to parent
+# Note: This would need conditional logic to implement fully

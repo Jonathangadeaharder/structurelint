@@ -131,6 +131,45 @@ func (l *Linter) createRules(files []walker.FileInfo, importGraph *graph.ImportG
 		}
 	}
 
+	// Test adjacency rule
+	if testAdj, ok := l.getRuleConfig("test-adjacency"); ok {
+		if adjMap, ok := testAdj.(map[string]interface{}); ok {
+			pattern := l.getStringFromMap(adjMap, "pattern")
+			testDir := l.getStringFromMap(adjMap, "test-dir")
+			filePatterns := l.getStringSliceFromMap(adjMap, "file-patterns")
+			exemptions := l.getStringSliceFromMap(adjMap, "exemptions")
+
+			if pattern != "" && len(filePatterns) > 0 {
+				rulesList = append(rulesList, rules.NewTestAdjacencyRule(pattern, testDir, filePatterns, exemptions))
+			}
+		}
+	}
+
+	// Test location rule
+	if testLoc, ok := l.getRuleConfig("test-location"); ok {
+		if locMap, ok := testLoc.(map[string]interface{}); ok {
+			integrationDir := l.getStringFromMap(locMap, "integration-test-dir")
+			allowAdjacent := l.getBoolFromMap(locMap, "allow-adjacent")
+			exemptions := l.getStringSliceFromMap(locMap, "exemptions")
+
+			rulesList = append(rulesList, rules.NewTestLocationRule(integrationDir, allowAdjacent, exemptions))
+		}
+	}
+
+	// File content rule
+	if fileContent, ok := l.getRuleConfig("file-content"); ok {
+		if contentMap, ok := fileContent.(map[string]interface{}); ok {
+			templates := l.getStringMapFromMap(contentMap, "templates")
+			templateDir := l.getStringFromMap(contentMap, "template-dir")
+
+			if len(templates) > 0 && templateDir != "" {
+				// Get root path from linter (need to pass it through)
+				rootPath := "." // Default to current directory
+				rulesList = append(rulesList, rules.NewFileContentRule(templates, templateDir, rootPath))
+			}
+		}
+	}
+
 	return rulesList
 }
 
@@ -232,4 +271,48 @@ func (l *Linter) getRuleConfig(ruleName string) (interface{}, bool) {
 func (l *Linter) isRuleEnabled(ruleName string) bool {
 	_, enabled := l.getRuleConfig(ruleName)
 	return enabled
+}
+
+// getStringFromMap extracts a string value from a map
+func (l *Linter) getStringFromMap(m map[string]interface{}, key string) string {
+	if val, ok := m[key].(string); ok {
+		return val
+	}
+	return ""
+}
+
+// getBoolFromMap extracts a boolean value from a map
+func (l *Linter) getBoolFromMap(m map[string]interface{}, key string) bool {
+	if val, ok := m[key].(bool); ok {
+		return val
+	}
+	return false
+}
+
+// getStringSliceFromMap extracts a string slice from a map
+func (l *Linter) getStringSliceFromMap(m map[string]interface{}, key string) []string {
+	if val, ok := m[key].([]interface{}); ok {
+		result := make([]string, 0, len(val))
+		for _, v := range val {
+			if strVal, ok := v.(string); ok {
+				result = append(result, strVal)
+			}
+		}
+		return result
+	}
+	return nil
+}
+
+// getStringMapFromMap extracts a string map from a map
+func (l *Linter) getStringMapFromMap(m map[string]interface{}, key string) map[string]string {
+	if val, ok := m[key].(map[string]interface{}); ok {
+		result := make(map[string]string)
+		for k, v := range val {
+			if strVal, ok := v.(string); ok {
+				result[k] = strVal
+			}
+		}
+		return result
+	}
+	return nil
 }

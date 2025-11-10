@@ -1,0 +1,10 @@
+# Template for CONTRIBUTING.md
+# Ensures contribution guidelines have required sections
+
+required-sections:
+  - "## Getting Started"
+  - "## Development"
+  - "## Pull Requests"
+  - "## Code Style"
+
+must-start-with: "^#\\s+Contributing"

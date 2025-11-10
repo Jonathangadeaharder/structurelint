@@ -1,0 +1,16 @@
+# Template for design documents
+# Ensures design docs have proper structure
+
+required-sections:
+  - "## Problem"
+  - "## Solution"
+  - "## Alternatives"
+  - "## Implementation"
+
+required-patterns:
+  - "(?i)(problem|motivation|background)"
+  - "(?i)(solution|approach|design)"
+
+forbidden-patterns:
+  - "TODO.*implement"
+  - "\\[TBD\\]"
