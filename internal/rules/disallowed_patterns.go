@@ -63,6 +63,10 @@ func (r *DisallowedPatternsRule) Check(files []walker.FileInfo, dirs map[string]
 
 // matchesGlobPattern checks if a path matches a glob pattern including **
 func matchesGlobPattern(path, pattern string) bool {
+	// Normalize paths to use forward slashes for consistent matching across platforms
+	path = filepath.ToSlash(path)
+	pattern = filepath.ToSlash(pattern)
+
 	// Handle ** patterns
 	if strings.Contains(pattern, "**") {
 		parts := strings.Split(pattern, "**")

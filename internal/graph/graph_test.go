@@ -10,12 +10,15 @@ import (
 )
 
 func TestNewBuilder(t *testing.T) {
+	// Arrange
 	layers := []config.Layer{
 		{Name: "domain", Path: "src/domain/**", DependsOn: []string{}},
 	}
 
+	// Act
 	builder := NewBuilder("/test/path", layers)
 
+	// Assert
 	if builder == nil {
 		t.Fatal("NewBuilder returned nil")
 	}

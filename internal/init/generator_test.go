@@ -6,6 +6,7 @@ import (
 )
 
 func TestGenerateConfig(t *testing.T) {
+	// Arrange
 	tests := []struct {
 		name             string
 		info             *ProjectInfo
@@ -97,8 +98,10 @@ func TestGenerateConfig(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			// Act
 			got := GenerateConfig(tt.info)
 
+			// Assert
 			for _, want := range tt.wantContains {
 				if !strings.Contains(got, want) {
 					t.Errorf("GenerateConfig() missing expected content: %q", want)

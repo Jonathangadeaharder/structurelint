@@ -67,14 +67,18 @@ func privateFunc() {}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			// Arrange
 			tmpDir := t.TempDir()
 			testFile := filepath.Join(tmpDir, "test.go")
 			if err := os.WriteFile(testFile, []byte(tt.content), 0644); err != nil {
 				t.Fatal(err)
 			}
 
+			// Act
 			p := New(tmpDir)
 			exports, err := p.parseGoExports(testFile)
+
+			// Assert
 			if err != nil {
 				t.Fatalf("parseGoExports() error = %v", err)
 			}
