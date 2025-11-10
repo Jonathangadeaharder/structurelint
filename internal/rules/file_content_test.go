@@ -9,9 +9,6 @@ import (
 )
 
 func TestFileContentRule_Check(t *testing.T) {
-	// Arrange
-	// Act
-	// Assert
 	// Create temp directory with templates
 	tmpDir := t.TempDir()
 	templateDir := filepath.Join(tmpDir, ".structurelint", "templates")
@@ -69,9 +66,13 @@ This is a test project.
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			// Arrange
 			rule := NewFileContentRule(tt.templates, ".structurelint/templates", tmpDir)
+
+			// Act
 			violations := rule.Check(tt.files, nil)
 
+			// Assert
 			if len(violations) != tt.wantViolCount {
 				t.Errorf("Check() got %d violations, want %d", len(violations), tt.wantViolCount)
 				for _, v := range violations {

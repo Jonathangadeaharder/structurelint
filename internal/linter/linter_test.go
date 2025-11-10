@@ -10,9 +10,6 @@ import (
 )
 
 func TestNew(t *testing.T) {
-	// Arrange
-	// (no arrangement needed)
-
 	// Act
 	linter := New()
 
@@ -27,6 +24,7 @@ func TestNew(t *testing.T) {
 }
 
 func TestGetRuleConfig_Exists(t *testing.T) {
+	// Arrange
 	linter := &Linter{
 		config: &config.Config{
 			Rules: map[string]interface{}{
@@ -37,7 +35,10 @@ func TestGetRuleConfig_Exists(t *testing.T) {
 		},
 	}
 
+	// Act
 	cfg, ok := linter.getRuleConfig("max-depth")
+
+	// Assert
 	if !ok {
 		t.Error("Expected rule to exist")
 	}
