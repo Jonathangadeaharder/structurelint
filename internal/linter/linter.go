@@ -131,6 +131,17 @@ func (l *Linter) createRules(files []walker.FileInfo, importGraph *graph.ImportG
 		}
 	}
 
+	// Phase 3 rules
+	l.addTestValidationRules(&rulesList)
+
+	// Phase 4 rules
+	l.addContentRules(&rulesList)
+
+	return rulesList
+}
+
+// addTestValidationRules adds Phase 3 test validation rules
+func (l *Linter) addTestValidationRules(rulesList *[]rules.Rule) {
 	// Test adjacency rule
 	if testAdj, ok := l.getRuleConfig("test-adjacency"); ok {
 		if adjMap, ok := testAdj.(map[string]interface{}); ok {
@@ -140,7 +151,7 @@ func (l *Linter) createRules(files []walker.FileInfo, importGraph *graph.ImportG
 			exemptions := l.getStringSliceFromMap(adjMap, "exemptions")
 
 			if pattern != "" && len(filePatterns) > 0 {
-				rulesList = append(rulesList, rules.NewTestAdjacencyRule(pattern, testDir, filePatterns, exemptions))
+				*rulesList = append(*rulesList, rules.NewTestAdjacencyRule(pattern, testDir, filePatterns, exemptions))
 			}
 		}
 	}
@@ -152,10 +163,13 @@ func (l *Linter) createRules(files []walker.FileInfo, importGraph *graph.ImportG
 			allowAdjacent := l.getBoolFromMap(locMap, "allow-adjacent")
 			exemptions := l.getStringSliceFromMap(locMap, "exemptions")
 
-			rulesList = append(rulesList, rules.NewTestLocationRule(integrationDir, allowAdjacent, exemptions))
+			*rulesList = append(*rulesList, rules.NewTestLocationRule(integrationDir, allowAdjacent, exemptions))
 		}
 	}
+}
 
+// addContentRules adds Phase 4 file content rules
+func (l *Linter) addContentRules(rulesList *[]rules.Rule) {
 	// File content rule
 	if fileContent, ok := l.getRuleConfig("file-content"); ok {
 		if contentMap, ok := fileContent.(map[string]interface{}); ok {
@@ -165,12 +179,10 @@ func (l *Linter) createRules(files []walker.FileInfo, importGraph *graph.ImportG
 			if len(templates) > 0 && templateDir != "" {
 				// Get root path from linter (need to pass it through)
 				rootPath := "." // Default to current directory
-				rulesList = append(rulesList, rules.NewFileContentRule(templates, templateDir, rootPath))
+				*rulesList = append(*rulesList, rules.NewFileContentRule(templates, templateDir, rootPath))
 			}
 		}
 	}
-
-	return rulesList
 }
 
 // getIntConfig extracts an integer value from a rule's configuration map

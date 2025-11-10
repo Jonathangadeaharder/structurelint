@@ -55,12 +55,13 @@ func GenerateConfig(info *ProjectInfo) string {
 	sb.WriteString(fmt.Sprintf("  max-subdirs:\n    max: %d\n\n", info.MaxSubdirs))
 
 	// Documentation rules
-	if info.DocumentationStyle == "comprehensive" {
+	switch info.DocumentationStyle {
+	case "comprehensive":
 		sb.WriteString("  # Documentation requirements\n")
 		sb.WriteString("  # Your project has comprehensive documentation - enforcing README.md in all directories\n")
 		sb.WriteString("  file-existence:\n")
 		sb.WriteString("    \"README.md\": \"exists:1\"\n\n")
-	} else if info.DocumentationStyle == "minimal" {
+	case "minimal":
 		sb.WriteString("  # Documentation requirements (commented out - enable when ready)\n")
 		sb.WriteString("  # file-existence:\n")
 		sb.WriteString("  #   \"README.md\": \"exists:1\"\n\n")

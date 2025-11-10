@@ -76,7 +76,7 @@ func (r *TestLocationRule) Check(files []walker.FileInfo, dirs map[string]*walke
 		}
 
 		// Test file is misplaced
-		message := fmt.Sprintf("test file not adjacent to source code")
+		message := "test file not adjacent to source code"
 		if r.IntegrationTestDir != "" {
 			message += fmt.Sprintf(" and not in integration test directory '%s/'", r.IntegrationTestDir)
 		}
@@ -138,11 +138,7 @@ func (r *TestLocationRule) hasAdjacentSource(testPath string, sourceFiles map[st
 
 	// Also check without extension
 	nameWithoutExt := strings.TrimSuffix(sourceFileName, ext)
-	if sourceFiles[filepath.Join(dir, nameWithoutExt)] {
-		return true
-	}
-
-	return false
+	return sourceFiles[filepath.Join(dir, nameWithoutExt)]
 }
 
 // getSourceFileName extracts the source file name from a test file name

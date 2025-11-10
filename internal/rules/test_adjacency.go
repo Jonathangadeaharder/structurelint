@@ -25,9 +25,10 @@ func (r *TestAdjacencyRule) Name() string {
 func (r *TestAdjacencyRule) Check(files []walker.FileInfo, dirs map[string]*walker.DirInfo) []Violation {
 	var violations []Violation
 
-	if r.Pattern == "adjacent" {
+	switch r.Pattern {
+	case "adjacent":
 		violations = r.checkAdjacentPattern(files)
-	} else if r.Pattern == "separate" {
+	case "separate":
 		violations = r.checkSeparatePattern(files)
 	}
 

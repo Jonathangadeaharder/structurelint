@@ -84,7 +84,7 @@ func runInit() error {
 		fmt.Printf("⚠ Warning: %s already exists\n", configPath)
 		fmt.Print("Overwrite? [y/N]: ")
 		var response string
-		fmt.Scanln(&response)
+		_, _ = fmt.Scanln(&response) // Ignore scan errors, default to "no"
 		if response != "y" && response != "Y" {
 			fmt.Println("Aborted. No changes made.")
 			return nil
