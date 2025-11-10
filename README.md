@@ -20,10 +20,24 @@ As projects grow, their directory structures often degrade into chaos:
 - **File existence requirements** - Ensure critical files are present
 - **Pattern restrictions** - Disallow problematic patterns
 
-**Phase 1 - Architectural Layer Enforcement:** ✨ NEW
+**Phase 1 - Architectural Layer Enforcement:**
 - **Import graph analysis** - Parse source files to build dependency graphs
 - **Layer boundary validation** - Enforce architectural patterns (Clean Architecture, Hexagonal, Feature-Sliced Design, etc.)
 - **Dependency rules** - Prevent violations like "domain importing from presentation"
+
+**Phase 2 - Dead Code Detection:**
+- **Orphaned file detection** - Find files never imported by other files
+- **Unused export identification** - Locate dead exports that can be removed
+
+**Phase 3 - Test Validation:** ✨ NEW
+- **Test adjacency enforcement** - Ensure every source file has corresponding tests
+- **Test location validation** - Prevent orphaned tests and enforce test directory structure
+- **Multi-language support** - Python, Go, TypeScript, JavaScript, Java, Rust, Ruby, C/C++
+
+**Phase 4 - File Content Templates:** ✨ NEW
+- **Template system** - Define required file structures (READMEs, design docs, etc.)
+- **Section validation** - Ensure documentation has required sections
+- **Pattern enforcement** - Require or forbid specific content patterns
 
 ## Features
 
@@ -68,6 +82,27 @@ go build -o structurelint ./cmd/structurelint
 
 ## Quick Start
 
+### Option 1: Automatic Configuration (Recommended)
+
+Let structurelint analyze your project and generate configuration automatically:
+
+```bash
+# Analyze your project and create .structurelint.yml
+structurelint --init
+
+# Review and customize the generated config
+# Then run the linter
+structurelint .
+```
+
+The `--init` command automatically detects:
+- Programming languages (Python, Go, TypeScript, Java, etc.)
+- Test patterns (adjacent tests vs separate test directories)
+- Project structure metrics
+- Documentation style
+
+### Option 2: Manual Configuration
+
 1. Create a `.structurelint.yml` file in your project root:
 
 ```yaml
@@ -92,7 +127,7 @@ rules:
 2. Run structurelint:
 
 ```bash
-./structurelint .
+structurelint .
 ```
 
 ## Configuration
@@ -385,21 +420,47 @@ jobs:
 
 ## Roadmap
 
-### Phase 0 (Current) - Core Filesystem Linting
+### Phase 0 - Core Filesystem Linting ✅ COMPLETE
 - ✅ Metric rules (max-depth, max-files, max-subdirs)
 - ✅ Naming conventions
 - ✅ File existence validation
 - ✅ Pattern matching and disallowing
 
-### Phase 1 - Architectural Layer Enforcement
-- Import graph analysis
-- Layer boundary enforcement
-- Dependency rules
+### Phase 1 - Architectural Layer Enforcement ✅ COMPLETE
+- ✅ Import graph analysis
+- ✅ Layer boundary enforcement
+- ✅ Dependency rules
 
-### Phase 2 - Dead Code Detection
-- Orphaned file detection
-- Unused export identification
-- Compiler plugin system for non-standard files
+### Phase 2 - Dead Code Detection ✅ COMPLETE
+- ✅ Orphaned file detection
+- ✅ Unused export identification
+- ✅ Entrypoint configuration
+
+### Phase 3 - Test Validation ✅ COMPLETE
+- ✅ Test adjacency enforcement (adjacent and separate patterns)
+- ✅ Test location validation
+- ✅ Multi-language support (Python, Go, TypeScript, Java, Rust, Ruby, C/C++)
+- ✅ Language-specific test naming conventions
+
+### Phase 4 - File Content Templates ✅ COMPLETE
+- ✅ Template system for file structure validation
+- ✅ Section validation (required sections)
+- ✅ Pattern enforcement (required/forbidden patterns)
+- ✅ Content structure validation (must-start-with, must-end-with)
+
+### Phase 5 - Automatic Configuration 🎯 COMPLETE
+- ✅ `--init` command for automatic configuration generation
+- ✅ Language detection (8+ languages)
+- ✅ Test pattern recognition
+- ✅ Smart defaults based on project structure
+- ✅ Project metrics analysis
+
+### Future Enhancements
+- 🔮 Monorepo support with per-package configurations
+- 🔮 Framework-specific detection (pytest, Jest, JUnit)
+- 🔮 Integration test directory detection
+- 🔮 Compiler plugin system for non-standard files
+- 🔮 Advanced dead code detection with call graph analysis
 
 ## Contributing
 
@@ -676,6 +737,316 @@ See `examples/dead-code-detection.yml` and `examples/complete-setup.yml` for ful
 - **Prevent Accumulation**: Catch dead code before it becomes technical debt
 - **CI/CD Integration**: Enforce cleanliness in your build pipeline
 
+## Phase 3: Test Validation
+
+### Overview
+
+Phase 3 ensures comprehensive test coverage by validating that every source file has corresponding tests and that test files are properly organized.
+
+### Features
+
+**1. Test Adjacency Enforcement**
+- Validates that source files have corresponding test files
+- Supports both "adjacent" and "separate" test patterns
+- Language-specific test file naming (e.g., `_test.go`, `.test.ts`, `test_*.py`)
+
+**2. Test Location Validation**
+- Prevents orphaned tests (tests without corresponding source files)
+- Enforces proper test directory structure
+- Supports integration test directories
+
+### Configuration
+
+#### Adjacent Test Pattern
+
+For projects where tests live next to source files (Go, TypeScript):
+
+```yaml
+rules:
+  test-adjacency:
+    pattern: "adjacent"
+    file-patterns:
+      - "**/*.go"
+      - "**/*.ts"
+    exemptions:
+      - "cmd/**/*.go"      # Entry points don't need tests
+      - "**/*_gen.go"      # Generated files
+      - "**/*.d.ts"        # Type definitions
+```
+
+#### Separate Test Pattern
+
+For projects with dedicated test directories (Python, Java):
+
+```yaml
+rules:
+  test-adjacency:
+    pattern: "separate"
+    test-dir: "tests"
+    file-patterns:
+      - "**/*.py"
+    exemptions:
+      - "**/__init__.py"  # Package initializers
+      - "setup.py"         # Setup scripts
+```
+
+#### Test Location Validation
+
+```yaml
+rules:
+  test-location:
+    integration-test-dir: "tests"    # Directory for integration tests
+    allow-adjacent: true              # Allow unit tests next to source
+    exemptions:
+      - "testdata/**"                 # Test fixtures
+```
+
+### Example Violations
+
+**Missing Test File (Adjacent Pattern):**
+```
+src/calculator.ts: missing test file (expected: src/calculator.test.ts)
+```
+
+**Orphaned Test File:**
+```
+tests/old-feature.test.ts: test file has no corresponding source file
+```
+
+**Test in Wrong Location:**
+```
+src/utils/helper.test.ts: test file should be in 'tests/' directory (separate pattern)
+```
+
+### Language-Specific Support
+
+| Language | Adjacent Pattern | Separate Pattern | Test Naming |
+|----------|-----------------|------------------|-------------|
+| Go | ✅ Default | ✅ Supported | `*_test.go` |
+| Python | ✅ Supported | ✅ Default | `test_*.py`, `*_test.py` |
+| TypeScript/JS | ✅ Default | ✅ Supported | `*.test.ts`, `*.spec.js` |
+| Java | ❌ | ✅ Default | `*Test.java`, `*IT.java` |
+| Rust | ✅ Default | ✅ Supported | `*_test.rs` |
+| Ruby | ❌ | ✅ Default | `*_spec.rb` |
+| C/C++ | ✅ Supported | ✅ Supported | `test_*.cpp`, `*_test.cpp` |
+
+### Complete Examples
+
+#### Go Project with Adjacent Tests
+
+```yaml
+rules:
+  test-adjacency:
+    pattern: "adjacent"
+    file-patterns:
+      - "**/*.go"
+    exemptions:
+      - "cmd/**/*.go"
+      - "**/*_gen.go"
+      - "vendor/**"
+
+  test-location:
+    integration-test-dir: "tests"
+    allow-adjacent: true
+```
+
+#### Python Project with Separate Tests
+
+```yaml
+rules:
+  test-adjacency:
+    pattern: "separate"
+    test-dir: "tests"
+    file-patterns:
+      - "**/*.py"
+    exemptions:
+      - "**/__init__.py"
+      - "**/conftest.py"
+      - "setup.py"
+
+  test-location:
+    integration-test-dir: "tests"
+    allow-adjacent: false
+```
+
+### Using --init for Test Configuration
+
+The `--init` command automatically detects your test patterns:
+
+```bash
+$ structurelint --init
+
+Analyzing project structure...
+
+🔍 Project Analysis Summary
+===========================
+
+Languages Detected:
+  [✓] python (42 files)
+      Test pattern: separate
+      Test directory: tests/
+
+# Automatically generates appropriate test-adjacency config
+```
+
+See [docs/TEST_VALIDATION.md](docs/TEST_VALIDATION.md) for complete documentation.
+
+## Phase 4: File Content Templates
+
+### Overview
+
+Phase 4 enables validation of file contents using templates. This ensures documentation and configuration files follow consistent structures.
+
+### Features
+
+**1. Section Validation**
+- Require specific sections in markdown files (e.g., "## Overview", "## Installation")
+- Enforce consistent documentation structure
+
+**2. Pattern Matching**
+- Require specific patterns (e.g., must start with heading)
+- Forbid unwanted patterns (e.g., no TODO comments in production)
+
+**3. Content Structure**
+- Validate file must start/end with specific content
+- Ensure proper formatting
+
+### Configuration
+
+Define templates in `.structurelint/templates/`:
+
+**.structurelint/templates/readme.yml:**
+```yaml
+# Template for README.md files
+required-sections:
+  - "# "              # Must have a main heading
+  - "## Overview"     # Must have Overview section
+
+required-patterns:
+  - "^#\\s+\\w+"      # Must start with heading
+
+must-start-with: "# " # Must start with main heading
+```
+
+**Reference templates in .structurelint.yml:**
+```yaml
+rules:
+  file-content:
+    templates:
+      "**/README.md": "readme"
+      "docs/design/*.md": "design-doc"
+      "CONTRIBUTING.md": "contributing"
+```
+
+### Example Templates
+
+#### README Template
+
+```yaml
+required-sections:
+  - "# "
+  - "## Overview"
+  - "⬆️ **[Parent Directory]"  # Building lobby pattern
+
+required-patterns:
+  - "^#\\s+\\w+"                # Starts with heading
+```
+
+#### Design Document Template
+
+```yaml
+required-sections:
+  - "# "
+  - "## Problem Statement"
+  - "## Proposed Solution"
+  - "## Alternatives Considered"
+
+forbidden-patterns:
+  - "TODO"     # No TODOs in final design docs
+  - "FIXME"
+```
+
+#### Contributing Guide Template
+
+```yaml
+required-sections:
+  - "# Contributing"
+  - "## Code of Conduct"
+  - "## How to Contribute"
+  - "## Development Setup"
+
+must-end-with: "## License"
+```
+
+### Example Violations
+
+**Missing Required Section:**
+```
+docs/api.md: missing required section "## Installation" (template: readme)
+```
+
+**Forbidden Pattern:**
+```
+docs/design/auth.md: contains forbidden pattern "TODO" (template: design-doc)
+```
+
+**Invalid Structure:**
+```
+README.md: must start with "# " (template: readme)
+```
+
+### Building Lobby Pattern
+
+Enforce that every directory has a README serving as a navigation guide:
+
+```yaml
+rules:
+  # Every directory must have exactly one README
+  file-existence:
+    "README.md": "exists:1"
+
+  # READMEs must follow template
+  file-content:
+    templates:
+      "**/README.md": "readme"
+```
+
+**.structurelint/templates/readme.yml:**
+```yaml
+required-sections:
+  - "# "                              # Directory name
+  - "⬆️ **[Parent Directory]"         # Link to parent
+  - "## Overview"                     # Description
+
+required-patterns:
+  - "⬆️ \\*\\*\\[Parent Directory\\]\\(.*README\\.md\\)\\*\\*"  # Parent link
+```
+
+This creates a "building lobby" where each directory's README guides you through the codebase.
+
+### Complete Example
+
+```yaml
+root: true
+
+rules:
+  # Require READMEs everywhere
+  file-existence:
+    "README.md": "exists:1"
+
+  # Validate README content
+  file-content:
+    templates:
+      "**/README.md": "readme"
+      "docs/**/*.md": "documentation"
+      "docs/design/*.md": "design-doc"
+
+exclude:
+  - node_modules/**
+  - .git/**
+```
+
+See [docs/FILE_CONTENT_TEMPLATES.md](docs/FILE_CONTENT_TEMPLATES.md) for complete documentation.
 
 ## Documentation & Resources
 
