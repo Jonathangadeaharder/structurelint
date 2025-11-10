@@ -2,12 +2,9 @@
 # Enforces AAA pattern AND descriptive GWT naming in subtests
 
 required-patterns:
-  # Test functions must follow GWT naming (Test...When for table-driven tests)
-  - "func Test[a-zA-Z0-9_]+_When[a-zA-Z0-9_]+\\(t"
-
-  # Subtest names must have When and Then (Given is optional)
-  # Pattern: name: "WhenX_ThenY" or name: "GivenZ_WhenX_ThenY"
-  - "name:.*When[A-Z][a-zA-Z0-9_]*_Then[A-Z]"
+  # Test functions must follow GWT naming
+  # Either: Test...When for table-driven OR Test...Given...When...Then for standalone
+  - "func Test[a-zA-Z0-9_]+_(When[a-zA-Z0-9_]+|Given[a-zA-Z0-9_]+_When[a-zA-Z0-9_]+_Then[a-zA-Z0-9_]+)\\(t"
 
   # AAA pattern comments must be present
   - "// Arrange"

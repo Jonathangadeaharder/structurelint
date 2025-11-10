@@ -6,7 +6,8 @@ import (
 	"github.com/structurelint/structurelint/internal/graph"
 )
 
-func TestOrphanedFilesRule_DetectsOrphans(t *testing.T) {
+func TestOrphanedFilesRule_GivenOrphanedFile_WhenChecking_ThenDetectsOrphan(t *testing.T) {
+	// Arrange
 	importGraph := &graph.ImportGraph{
 		AllFiles: []string{
 			"src/index.ts",
@@ -19,10 +20,12 @@ func TestOrphanedFilesRule_DetectsOrphans(t *testing.T) {
 			"src/orphaned.ts": 0, // Orphaned!
 		},
 	}
-
 	rule := NewOrphanedFilesRule(importGraph, []string{"src/index.ts"})
+
+	// Act
 	violations := rule.Check(nil, nil)
 
+	// Assert
 	if len(violations) != 1 {
 		t.Errorf("Expected 1 violation, got %d", len(violations))
 	}
@@ -32,7 +35,8 @@ func TestOrphanedFilesRule_DetectsOrphans(t *testing.T) {
 	}
 }
 
-func TestOrphanedFilesRule_RespectsEntrypoints(t *testing.T) {
+func TestOrphanedFilesRule_GivenEntrypoints_WhenChecking_ThenRespectsEntrypoints(t *testing.T) {
+	// Arrange
 	importGraph := &graph.ImportGraph{
 		AllFiles: []string{
 			"src/main.ts",
@@ -43,16 +47,19 @@ func TestOrphanedFilesRule_RespectsEntrypoints(t *testing.T) {
 			"src/app.ts":  0,
 		},
 	}
-
 	rule := NewOrphanedFilesRule(importGraph, []string{"src/main.ts", "src/app.ts"})
+
+	// Act
 	violations := rule.Check(nil, nil)
 
+	// Assert
 	if len(violations) != 0 {
 		t.Errorf("Expected no violations for entrypoints, got %d", len(violations))
 	}
 }
 
-func TestOrphanedFilesRule_ExcludesConfigFiles(t *testing.T) {
+func TestOrphanedFilesRule_GivenConfigFiles_WhenChecking_ThenExcludesConfigFiles(t *testing.T) {
+	// Arrange
 	importGraph := &graph.ImportGraph{
 		AllFiles: []string{
 			"package.json",
@@ -62,16 +69,19 @@ func TestOrphanedFilesRule_ExcludesConfigFiles(t *testing.T) {
 		},
 		IncomingRefs: map[string]int{},
 	}
-
 	rule := NewOrphanedFilesRule(importGraph, []string{})
+
+	// Act
 	violations := rule.Check(nil, nil)
 
+	// Assert
 	if len(violations) != 0 {
 		t.Errorf("Expected no violations for config/doc files, got %d", len(violations))
 	}
 }
 
-func TestOrphanedFilesRule_ExcludesTestFiles(t *testing.T) {
+func TestOrphanedFilesRule_GivenTestFiles_WhenChecking_ThenExcludesTestFiles(t *testing.T) {
+	// Arrange
 	importGraph := &graph.ImportGraph{
 		AllFiles: []string{
 			"src/app.test.ts",
@@ -80,10 +90,12 @@ func TestOrphanedFilesRule_ExcludesTestFiles(t *testing.T) {
 		},
 		IncomingRefs: map[string]int{},
 	}
-
 	rule := NewOrphanedFilesRule(importGraph, []string{})
+
+	// Act
 	violations := rule.Check(nil, nil)
 
+	// Assert
 	if len(violations) != 0 {
 		t.Errorf("Expected no violations for test files, got %d", len(violations))
 	}
