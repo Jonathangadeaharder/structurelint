@@ -80,9 +80,10 @@ Branch naming conventions:
    - Run `go vet` before committing
 
 2. **Complexity limits**:
-   - Cyclomatic complexity: ≤ 20 per function
-   - Cognitive complexity: ≤ 85 per function
-   - See `COMPLEXITY.md` for details
+   - Cyclomatic complexity: ≤ 15 per function
+   - Cognitive complexity: ≤ 30 per function
+   - Avoid suppressing complexity warnings - refactor instead
+   - See `docs/COMPLEXITY.md` for details
 
 3. **Write clear commit messages**:
    ```
@@ -114,7 +115,7 @@ To add a new linting rule:
        return "your-rule"
    }
 
-   func (r *YourRule) Check(files []walker.FileInfo, importGraph *graph.ImportGraph) []Violation {
+   func (r *YourRule) Check(files []walker.FileInfo, dirs map[string]*walker.DirInfo) []Violation {
        // Implementation
    }
    ```
@@ -128,6 +129,42 @@ To add a new linting rule:
 3. Add comprehensive tests in `internal/rules/your_rule_test.go`
 
 4. Update README.md with rule documentation
+
+5. Add examples to documentation in `docs/`
+
+### Rule Categories
+
+structurelint has five phases of rules:
+
+- **Phase 0 - Filesystem Rules**: Metrics, naming, file existence
+- **Phase 1 - Architecture Rules**: Layer boundaries, dependency graphs
+- **Phase 2 - Dead Code Rules**: Orphaned files, unused exports
+- **Phase 3 - Test Validation Rules**: Test adjacency, test location (NEW)
+- **Phase 4 - Content Rules**: File content templates, section validation (NEW)
+
+When adding new rules:
+- Consider which phase it belongs to
+- Follow naming conventions of that phase
+- Add appropriate helper methods to avoid complexity
+- Use existing patterns from similar rules
+
+### Improving Auto-Configuration
+
+The `--init` command in `internal/init/` automatically generates configurations:
+
+**Adding Language Support**:
+1. Update `extensionToLanguage()` in `internal/init/detector.go`
+2. Add test patterns to `getTestFilePatterns()`
+3. Add source patterns to `getSourcePatterns()`
+4. Add exemptions to `generateExemptions()` in `internal/init/generator.go`
+5. Test with real projects of that language
+
+**Improving Detection**:
+- Enhance `isAdjacentTest()` for better pattern matching
+- Improve `findTestDirectory()` for framework-specific paths
+- Add framework detection (pytest, Jest, JUnit, etc.)
+
+See `docs/INIT_TESTING.md` for testing methodology.
 
 ## Testing
 
@@ -206,9 +243,9 @@ golangci-lint run
 # Run tests
 go test ./...
 
-# Check complexity (optional)
-gocyclo -over 20 .
-gocognit -over 85 .
+# Check complexity
+gocyclo -over 15 .
+gocognit -over 30 .
 ```
 
 ### Continuous Integration
@@ -276,18 +313,30 @@ structurelint/
 │   └── structurelint/      # CLI entry point
 ├── internal/
 │   ├── config/             # Configuration parsing
-│   ├── graph/              # Import graph building
+│   ├── graph/              # Import graph building (Phase 1)
+│   ├── init/               # Auto-config generation (Phase 5)
 │   ├── linter/             # Linter orchestration
 │   ├── parser/             # File parsing (imports, exports)
 │   ├── rules/              # All linting rules
+│   │   ├── *_rule.go       # Phase 0 rules (metrics, naming)
+│   │   ├── layer_*.go      # Phase 1 rules (architecture)
+│   │   ├── orphaned_*.go   # Phase 2 rules (dead code)
+│   │   ├── test_*.go       # Phase 3 rules (test validation)
+│   │   └── file_content.go # Phase 4 rules (templates)
 │   └── walker/             # Filesystem walking
 ├── testdata/
 │   └── fixtures/           # Integration test projects
+├── .structurelint/
+│   └── templates/          # File content templates
 ├── .github/
 │   └── workflows/          # CI/CD pipelines
 ├── .structurelint.yml      # Self-linting config
 ├── .golangci.yml           # Linter config
-└── docs/                   # Documentation
+└── docs/                   # Comprehensive documentation
+    ├── TEST_VALIDATION.md       # Phase 3 docs
+    ├── FILE_CONTENT_TEMPLATES.md # Phase 4 docs
+    ├── INIT_TESTING.md          # Auto-config testing
+    └── *.md                     # Additional docs
 ```
 
 ## Need Help?
