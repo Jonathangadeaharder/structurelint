@@ -2,9 +2,12 @@
 # Enforces AAA pattern AND descriptive GWT naming in subtests
 
 required-patterns:
-  # Test functions must follow GWT naming
-  # Either: Test...Given...When...Then or Test...When for table-driven tests
+  # Test functions must follow GWT naming (Test...When for table-driven tests)
   - "func Test[a-zA-Z0-9_]+_When[a-zA-Z0-9_]+\\(t"
+
+  # Subtest names must have When and Then (Given is optional)
+  # Pattern: name: "WhenX_ThenY" or name: "GivenZ_WhenX_ThenY"
+  - "name:.*When[A-Z][a-zA-Z0-9_]*_Then[A-Z]"
 
   # AAA pattern comments must be present
   - "// Arrange"
@@ -35,8 +38,9 @@ forbidden-patterns:
 #     tests := []struct {
 #         name string
 #     }{
-#         {name: "GivenTwoPositiveNumbers_ThenReturnsSum"},
-#         {name: "GivenNegativeNumbers_ThenReturnsNegativeSum"},
+#         {name: "GivenTwoPositiveNumbers_WhenAdding_ThenReturnsSum"},
+#         {name: "GivenNegativeNumbers_WhenAdding_ThenReturnsNegativeSum"},
+#         {name: "WhenAddingZero_ThenReturnsOriginalNumber"}, # Given is optional
 #     }
 #     for _, tt := range tests {
 #         t.Run(tt.name, func(t *testing.T) {

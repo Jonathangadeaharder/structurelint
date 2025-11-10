@@ -15,7 +15,7 @@ func TestMaxFilesRule_WhenChecking(t *testing.T) {
 		wantViolCount int
 	}{
 		{
-			name:     "GivenFileCountWithinLimit_ThenReturnsNoViolations",
+			name:     "GivenFileCountWithinLimit_WhenChecking_ThenReturnsNoViolations",
 			maxFiles: 10,
 			files: []walker.FileInfo{
 				{Path: "src/file1.go", ParentPath: "src", IsDir: false},
@@ -28,7 +28,7 @@ func TestMaxFilesRule_WhenChecking(t *testing.T) {
 			wantViolCount: 0,
 		},
 		{
-			name:     "GivenTestFiles_ThenExcludedFromCount",
+			name:     "GivenTestFiles_WhenCounting_ThenExcludedFromCount",
 			maxFiles: 5,
 			files: []walker.FileInfo{
 				{Path: "src/file1.go", ParentPath: "src", IsDir: false},
@@ -44,7 +44,7 @@ func TestMaxFilesRule_WhenChecking(t *testing.T) {
 			wantViolCount: 0, // 3 non-test files, tests don't count
 		},
 		{
-			name:     "GivenExcessiveNonTestFiles_ThenReturnsViolation",
+			name:     "GivenExcessiveNonTestFiles_WhenChecking_ThenReturnsViolation",
 			maxFiles: 2,
 			files: []walker.FileInfo{
 				{Path: "src/file1.go", ParentPath: "src", IsDir: false},
@@ -58,7 +58,7 @@ func TestMaxFilesRule_WhenChecking(t *testing.T) {
 			wantViolCount: 1, // 3 non-test files exceeds limit of 2
 		},
 		{
-			name:     "GivenTypeScriptTestFiles_ThenExcludedFromCount",
+			name:     "GivenTypeScriptTestFiles_WhenCounting_ThenExcludedFromCount",
 			maxFiles: 3,
 			files: []walker.FileInfo{
 				{Path: "src/component.tsx", ParentPath: "src", IsDir: false},
@@ -72,7 +72,7 @@ func TestMaxFilesRule_WhenChecking(t *testing.T) {
 			wantViolCount: 0, // 2 non-test files
 		},
 		{
-			name:     "GivenPythonTestFiles_ThenExcludedFromCount",
+			name:     "GivenPythonTestFiles_WhenCounting_ThenExcludedFromCount",
 			maxFiles: 2,
 			files: []walker.FileInfo{
 				{Path: "src/module.py", ParentPath: "src", IsDir: false},
@@ -85,7 +85,7 @@ func TestMaxFilesRule_WhenChecking(t *testing.T) {
 			wantViolCount: 0, // 1 non-test file
 		},
 		{
-			name:          "GivenEmptyDirectory_ThenReturnsNoViolations",
+			name:          "WhenDirectoryEmpty_ThenReturnsNoViolations",
 			maxFiles:      5,
 			files:         []walker.FileInfo{},
 			dirs:          map[string]*walker.DirInfo{"src": {}},
