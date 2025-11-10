@@ -1,5 +1,12 @@
 # Example: Complete structurelint Setup
-# Demonstrates all three phases working together
+# Demonstrates all five phases working together
+#
+# This example shows the full power of structurelint:
+# - Phase 0: Filesystem structure validation
+# - Phase 1: Architectural layer enforcement
+# - Phase 2: Dead code detection
+# - Phase 3: Test validation
+# - Phase 4: File content templates
 
 root: true
 
@@ -47,6 +54,35 @@ rules:
   # Phase 2: Dead Code Detection
   disallow-orphaned-files: true
   disallow-unused-exports: true
+
+  # Phase 3: Test Validation
+  test-adjacency:
+    pattern: "adjacent"
+    file-patterns:
+      - "**/*.ts"
+      - "**/*.tsx"
+    exemptions:
+      - "**/*.d.ts"        # Type definitions
+      - "**/index.ts"      # Re-exports
+      - "**/*.config.ts"   # Configuration files
+
+  test-location:
+    integration-test-dir: "tests"
+    allow-adjacent: true
+    exemptions:
+      - "testdata/**"
+
+  # Phase 4: File Content Templates
+  file-content:
+    templates:
+      "**/README.md": "readme"
+      "docs/**/*.md": "documentation"
+
+exclude:
+  - node_modules/**
+  - dist/**
+  - build/**
+  - .git/**
 
 overrides:
   # Relaxed rules for test files

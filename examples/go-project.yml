@@ -16,6 +16,26 @@ rules:
     "internal/**/": "snake_case"
     "pkg/**/": "snake_case"
 
+  # Test validation (Phase 3)
+  test-adjacency:
+    pattern: "adjacent"
+    file-patterns:
+      - "**/*.go"
+    exemptions:
+      - "cmd/**/*.go"     # Entry points don't need tests
+      - "**/*_gen.go"     # Generated files
+      - "vendor/**"
+
+  test-location:
+    integration-test-dir: "tests"
+    allow-adjacent: true
+    exemptions:
+      - "testdata/**"
+
+exclude:
+  - vendor/**
+  - .git/**
+
 overrides:
   # /cmd contains main applications
   - files: ['cmd/**']

@@ -33,6 +33,32 @@ rules:
     - "**/misc/**"
     - "**/other/**"
 
+  # Test validation (Phase 3)
+  test-adjacency:
+    pattern: "adjacent"
+    file-patterns:
+      - "**/*.ts"
+      - "**/*.tsx"
+    exemptions:
+      - "**/*.d.ts"        # Type definitions
+      - "**/index.ts"      # Re-exports
+      - "**/index.tsx"     # Re-exports
+      - "**/*.config.ts"   # Configuration files
+      - "**/*.stories.tsx" # Storybook stories
+
+  test-location:
+    integration-test-dir: "tests"
+    allow-adjacent: true
+    exemptions:
+      - "testdata/**"
+      - "**/*.stories.tsx"  # Storybook stories
+
+exclude:
+  - node_modules/**
+  - dist/**
+  - build/**
+  - coverage/**
+
 overrides:
   # Feature folders have strict requirements
   - files: ['src/features/*']

@@ -28,6 +28,33 @@ rules:
     - "**/build/**"
     - "**/*.egg-info"
 
+  # Test validation (Phase 3)
+  test-adjacency:
+    pattern: "separate"
+    test-dir: "tests"
+    file-patterns:
+      - "**/*.py"
+    exemptions:
+      - "**/__init__.py"  # Package initializers
+      - "**/conftest.py"  # Pytest configuration
+      - "setup.py"         # Setup script
+      - "**/config.py"     # Configuration files
+
+  test-location:
+    integration-test-dir: "tests"
+    allow-adjacent: false
+    exemptions:
+      - "testdata/**"
+
+exclude:
+  - __pycache__/**
+  - .pytest_cache/**
+  - venv/**
+  - .venv/**
+  - dist/**
+  - build/**
+  - "*.egg-info"
+
 overrides:
   # Source code in src/
   - files: ['src/**']
