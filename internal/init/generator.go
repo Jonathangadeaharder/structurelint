@@ -66,9 +66,9 @@ func writeLanguageExclusions(sb *strings.Builder, lang string) {
 func writeBasicRules(sb *strings.Builder, info *ProjectInfo) {
 	sb.WriteString("rules:\n")
 	sb.WriteString("  # Phase 0: Basic filesystem structure\n")
-	sb.WriteString(fmt.Sprintf("  max-depth:\n    max: %d\n\n", info.MaxDepth))
-	sb.WriteString(fmt.Sprintf("  max-files-in-dir:\n    max: %d\n\n", info.MaxFilesInDir))
-	sb.WriteString(fmt.Sprintf("  max-subdirs:\n    max: %d\n\n", info.MaxSubdirs))
+	fmt.Fprintf(sb, "  max-depth:\n    max: %d\n\n", info.MaxDepth)
+	fmt.Fprintf(sb, "  max-files-in-dir:\n    max: %d\n\n", info.MaxFilesInDir)
+	fmt.Fprintf(sb, "  max-subdirs:\n    max: %d\n\n", info.MaxSubdirs)
 }
 
 func writeDocumentationRules(sb *strings.Builder, info *ProjectInfo) {
@@ -99,7 +99,7 @@ func writeTestRules(sb *strings.Builder, info *ProjectInfo) {
 
 	lang := info.PrimaryLanguage
 	sb.WriteString("  # Test file validation\n")
-	sb.WriteString(fmt.Sprintf("  # Detected: %s with %s test pattern\n", lang.Language, lang.TestPattern))
+	fmt.Fprintf(sb, "  # Detected: %s with %s test pattern\n", lang.Language, lang.TestPattern)
 
 	writeTestAdjacencyRule(sb, lang)
 	writeTestLocationRule(sb, lang)
@@ -111,17 +111,17 @@ func writeTestAdjacencyRule(sb *strings.Builder, lang *LanguageInfo) {
 		sb.WriteString("    pattern: \"adjacent\"\n")
 		sb.WriteString("    file-patterns:\n")
 		for _, pattern := range lang.SourcePatterns {
-			sb.WriteString(fmt.Sprintf("      - \"%s\"\n", pattern))
+			fmt.Fprintf(sb, "      - \"%s\"\n", pattern)
 		}
 		sb.WriteString("    exemptions:\n")
 		sb.WriteString(generateExemptions(lang.Language))
 	} else if lang.TestPattern == "separate" && lang.TestDir != "" {
 		sb.WriteString("  test-adjacency:\n")
 		sb.WriteString("    pattern: \"separate\"\n")
-		sb.WriteString(fmt.Sprintf("    test-dir: \"%s\"\n", lang.TestDir))
+		fmt.Fprintf(sb, "    test-dir: \"%s\"\n", lang.TestDir)
 		sb.WriteString("    file-patterns:\n")
 		for _, pattern := range lang.SourcePatterns {
-			sb.WriteString(fmt.Sprintf("      - \"%s\"\n", pattern))
+			fmt.Fprintf(sb, "      - \"%s\"\n", pattern)
 		}
 		sb.WriteString("    exemptions:\n")
 		sb.WriteString(generateExemptions(lang.Language))
@@ -132,11 +132,11 @@ func writeTestAdjacencyRule(sb *strings.Builder, lang *LanguageInfo) {
 func writeTestLocationRule(sb *strings.Builder, lang *LanguageInfo) {
 	sb.WriteString("  test-location:\n")
 	if lang.HasIntegrationDir {
-		sb.WriteString(fmt.Sprintf("    integration-test-dir: \"%s\"\n", lang.IntegrationDir))
+		fmt.Fprintf(sb, "    integration-test-dir: \"%s\"\n", lang.IntegrationDir)
 	} else {
 		sb.WriteString("    integration-test-dir: \"tests\"  # Default integration test directory\n")
 	}
-	sb.WriteString(fmt.Sprintf("    allow-adjacent: %t\n", lang.TestPattern == "adjacent" || lang.TestPattern == ""))
+	fmt.Fprintf(sb, "    allow-adjacent: %t\n", lang.TestPattern == "adjacent" || lang.TestPattern == "")
 	sb.WriteString("    exemptions:\n")
 	sb.WriteString("      - \"testdata/**\"\n")
 	sb.WriteString("\n")
@@ -263,25 +263,25 @@ func GenerateSummary(info *ProjectInfo) string {
 		if i == 0 {
 			marker = "✓"
 		}
-		sb.WriteString(fmt.Sprintf("  [%s] %s (%d files)\n", marker, lang.Language, lang.FileCount))
+		fmt.Fprintf(&sb, "  [%s] %s (%d files)\n", marker, lang.Language, lang.FileCount)
 
 		if lang.TestPattern != "" {
-			sb.WriteString(fmt.Sprintf("      Test pattern: %s\n", lang.TestPattern))
+			fmt.Fprintf(&sb, "      Test pattern: %s\n", lang.TestPattern)
 		}
 		if lang.TestDir != "" {
-			sb.WriteString(fmt.Sprintf("      Test directory: %s/\n", lang.TestDir))
+			fmt.Fprintf(&sb, "      Test directory: %s/\n", lang.TestDir)
 		}
 		if lang.HasIntegrationDir {
-			sb.WriteString(fmt.Sprintf("      Integration tests: %s/\n", lang.IntegrationDir))
+			fmt.Fprintf(&sb, "      Integration tests: %s/\n", lang.IntegrationDir)
 		}
 	}
 	sb.WriteString("\n")
 
 	// Structure metrics
 	sb.WriteString("Project Structure:\n")
-	sb.WriteString(fmt.Sprintf("  Max depth: %d levels\n", info.MaxDepth))
-	sb.WriteString(fmt.Sprintf("  Max files per directory: %d\n", info.MaxFilesInDir))
-	sb.WriteString(fmt.Sprintf("  Max subdirectories: %d\n", info.MaxSubdirs))
+	fmt.Fprintf(&sb, "  Max depth: %d levels\n", info.MaxDepth)
+	fmt.Fprintf(&sb, "  Max files per directory: %d\n", info.MaxFilesInDir)
+	fmt.Fprintf(&sb, "  Max subdirectories: %d\n", info.MaxSubdirs)
 	sb.WriteString("\n")
 
 	// Documentation
@@ -303,7 +303,7 @@ func GenerateSummary(info *ProjectInfo) string {
 		if lang.TestPattern == "" {
 			sb.WriteString("  ⚠ No clear test pattern detected. Consider adding tests.\n")
 		} else {
-			sb.WriteString(fmt.Sprintf("  ✓ Test pattern detected: %s\n", lang.TestPattern))
+			fmt.Fprintf(&sb, "  ✓ Test pattern detected: %s\n", lang.TestPattern)
 		}
 	}
 
