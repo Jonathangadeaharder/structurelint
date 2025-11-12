@@ -82,7 +82,91 @@ func Load(path string) (*Config, error) {
 		config.Rules = make(map[string]interface{})
 	}
 
+	// Resolve extends if present
+	if config.Extends != nil {
+		extendedConfigs, err := resolveExtends(config.Extends, filepath.Dir(path))
+		if err != nil {
+			return nil, fmt.Errorf("failed to resolve extends: %w", err)
+		}
+
+		// Merge extended configs with this config
+		// Extended configs come first, so this config overrides them
+		allConfigs := append(extendedConfigs, &config)
+		merged := Merge(allConfigs...)
+
+		// Clear the Extends field to avoid infinite recursion
+		merged.Extends = nil
+
+		return merged, nil
+	}
+
 	return &config, nil
+}
+
+// resolveExtends resolves the extends field to a list of configs
+func resolveExtends(extends interface{}, baseDir string) ([]*Config, error) {
+	var extendPaths []string
+
+	// Handle both string and []string
+	switch v := extends.(type) {
+	case string:
+		extendPaths = []string{v}
+	case []interface{}:
+		for _, item := range v {
+			if s, ok := item.(string); ok {
+				extendPaths = append(extendPaths, s)
+			}
+		}
+	case []string:
+		extendPaths = v
+	default:
+		return nil, fmt.Errorf("extends must be a string or array of strings, got %T", extends)
+	}
+
+	var configs []*Config
+	for _, extendPath := range extendPaths {
+		resolvedPath, err := resolveExtendPath(extendPath, baseDir)
+		if err != nil {
+			return nil, fmt.Errorf("failed to resolve extend path '%s': %w", extendPath, err)
+		}
+
+		config, err := Load(resolvedPath)
+		if err != nil {
+			return nil, fmt.Errorf("failed to load extended config '%s': %w", resolvedPath, err)
+		}
+
+		configs = append(configs, config)
+	}
+
+	return configs, nil
+}
+
+// resolveExtendPath resolves an extend path to an absolute file path
+func resolveExtendPath(extendPath, baseDir string) (string, error) {
+	// If it's an absolute path, use it as-is
+	if filepath.IsAbs(extendPath) {
+		if _, err := os.Stat(extendPath); err != nil {
+			return "", fmt.Errorf("extended config not found: %w", err)
+		}
+		return extendPath, nil
+	}
+
+	// If it starts with ./ or ../, it's a relative path
+	if filepath.IsLocal(extendPath) || filepath.VolumeName(extendPath) == "" {
+		absPath := filepath.Join(baseDir, extendPath)
+		if _, err := os.Stat(absPath); err != nil {
+			return "", fmt.Errorf("extended config not found: %w", err)
+		}
+		return absPath, nil
+	}
+
+	// Future: Handle package names (e.g., @structurelint/preset-go)
+	// For now, treat as a relative path
+	absPath := filepath.Join(baseDir, extendPath)
+	if _, err := os.Stat(absPath); err != nil {
+		return "", fmt.Errorf("extended config not found (package resolution not yet implemented): %w", err)
+	}
+	return absPath, nil
 }
 
 // FindConfigs finds all .structurelint.yml files from the given path up to the root

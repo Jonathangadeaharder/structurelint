@@ -1,11 +1,13 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"os"
 
 	init_pkg "github.com/structurelint/structurelint/internal/init"
 	"github.com/structurelint/structurelint/internal/linter"
+	"github.com/structurelint/structurelint/internal/output"
 )
 
 // Version is set during build via ldflags
@@ -19,25 +21,51 @@ func main() {
 }
 
 func run() error {
-	// Parse command line arguments
-	if len(os.Args) > 1 {
-		arg := os.Args[1]
-		if arg == "--version" || arg == "-v" {
-			fmt.Printf("structurelint version %s\n", Version)
-			return nil
-		}
-		if arg == "--help" || arg == "-h" {
-			printHelp()
-			return nil
-		}
-		if arg == "--init" {
-			return runInit()
-		}
+	// Define flags
+	fs := flag.NewFlagSet("structurelint", flag.ContinueOnError)
+	formatFlag := fs.String("format", "text", "Output format: text, json, junit")
+	versionFlag := fs.Bool("version", false, "Show version information")
+	versionFlagShort := fs.Bool("v", false, "Show version information (shorthand)")
+	helpFlag := fs.Bool("help", false, "Show help message")
+	helpFlagShort := fs.Bool("h", false, "Show help message (shorthand)")
+	initFlag := fs.Bool("init", false, "Initialize configuration")
+
+	// Parse flags
+	if err := fs.Parse(os.Args[1:]); err != nil {
+		return err
 	}
 
+	// Handle version flag
+	if *versionFlag || *versionFlagShort {
+		fmt.Printf("structurelint version %s\n", Version)
+		return nil
+	}
+
+	// Handle help flag
+	if *helpFlag || *helpFlagShort {
+		printHelp()
+		return nil
+	}
+
+	// Handle init flag
+	if *initFlag {
+		path := "."
+		if fs.NArg() > 0 {
+			path = fs.Arg(0)
+		}
+		return runInit(path)
+	}
+
+	// Get path argument
 	path := "."
-	if len(os.Args) > 1 {
-		path = os.Args[1]
+	if fs.NArg() > 0 {
+		path = fs.Arg(0)
+	}
+
+	// Get output formatter
+	formatter, err := output.GetFormatter(*formatFlag)
+	if err != nil {
+		return err
 	}
 
 	// Create and run linter
@@ -47,23 +75,32 @@ func run() error {
 		return err
 	}
 
-	// Report violations
+	// Format and report violations
 	if len(violations) > 0 {
-		for _, v := range violations {
-			fmt.Printf("%s: %s\n", v.Path, v.Message)
+		formatted, err := formatter.Format(violations)
+		if err != nil {
+			return fmt.Errorf("failed to format output: %w", err)
 		}
+		fmt.Print(formatted)
 		return fmt.Errorf("found %d violation(s)", len(violations))
 	}
 
-	fmt.Println("✓ All checks passed")
+	// Only print success message for text format
+	if *formatFlag == "text" || *formatFlag == "" {
+		fmt.Println("✓ All checks passed")
+	} else {
+		// For JSON/JUnit, output empty success structure
+		formatted, err := formatter.Format(violations)
+		if err != nil {
+			return fmt.Errorf("failed to format output: %w", err)
+		}
+		fmt.Print(formatted)
+	}
+
 	return nil
 }
 
-func runInit() error {
-	path := "."
-	if len(os.Args) > 2 {
-		path = os.Args[2]
-	}
+func runInit(path string) error {
 
 	fmt.Println("Analyzing project structure...")
 
@@ -112,25 +149,32 @@ func printHelp() {
 	fmt.Println(`structurelint - Project structure and architecture linter
 
 Usage:
-  structurelint [path]         Lint the project at path (default: current directory)
-  structurelint --init [path]  Generate configuration by analyzing project
-  structurelint --version      Show version information
-  structurelint --help         Show this help message
+  structurelint [options] [path]   Lint the project at path (default: current directory)
+  structurelint --init [path]      Generate configuration by analyzing project
+  structurelint --version          Show version information
+  structurelint --help             Show this help message
 
 Options:
-  -v, --version               Show version information
-  -h, --help                  Show help message
-      --init                  Initialize configuration for your project
+  -v, --version                Show version information
+  -h, --help                   Show help message
+      --init                   Initialize configuration for your project
+      --format <format>        Output format: text, json, junit (default: text)
 
 Configuration:
   structurelint looks for .structurelint.yml or .structurelint.yaml files
   in the current directory and parent directories.
 
 Examples:
-  structurelint                Lint current directory
-  structurelint --init         Generate config based on current project
-  structurelint ./src          Lint src directory
-  structurelint /path/to/project
+  structurelint                     Lint current directory
+  structurelint --init              Generate config based on current project
+  structurelint --format json .     Output violations as JSON
+  structurelint --format junit ./src  Output violations as JUnit XML
+  structurelint /path/to/project    Lint specific directory
+
+Output Formats:
+  text    - Human-readable text output (default)
+  json    - JSON format for machine parsing and CI/CD integration
+  junit   - JUnit XML format for Jenkins, GitHub Actions, etc.
 
 Initialization:
   The --init command analyzes your project to detect:

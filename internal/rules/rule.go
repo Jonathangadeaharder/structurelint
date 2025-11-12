@@ -4,6 +4,7 @@
 package rules
 
 import (
+	"github.com/structurelint/structurelint/internal/parser"
 	"github.com/structurelint/structurelint/internal/walker"
 )
 
@@ -26,4 +27,24 @@ type Rule interface {
 // RuleConfig is a marker interface for rule configurations
 type RuleConfig interface {
 	IsEnabled() bool
+}
+
+// ShouldIgnoreFile checks if a file has a directive to ignore a specific rule
+// Returns (shouldIgnore, reason)
+func ShouldIgnoreFile(file walker.FileInfo, ruleName string) (bool, string) {
+	if file.IsDir {
+		return false, ""
+	}
+	return parser.HasDirectiveForRule(file.Directives, ruleName)
+}
+
+// FilterIgnoredFiles filters out files that have directives to ignore the specified rule
+func FilterIgnoredFiles(files []walker.FileInfo, ruleName string) []walker.FileInfo {
+	var filtered []walker.FileInfo
+	for _, file := range files {
+		if shouldIgnore, _ := ShouldIgnoreFile(file, ruleName); !shouldIgnore {
+			filtered = append(filtered, file)
+		}
+	}
+	return filtered
 }

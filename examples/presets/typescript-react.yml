@@ -1,0 +1,61 @@
+# Structurelint Preset: TypeScript/React
+# Configuration for TypeScript React projects with feature-sliced architecture
+#
+# To use this preset, add to your .structurelint.yml:
+#   extends: "./path/to/typescript-react.yml"
+
+root: false
+
+rules:
+  # Filesystem rules
+  max-depth: 6
+  max-files-in-dir: 20
+  max-subdirs: 10
+
+  # Naming conventions for TypeScript/React
+  naming-convention:
+    "**/*.ts": "camelCase"
+    "**/*.tsx": "PascalCase"
+    "**/components/**/*.tsx": "PascalCase"
+    "**/hooks/**/*.ts": "camelCase"
+
+  # Required files
+  file-existence:
+    ".": "README.md"
+    ".": "package.json"
+    ".": "tsconfig.json"
+    "src": "index.tsx|index.ts"
+
+  # Test requirements
+  test-adjacency:
+    pattern: "adjacent"
+    file-patterns:
+      - "**/*.ts"
+      - "**/*.tsx"
+    exemptions:
+      - "**/index.ts"
+      - "**/index.tsx"
+      - "**/*.d.ts"
+
+  # Disallow common anti-patterns
+  disallowed-patterns:
+    - "**/.DS_Store"
+    - "**/Thumbs.db"
+    - "**/*.swp"
+    - "**/node_modules"
+    - "**/dist"
+    - "**/build"
+
+# Example layer architecture for feature-sliced design
+layers:
+  - name: "app"
+    path: "src/app/**"
+    dependsOn: ["features", "shared"]
+
+  - name: "features"
+    path: "src/features/**"
+    dependsOn: ["shared"]
+
+  - name: "shared"
+    path: "src/shared/**"
+    dependsOn: []

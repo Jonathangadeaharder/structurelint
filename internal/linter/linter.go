@@ -90,6 +90,17 @@ func (l *Linter) createRules(files []walker.FileInfo, importGraph *graph.ImportG
 		rulesList = append(rulesList, rules.NewMaxSubdirsRule(max))
 	}
 
+	// Max cyclomatic complexity rule
+	if complexity, ok := l.getRuleConfig("max-cyclomatic-complexity"); ok {
+		if complexityMap, ok := complexity.(map[string]interface{}); ok {
+			max := l.getIntFromMap(complexityMap, "max")
+			filePatterns := l.getStringSliceFromMap(complexityMap, "file-patterns")
+			if max > 0 {
+				rulesList = append(rulesList, rules.NewMaxCyclomaticComplexityRule(max, filePatterns))
+			}
+		}
+	}
+
 	// Naming convention rule
 	if patterns, ok := l.getStringMapConfig("naming-convention"); ok {
 		rulesList = append(rulesList, rules.NewNamingConventionRule(patterns))
@@ -299,6 +310,18 @@ func (l *Linter) getBoolFromMap(m map[string]interface{}, key string) bool {
 		return val
 	}
 	return false
+}
+
+// getIntFromMap extracts an integer value from a map
+func (l *Linter) getIntFromMap(m map[string]interface{}, key string) int {
+	if val, ok := m[key].(int); ok {
+		return val
+	}
+	// Also handle float64 (common from YAML parsing)
+	if val, ok := m[key].(float64); ok {
+		return int(val)
+	}
+	return 0
 }
 
 // getStringSliceFromMap extracts a string slice from a map
