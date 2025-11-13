@@ -4,18 +4,15 @@ import (
 	"io/fs"
 	"path/filepath"
 	"strings"
-
-	"github.com/structurelint/structurelint/internal/parser"
 )
 
 // FileInfo represents information about a file or directory
 type FileInfo struct {
-	Path       string             // Relative path from root
-	AbsPath    string             // Absolute path
-	IsDir      bool               // Whether this is a directory
-	Depth      int                // Nesting depth from root
-	ParentPath string             // Path of parent directory
-	Directives []parser.Directive // Parsed structurelint directives from the file
+	Path       string // Relative path from root
+	AbsPath    string // Absolute path
+	IsDir      bool   // Whether this is a directory
+	Depth      int    // Nesting depth from root
+	ParentPath string // Path of parent directory
 }
 
 // DirInfo represents aggregated information about a directory
@@ -95,19 +92,12 @@ func (w *Walker) processPath(relPath, absPath string, d fs.DirEntry) error {
 	depth := w.calculateDepth(relPath, d.IsDir())
 	parentPath := w.normalizeParentPath(relPath)
 
-	// Parse directives for regular files (not directories)
-	var directives []parser.Directive
-	if !d.IsDir() {
-		directives = parser.ParseDirectives(absPath)
-	}
-
 	info := FileInfo{
 		Path:       relPath,
 		AbsPath:    absPath,
 		IsDir:      d.IsDir(),
 		Depth:      depth,
 		ParentPath: parentPath,
-		Directives: directives,
 	}
 
 	w.files = append(w.files, info)

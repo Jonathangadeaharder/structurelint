@@ -31,11 +31,14 @@ type RuleConfig interface {
 
 // ShouldIgnoreFile checks if a file has a directive to ignore a specific rule
 // Returns (shouldIgnore, reason)
+// Directives are parsed lazily and cached for performance
 func ShouldIgnoreFile(file walker.FileInfo, ruleName string) (bool, string) {
 	if file.IsDir {
 		return false, ""
 	}
-	return parser.HasDirectiveForRule(file.Directives, ruleName)
+	// Parse directives lazily - only when needed, with caching
+	directives := parser.ParseDirectives(file.AbsPath)
+	return parser.HasDirectiveForRule(directives, ruleName)
 }
 
 // FilterIgnoredFiles filters out files that have directives to ignore the specified rule

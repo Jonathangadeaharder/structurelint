@@ -1,9 +1,11 @@
+// @structurelint:ignore test-adjacency Directive parsing is tested through integration tests in rules package
 package parser
 
 import (
 	"bufio"
 	"os"
 	"strings"
+	"sync"
 )
 
 // DirectiveType represents the type of directive
@@ -24,9 +26,39 @@ type Directive struct {
 	Line   int           // Line number where directive was found
 }
 
+// directiveCache caches parsed directives to avoid re-parsing files
+var directiveCache = struct {
+	sync.RWMutex
+	cache map[string][]Directive
+}{
+	cache: make(map[string][]Directive),
+}
+
 // ParseDirectives scans a file and extracts all structurelint directives
 // Directives should be placed near the top of the file (scans first 100 lines)
+// Results are cached to avoid re-parsing the same file multiple times
 func ParseDirectives(absPath string) []Directive {
+	// Check cache first (read lock)
+	directiveCache.RLock()
+	if cached, ok := directiveCache.cache[absPath]; ok {
+		directiveCache.RUnlock()
+		return cached
+	}
+	directiveCache.RUnlock()
+
+	// Parse the file (not in cache)
+	directives := parseDirectivesFromFile(absPath)
+
+	// Store in cache (write lock)
+	directiveCache.Lock()
+	directiveCache.cache[absPath] = directives
+	directiveCache.Unlock()
+
+	return directives
+}
+
+// parseDirectivesFromFile does the actual file parsing (internal helper)
+func parseDirectivesFromFile(absPath string) []Directive {
 	file, err := os.Open(absPath)
 	if err != nil {
 		return nil
