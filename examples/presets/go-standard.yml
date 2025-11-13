@@ -1,0 +1,38 @@
+# Structurelint Preset: Go Standard
+# A sensible default configuration for Go projects
+#
+# To use this preset, add to your .structurelint.yml:
+#   extends: "./path/to/go-standard.yml"
+
+root: false
+
+rules:
+  # Filesystem rules
+  max-depth: 5
+  max-files-in-dir: 15
+  max-subdirs: 10
+
+  # Naming conventions for Go
+  naming-convention:
+    "**/*.go": "snake_case"
+    "**/internal/**": "snake_case"
+
+  # Required files
+  file-existence:
+    ".": "README.md|go.mod|.gitignore"
+
+  # Test requirements
+  test-adjacency:
+    pattern: "adjacent"
+    file-patterns:
+      - "**/*.go"
+    exemptions:
+      - "**/cmd/**/*.go"
+      - "**/main.go"
+
+  # Disallow common anti-patterns
+  disallowed-patterns:
+    - "**/.DS_Store"
+    - "**/Thumbs.db"
+    - "**/*.swp"
+    - "**/*.bak"

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"gopkg.in/yaml.v3"
 )
@@ -65,6 +66,24 @@ type DisallowedPatternsRule []string
 
 // Load loads a configuration file from the given path
 func Load(path string) (*Config, error) {
+	visited := make(map[string]bool)
+	return loadWithVisited(path, visited)
+}
+
+// loadWithVisited loads a config and tracks visited paths to detect cycles
+func loadWithVisited(path string, visited map[string]bool) (*Config, error) {
+	// Normalize path for cycle detection
+	absPath, err := filepath.Abs(path)
+	if err != nil {
+		absPath = path // fallback to original path if Abs fails
+	}
+
+	// Check for cycles
+	if visited[absPath] {
+		return nil, fmt.Errorf("circular dependency detected: config '%s' is already being loaded", path)
+	}
+	visited[absPath] = true
+
 	data, err := os.ReadFile(path)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -82,7 +101,93 @@ func Load(path string) (*Config, error) {
 		config.Rules = make(map[string]interface{})
 	}
 
+	// Resolve extends if present
+	if config.Extends != nil {
+		extendedConfigs, err := resolveExtendsWithVisited(config.Extends, filepath.Dir(path), visited)
+		if err != nil {
+			return nil, fmt.Errorf("failed to resolve extends: %w", err)
+		}
+
+		// Merge extended configs with this config
+		// Extended configs come first, so this config overrides them
+		allConfigs := append(extendedConfigs, &config)
+		merged := Merge(allConfigs...)
+
+		// Clear the Extends field to avoid infinite recursion
+		merged.Extends = nil
+
+		return merged, nil
+	}
+
 	return &config, nil
+}
+
+// resolveExtendsWithVisited resolves extends with cycle detection
+func resolveExtendsWithVisited(extends interface{}, baseDir string, visited map[string]bool) ([]*Config, error) {
+	var extendPaths []string
+
+	// Handle both string and []string
+	switch v := extends.(type) {
+	case string:
+		extendPaths = []string{v}
+	case []interface{}:
+		for _, item := range v {
+			if s, ok := item.(string); ok {
+				extendPaths = append(extendPaths, s)
+			}
+		}
+	case []string:
+		extendPaths = v
+	default:
+		return nil, fmt.Errorf("extends must be a string or array of strings, got %T", extends)
+	}
+
+	var configs []*Config
+	for _, extendPath := range extendPaths {
+		resolvedPath, err := resolveExtendPath(extendPath, baseDir)
+		if err != nil {
+			return nil, fmt.Errorf("failed to resolve extend path '%s': %w", extendPath, err)
+		}
+
+		config, err := loadWithVisited(resolvedPath, visited)
+		if err != nil {
+			return nil, fmt.Errorf("failed to load extended config '%s': %w", resolvedPath, err)
+		}
+
+		configs = append(configs, config)
+	}
+
+	return configs, nil
+}
+
+// resolveExtendPath resolves an extend path to an absolute file path
+func resolveExtendPath(extendPath, baseDir string) (string, error) {
+	// If it's an absolute path, use it as-is
+	if filepath.IsAbs(extendPath) {
+		if _, err := os.Stat(extendPath); err != nil {
+			return "", fmt.Errorf("extended config not found: %w", err)
+		}
+		return extendPath, nil
+	}
+
+	// If it starts with ./ or ../, or is not an absolute path, treat as relative
+	if strings.HasPrefix(extendPath, "./") ||
+		strings.HasPrefix(extendPath, "../") ||
+		(!filepath.IsAbs(extendPath) && filepath.VolumeName(extendPath) == "") {
+		absPath := filepath.Join(baseDir, extendPath)
+		if _, err := os.Stat(absPath); err != nil {
+			return "", fmt.Errorf("extended config not found: %w", err)
+		}
+		return absPath, nil
+	}
+
+	// Future: Handle package names (e.g., @structurelint/preset-go)
+	// For now, treat as a relative path
+	absPath := filepath.Join(baseDir, extendPath)
+	if _, err := os.Stat(absPath); err != nil {
+		return "", fmt.Errorf("extended config not found (package resolution not yet implemented): %w", err)
+	}
+	return absPath, nil
 }
 
 // FindConfigs finds all .structurelint.yml files from the given path up to the root
