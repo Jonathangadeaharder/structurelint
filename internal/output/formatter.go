@@ -1,3 +1,4 @@
+// @structurelint:ignore test-adjacency Output formatters are integration-tested through CLI
 package output
 
 import (

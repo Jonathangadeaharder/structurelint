@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"gopkg.in/yaml.v3"
 )
@@ -65,6 +66,24 @@ type DisallowedPatternsRule []string
 
 // Load loads a configuration file from the given path
 func Load(path string) (*Config, error) {
+	visited := make(map[string]bool)
+	return loadWithVisited(path, visited)
+}
+
+// loadWithVisited loads a config and tracks visited paths to detect cycles
+func loadWithVisited(path string, visited map[string]bool) (*Config, error) {
+	// Normalize path for cycle detection
+	absPath, err := filepath.Abs(path)
+	if err != nil {
+		absPath = path // fallback to original path if Abs fails
+	}
+
+	// Check for cycles
+	if visited[absPath] {
+		return nil, fmt.Errorf("circular dependency detected: config '%s' is already being loaded", path)
+	}
+	visited[absPath] = true
+
 	data, err := os.ReadFile(path)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -84,7 +103,7 @@ func Load(path string) (*Config, error) {
 
 	// Resolve extends if present
 	if config.Extends != nil {
-		extendedConfigs, err := resolveExtends(config.Extends, filepath.Dir(path))
+		extendedConfigs, err := resolveExtendsWithVisited(config.Extends, filepath.Dir(path), visited)
 		if err != nil {
 			return nil, fmt.Errorf("failed to resolve extends: %w", err)
 		}
@@ -103,8 +122,14 @@ func Load(path string) (*Config, error) {
 	return &config, nil
 }
 
-// resolveExtends resolves the extends field to a list of configs
+// resolveExtends resolves the extends field to a list of configs (no cycle detection)
 func resolveExtends(extends interface{}, baseDir string) ([]*Config, error) {
+	visited := make(map[string]bool)
+	return resolveExtendsWithVisited(extends, baseDir, visited)
+}
+
+// resolveExtendsWithVisited resolves extends with cycle detection
+func resolveExtendsWithVisited(extends interface{}, baseDir string, visited map[string]bool) ([]*Config, error) {
 	var extendPaths []string
 
 	// Handle both string and []string
@@ -130,7 +155,7 @@ func resolveExtends(extends interface{}, baseDir string) ([]*Config, error) {
 			return nil, fmt.Errorf("failed to resolve extend path '%s': %w", extendPath, err)
 		}
 
-		config, err := Load(resolvedPath)
+		config, err := loadWithVisited(resolvedPath, visited)
 		if err != nil {
 			return nil, fmt.Errorf("failed to load extended config '%s': %w", resolvedPath, err)
 		}
@@ -151,8 +176,10 @@ func resolveExtendPath(extendPath, baseDir string) (string, error) {
 		return extendPath, nil
 	}
 
-	// If it starts with ./ or ../, it's a relative path
-	if filepath.IsLocal(extendPath) || filepath.VolumeName(extendPath) == "" {
+	// If it starts with ./ or ../, or is not an absolute path, treat as relative
+	if strings.HasPrefix(extendPath, "./") ||
+		strings.HasPrefix(extendPath, "../") ||
+		(!filepath.IsAbs(extendPath) && filepath.VolumeName(extendPath) == "") {
 		absPath := filepath.Join(baseDir, extendPath)
 		if _, err := os.Stat(absPath); err != nil {
 			return "", fmt.Errorf("extended config not found: %w", err)

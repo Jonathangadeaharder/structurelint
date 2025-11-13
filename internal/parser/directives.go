@@ -163,33 +163,30 @@ func parseNoTestDirective(content string, lineNum int) *Directive {
 	}
 }
 
-// isRuleName checks if a word looks like a rule name (contains hyphens, lowercase)
+// isRuleName checks if a word is a valid rule name format.
+// Rules are expected to be kebab-case: lowercase letters, numbers, and hyphens.
 func isRuleName(word string) bool {
 	if len(word) == 0 {
 		return false
 	}
 
-	// Rule names typically contain hyphens and are lowercase
-	hasHyphen := strings.Contains(word, "-")
-	isLowercase := word == strings.ToLower(word)
-
-	// Check for common rule patterns
-	commonRules := []string{
-		"max-depth", "max-files-in-dir", "max-subdirs",
-		"naming-convention", "regex-match", "file-existence",
-		"disallowed-patterns", "enforce-layer-boundaries",
-		"disallow-orphaned-files", "disallow-unused-exports",
-		"test-adjacency", "test-location", "file-content",
+	// Rule names must not start or end with a hyphen
+	if strings.HasPrefix(word, "-") || strings.HasSuffix(word, "-") {
+		return false
 	}
 
-	for _, rule := range commonRules {
-		if word == rule {
-			return true
+	// Check each character is lowercase letter, digit, or hyphen
+	for _, r := range word {
+		isLowercaseLetter := r >= 'a' && r <= 'z'
+		isDigit := r >= '0' && r <= '9'
+		isHyphen := r == '-'
+		if !isLowercaseLetter && !isDigit && !isHyphen {
+			return false
 		}
 	}
 
-	// Generic check: contains hyphen and is lowercase
-	return hasHyphen && isLowercase
+	// Rule names should contain at least one hyphen (to distinguish from regular words)
+	return strings.Contains(word, "-")
 }
 
 // HasDirectiveForRule checks if a file has a directive that applies to a specific rule

@@ -21,9 +21,7 @@ rules:
 
   # Required files
   file-existence:
-    ".": "README.md"
-    ".": "package.json"
-    ".": "tsconfig.json"
+    ".": "README.md|package.json|tsconfig.json"
     "src": "index.tsx|index.ts"
 
   # Test requirements

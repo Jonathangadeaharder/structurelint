@@ -19,9 +19,7 @@ rules:
 
   # Required files
   file-existence:
-    ".": "README.md"
-    ".": "go.mod"
-    ".": ".gitignore"
+    ".": "README.md|go.mod|.gitignore"
 
   # Test requirements
   test-adjacency:
