@@ -122,12 +122,6 @@ func loadWithVisited(path string, visited map[string]bool) (*Config, error) {
 	return &config, nil
 }
 
-// resolveExtends resolves the extends field to a list of configs (no cycle detection)
-func resolveExtends(extends interface{}, baseDir string) ([]*Config, error) {
-	visited := make(map[string]bool)
-	return resolveExtendsWithVisited(extends, baseDir, visited)
-}
-
 // resolveExtendsWithVisited resolves extends with cycle detection
 func resolveExtendsWithVisited(extends interface{}, baseDir string, visited map[string]bool) ([]*Config, error) {
 	var extendPaths []string

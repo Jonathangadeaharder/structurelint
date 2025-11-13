@@ -2,9 +2,7 @@
 package rules
 
 import (
-	"bufio"
 	"fmt"
-	"os"
 	"path/filepath"
 	"strings"
 
@@ -237,41 +235,6 @@ func (r *TestAdjacencyRule) getExpectedTestPath(sourcePath string) string {
 	}
 
 	return filepath.Join(r.TestDir, dir, testFileName)
-}
-
-// hasNoTestDirective checks if a file contains the @structurelint:no-test directive
-// Returns (hasDirective, reason)
-func (r *TestAdjacencyRule) hasNoTestDirective(absPath string) (bool, string) {
-	file, err := os.Open(absPath)
-	if err != nil {
-		return false, ""
-	}
-	defer func() { _ = file.Close() }()
-
-	scanner := bufio.NewScanner(file)
-	lineCount := 0
-
-	// Only scan first 50 lines (directives should be at the top)
-	for scanner.Scan() && lineCount < 50 {
-		line := strings.TrimSpace(scanner.Text())
-		lineCount++
-
-		// Look for @structurelint:no-test directive
-		if strings.Contains(line, "@structurelint:no-test") {
-			// Extract reason after the directive
-			parts := strings.SplitN(line, "@structurelint:no-test", 2)
-			if len(parts) == 2 {
-				reason := strings.TrimSpace(parts[1])
-				if reason == "" {
-					reason = "no reason provided"
-				}
-				return true, reason
-			}
-			return true, "no reason provided"
-		}
-	}
-
-	return false, ""
 }
 
 // NewTestAdjacencyRule creates a new TestAdjacencyRule

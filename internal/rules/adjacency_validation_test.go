@@ -1,8 +1,6 @@
 package rules
 
 import (
-	"os"
-	"path/filepath"
 	"testing"
 
 	"github.com/structurelint/structurelint/internal/walker"
@@ -138,77 +136,6 @@ func TestTestAdjacencyRule_isTestFile(t *testing.T) {
 			got := rule.isTestFile(tt.path)
 			if got != tt.want {
 				t.Errorf("isTestFile(%q) = %v, want %v", tt.path, got, tt.want)
-			}
-		})
-	}
-}
-
-func TestTestAdjacencyRule_hasNoTestDirective(t *testing.T) {
-	rule := &TestAdjacencyRule{}
-
-	// Create temp directory
-	tmpDir := t.TempDir()
-
-	tests := []struct {
-		name       string
-		content    string
-		wantHas    bool
-		wantReason string
-	}{
-		{
-			name: "directive with reason",
-			content: `// Package main
-//
-// @structurelint:no-test This is a simple entry point
-package main
-`,
-			wantHas:    true,
-			wantReason: "This is a simple entry point",
-		},
-		{
-			name: "directive without reason",
-			content: `// Package main
-//
-// @structurelint:no-test
-package main
-`,
-			wantHas:    true,
-			wantReason: "no reason provided",
-		},
-		{
-			name: "no directive",
-			content: `// Package main
-package main
-`,
-			wantHas: false,
-		},
-		{
-			name: "Python style directive",
-			content: `"""Module docstring"""
-
-# @structurelint:no-test Simple utility module
-
-import os
-`,
-			wantHas:    true,
-			wantReason: "Simple utility module",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			// Create temp file
-			tmpFile := filepath.Join(tmpDir, "test.go")
-			if err := os.WriteFile(tmpFile, []byte(tt.content), 0644); err != nil {
-				t.Fatal(err)
-			}
-
-			gotHas, gotReason := rule.hasNoTestDirective(tmpFile)
-			if gotHas != tt.wantHas {
-				t.Errorf("hasNoTestDirective() has = %v, want %v", gotHas, tt.wantHas)
-			}
-			if gotHas && gotReason != tt.wantReason {
-				t.Errorf("hasNoTestDirective() reason = %q, want %q", gotReason, tt.wantReason)
 			}
 		})
 	}

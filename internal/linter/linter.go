@@ -71,84 +71,85 @@ func (l *Linter) Lint(path string) ([]Violation, error) {
 	return violations, nil
 }
 
-// createRules instantiates rules based on the configuration
+// ruleFactory is a function that creates a rule from configuration
+type ruleFactory func() rules.Rule
+
+// createRules instantiates rules based on the configuration using a registry pattern
 func (l *Linter) createRules(files []walker.FileInfo, importGraph *graph.ImportGraph) []rules.Rule {
 	var rulesList []rules.Rule
 
-	// Max depth rule
-	if max, ok := l.getIntConfig("max-depth", "max"); ok {
-		rulesList = append(rulesList, rules.NewMaxDepthRule(max))
+	// Simple rules that take a single integer "max" parameter
+	simpleIntRules := map[string]func(int) rules.Rule{
+		"max-depth":        func(max int) rules.Rule { return rules.NewMaxDepthRule(max) },
+		"max-files-in-dir": func(max int) rules.Rule { return rules.NewMaxFilesRule(max) },
+		"max-subdirs":      func(max int) rules.Rule { return rules.NewMaxSubdirsRule(max) },
 	}
 
-	// Max files rule
-	if max, ok := l.getIntConfig("max-files-in-dir", "max"); ok {
-		rulesList = append(rulesList, rules.NewMaxFilesRule(max))
+	for ruleName, factory := range simpleIntRules {
+		if max, ok := l.getIntConfig(ruleName, "max"); ok {
+			rulesList = append(rulesList, factory(max))
+		}
 	}
 
-	// Max subdirs rule
-	if max, ok := l.getIntConfig("max-subdirs", "max"); ok {
-		rulesList = append(rulesList, rules.NewMaxSubdirsRule(max))
+	// String map rules (naming-convention, file-existence, regex-match)
+	stringMapRules := map[string]func(map[string]string) rules.Rule{
+		"naming-convention": func(patterns map[string]string) rules.Rule { return rules.NewNamingConventionRule(patterns) },
+		"file-existence":    func(requirements map[string]string) rules.Rule { return rules.NewFileExistenceRule(requirements) },
+		"regex-match":       func(patterns map[string]string) rules.Rule { return rules.NewRegexMatchRule(patterns) },
 	}
 
+	for ruleName, factory := range stringMapRules {
+		if config, ok := l.getStringMapConfig(ruleName); ok {
+			rulesList = append(rulesList, factory(config))
+		}
+	}
+
+	// String slice rules
+	if patterns, ok := l.getStringSliceConfig("disallowed-patterns"); ok {
+		rulesList = append(rulesList, rules.NewDisallowedPatternsRule(patterns))
+	}
+
+	// Complex rules that need custom handling
+	l.addComplexRules(&rulesList, importGraph)
+
+	return rulesList
+}
+
+// addComplexRules adds rules that require more complex configuration
+func (l *Linter) addComplexRules(rulesList *[]rules.Rule, importGraph *graph.ImportGraph) {
 	// Max cyclomatic complexity rule
 	if complexity, ok := l.getRuleConfig("max-cyclomatic-complexity"); ok {
 		if complexityMap, ok := complexity.(map[string]interface{}); ok {
 			max := l.getIntFromMap(complexityMap, "max")
 			filePatterns := l.getStringSliceFromMap(complexityMap, "file-patterns")
 			if max > 0 {
-				rulesList = append(rulesList, rules.NewMaxCyclomaticComplexityRule(max, filePatterns))
+				*rulesList = append(*rulesList, rules.NewMaxCyclomaticComplexityRule(max, filePatterns))
 			}
 		}
 	}
 
-	// Naming convention rule
-	if patterns, ok := l.getStringMapConfig("naming-convention"); ok {
-		rulesList = append(rulesList, rules.NewNamingConventionRule(patterns))
-	}
+	// Graph-dependent rules
+	if importGraph != nil {
+		if _, ok := l.getRuleConfig("enforce-layer-boundaries"); ok {
+			if len(l.config.Layers) > 0 {
+				*rulesList = append(*rulesList, rules.NewLayerBoundariesRule(importGraph))
+			}
+		}
 
-	// Disallowed patterns rule
-	if patterns, ok := l.getStringSliceConfig("disallowed-patterns"); ok {
-		rulesList = append(rulesList, rules.NewDisallowedPatternsRule(patterns))
-	}
+		if _, ok := l.getRuleConfig("disallow-orphaned-files"); ok {
+			*rulesList = append(*rulesList, rules.NewOrphanedFilesRule(importGraph, l.config.Entrypoints))
+		}
 
-	// File existence rule
-	if requirements, ok := l.getStringMapConfig("file-existence"); ok {
-		rulesList = append(rulesList, rules.NewFileExistenceRule(requirements))
-	}
-
-	// Regex match rule
-	if patterns, ok := l.getStringMapConfig("regex-match"); ok {
-		rulesList = append(rulesList, rules.NewRegexMatchRule(patterns))
-	}
-
-	// Layer boundaries rule (Phase 1)
-	if _, ok := l.getRuleConfig("enforce-layer-boundaries"); ok {
-		if importGraph != nil && len(l.config.Layers) > 0 {
-			rulesList = append(rulesList, rules.NewLayerBoundariesRule(importGraph))
+		if _, ok := l.getRuleConfig("disallow-unused-exports"); ok {
+			*rulesList = append(*rulesList, rules.NewUnusedExportsRule(importGraph))
 		}
 	}
 
-	// Orphaned files rule (Phase 2)
-	if _, ok := l.getRuleConfig("disallow-orphaned-files"); ok {
-		if importGraph != nil {
-			rulesList = append(rulesList, rules.NewOrphanedFilesRule(importGraph, l.config.Entrypoints))
-		}
-	}
+	// Test validation rules (Phase 3)
+	l.addTestValidationRules(rulesList)
 
-	// Unused exports rule (Phase 2)
-	if _, ok := l.getRuleConfig("disallow-unused-exports"); ok {
-		if importGraph != nil {
-			rulesList = append(rulesList, rules.NewUnusedExportsRule(importGraph))
-		}
-	}
-
-	// Phase 3 rules
-	l.addTestValidationRules(&rulesList)
-
-	// Phase 4 rules
-	l.addContentRules(&rulesList)
-
-	return rulesList
+	// Content rules (Phase 4)
+	l.addContentRules(rulesList)
 }
 
 // addTestValidationRules adds Phase 3 test validation rules
