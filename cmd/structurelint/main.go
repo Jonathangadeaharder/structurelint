@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"path/filepath"
 
 	init_pkg "github.com/structurelint/structurelint/internal/init"
 	"github.com/structurelint/structurelint/internal/linter"
@@ -35,6 +36,12 @@ func run() error {
 		return err
 	}
 
+	// Extract path argument once
+	path := "."
+	if fs.NArg() > 0 {
+		path = fs.Arg(0)
+	}
+
 	// Handle version flag
 	if *versionFlag || *versionFlagShort {
 		fmt.Printf("structurelint version %s\n", Version)
@@ -49,21 +56,11 @@ func run() error {
 
 	// Handle init flag
 	if *initFlag {
-		path := "."
-		if fs.NArg() > 0 {
-			path = fs.Arg(0)
-		}
 		return runInit(path)
 	}
 
-	// Get path argument
-	path := "."
-	if fs.NArg() > 0 {
-		path = fs.Arg(0)
-	}
-
 	// Get output formatter
-	formatter, err := output.GetFormatter(*formatFlag)
+	formatter, err := output.GetFormatter(*formatFlag, Version)
 	if err != nil {
 		return err
 	}
@@ -82,7 +79,13 @@ func run() error {
 			return fmt.Errorf("failed to format output: %w", err)
 		}
 		fmt.Print(formatted)
-		return fmt.Errorf("found %d violation(s)", len(violations))
+
+		// For text format, print error message to stderr
+		// For JSON/JUnit, just exit with error code (violations are in formatted output)
+		if *formatFlag == "text" || *formatFlag == "" {
+			fmt.Fprintf(os.Stderr, "Error: found %d violation(s)\n", len(violations))
+		}
+		os.Exit(1)
 	}
 
 	// Only print success message for text format
@@ -116,7 +119,7 @@ func runInit(path string) error {
 	fmt.Println()
 
 	// Check if config already exists
-	configPath := ".structurelint.yml"
+	configPath := filepath.Join(path, ".structurelint.yml")
 	if _, err := os.Stat(configPath); err == nil {
 		fmt.Printf("⚠ Warning: %s already exists\n", configPath)
 		fmt.Print("Overwrite? [y/N]: ")

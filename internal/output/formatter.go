@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 
@@ -33,7 +34,9 @@ func (f *TextFormatter) Format(violations []rules.Violation) (string, error) {
 }
 
 // JSONFormatter formats violations as JSON
-type JSONFormatter struct{}
+type JSONFormatter struct {
+	Version string
+}
 
 // JSONOutput represents the JSON output structure
 type JSONOutput struct {
@@ -53,7 +56,7 @@ type JSONViolation struct {
 // Format formats violations as JSON
 func (f *JSONFormatter) Format(violations []rules.Violation) (string, error) {
 	output := JSONOutput{
-		Version:    "1.0.0",
+		Version:    f.Version,
 		Timestamp:  time.Now().UTC().Format(time.RFC3339),
 		Violations: len(violations),
 		Results:    make([]JSONViolation, 0, len(violations)),
@@ -81,6 +84,7 @@ type JUnitFormatter struct{}
 // JUnitTestSuites represents the root element of JUnit XML
 type JUnitTestSuites struct {
 	XMLName    xml.Name         `xml:"testsuites"`
+	XMLNS      string           `xml:"xmlns,attr,omitempty"`
 	Name       string           `xml:"name,attr"`
 	Tests      int              `xml:"tests,attr"`
 	Failures   int              `xml:"failures,attr"`
@@ -117,18 +121,29 @@ type JUnitFailure struct {
 
 // Format formats violations as JUnit XML
 func (f *JUnitFormatter) Format(violations []rules.Violation) (string, error) {
+	// Capture timestamp once for all test suites
+	timestamp := time.Now().UTC().Format(time.RFC3339)
+
 	// Group violations by rule
 	ruleViolations := make(map[string][]rules.Violation)
 	for _, v := range violations {
 		ruleViolations[v.Rule] = append(ruleViolations[v.Rule], v)
 	}
 
+	// Sort rule names for deterministic output
+	var ruleNames []string
+	for ruleName := range ruleViolations {
+		ruleNames = append(ruleNames, ruleName)
+	}
+	sort.Strings(ruleNames)
+
 	var testSuites []JUnitTestSuite
 	totalTests := 0
 	totalFailures := len(violations)
 
-	// Create a test suite for each rule
-	for ruleName, ruleViols := range ruleViolations {
+	// Create a test suite for each rule in sorted order
+	for _, ruleName := range ruleNames {
+		ruleViols := ruleViolations[ruleName]
 		var testCases []JUnitTestCase
 
 		for _, v := range ruleViols {
@@ -150,7 +165,7 @@ func (f *JUnitFormatter) Format(violations []rules.Violation) (string, error) {
 			Failures:  len(testCases),
 			Errors:    0,
 			Time:      "0",
-			Timestamp: time.Now().UTC().Format(time.RFC3339),
+			Timestamp: timestamp,
 			TestCases: testCases,
 		})
 
@@ -165,7 +180,7 @@ func (f *JUnitFormatter) Format(violations []rules.Violation) (string, error) {
 			Failures:  0,
 			Errors:    0,
 			Time:      "0",
-			Timestamp: time.Now().UTC().Format(time.RFC3339),
+			Timestamp: timestamp,
 			TestCases: []JUnitTestCase{
 				{
 					Name:      "all-rules",
@@ -178,6 +193,7 @@ func (f *JUnitFormatter) Format(violations []rules.Violation) (string, error) {
 	}
 
 	output := JUnitTestSuites{
+		XMLNS:      "https://github.com/structurelint/structurelint",
 		Name:       "structurelint",
 		Tests:      totalTests,
 		Failures:   totalFailures,
@@ -195,12 +211,12 @@ func (f *JUnitFormatter) Format(violations []rules.Violation) (string, error) {
 }
 
 // GetFormatter returns a formatter based on the format name
-func GetFormatter(format string) (Formatter, error) {
+func GetFormatter(format string, version string) (Formatter, error) {
 	switch strings.ToLower(format) {
 	case "text", "":
 		return &TextFormatter{}, nil
 	case "json":
-		return &JSONFormatter{}, nil
+		return &JSONFormatter{Version: version}, nil
 	case "junit", "junit-xml":
 		return &JUnitFormatter{}, nil
 	default:
