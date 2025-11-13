@@ -71,9 +71,6 @@ func (l *Linter) Lint(path string) ([]Violation, error) {
 	return violations, nil
 }
 
-// ruleFactory is a function that creates a rule from configuration
-type ruleFactory func() rules.Rule
-
 // createRules instantiates rules based on the configuration using a registry pattern
 func (l *Linter) createRules(files []walker.FileInfo, importGraph *graph.ImportGraph) []rules.Rule {
 	var rulesList []rules.Rule
