@@ -15,6 +15,15 @@ type Violation struct {
 	Message string
 }
 
+// Fix represents an automated fix for a violation
+type Fix struct {
+	FilePath string      // Path to the file to fix
+	Action   string      // Type of action: "rename", "delete", "modify"
+	OldValue string      // Old value (e.g., old filename, line to remove)
+	NewValue string      // New value (e.g., new filename, replacement content)
+	Metadata interface{} // Additional metadata for complex fixes
+}
+
 // Rule defines the interface for all linter rules
 type Rule interface {
 	// Name returns the name of the rule
@@ -22,6 +31,14 @@ type Rule interface {
 
 	// Check validates the rule against the filesystem data
 	Check(files []walker.FileInfo, dirs map[string]*walker.DirInfo) []Violation
+}
+
+// FixableRule defines the interface for rules that support automated fixing
+type FixableRule interface {
+	Rule
+
+	// Fix generates fixes for violations
+	Fix(files []walker.FileInfo, dirs map[string]*walker.DirInfo) []Fix
 }
 
 // RuleConfig is a marker interface for rule configurations

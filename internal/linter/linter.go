@@ -88,11 +88,12 @@ func (l *Linter) createRules(files []walker.FileInfo, importGraph *graph.ImportG
 		}
 	}
 
-	// String map rules (naming-convention, file-existence, regex-match)
+	// String map rules (naming-convention, file-existence, regex-match, file-hash)
 	stringMapRules := map[string]func(map[string]string) rules.Rule{
 		"naming-convention": func(patterns map[string]string) rules.Rule { return rules.NewNamingConventionRule(patterns) },
 		"file-existence":    func(requirements map[string]string) rules.Rule { return rules.NewFileExistenceRule(requirements) },
 		"regex-match":       func(patterns map[string]string) rules.Rule { return rules.NewRegexMatchRule(patterns) },
+		"file-hash":         func(hashes map[string]string) rules.Rule { return rules.NewFileHashRule(hashes) },
 	}
 
 	for ruleName, factory := range stringMapRules {

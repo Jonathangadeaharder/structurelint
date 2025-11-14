@@ -6,9 +6,15 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/structurelint/structurelint/internal/config"
+	"github.com/structurelint/structurelint/internal/export"
+	"github.com/structurelint/structurelint/internal/fixer"
+	"github.com/structurelint/structurelint/internal/graph"
 	init_pkg "github.com/structurelint/structurelint/internal/init"
 	"github.com/structurelint/structurelint/internal/linter"
 	"github.com/structurelint/structurelint/internal/output"
+	"github.com/structurelint/structurelint/internal/rules"
+	"github.com/structurelint/structurelint/internal/walker"
 )
 
 // Version is set during build via ldflags
@@ -30,6 +36,9 @@ func run() error {
 	helpFlag := fs.Bool("help", false, "Show help message")
 	helpFlagShort := fs.Bool("h", false, "Show help message (shorthand)")
 	initFlag := fs.Bool("init", false, "Initialize configuration")
+	exportGraphFlag := fs.String("export-graph", "", "Export dependency graph: dot, mermaid, json")
+	fixFlag := fs.Bool("fix", false, "Automatically fix violations")
+	dryRunFlag := fs.Bool("dry-run", false, "Show what would be fixed without making changes")
 
 	// Parse flags
 	if err := fs.Parse(os.Args[1:]); err != nil {
@@ -57,6 +66,16 @@ func run() error {
 	// Handle init flag
 	if *initFlag {
 		return runInit(path)
+	}
+
+	// Handle export-graph flag
+	if *exportGraphFlag != "" {
+		return runExportGraph(path, *exportGraphFlag)
+	}
+
+	// Handle fix mode
+	if *fixFlag || *dryRunFlag {
+		return runFix(path, *dryRunFlag)
 	}
 
 	// Get output formatter
@@ -100,6 +119,99 @@ func run() error {
 		fmt.Print(formatted)
 	}
 
+	return nil
+}
+
+func runFix(path string, dryRun bool) error {
+	// Load configuration
+	configs, err := config.FindConfigs(path)
+	if err != nil {
+		return fmt.Errorf("failed to load config: %w", err)
+	}
+
+	cfg := config.Merge(configs...)
+
+	// Walk the filesystem
+	w := walker.New(path).WithExclude(cfg.Exclude)
+	if err := w.Walk(); err != nil {
+		return fmt.Errorf("failed to walk filesystem: %w", err)
+	}
+
+	files := w.GetFiles()
+	dirs := w.GetDirs()
+
+	// Collect all fixes from fixable rules
+	var allFixes []rules.Fix
+
+	// For now, we only support fixing naming-convention violations
+	// TODO: Add support for more fixable rules
+	if namingConfig, ok := cfg.Rules["naming-convention"].(map[string]interface{}); ok {
+		patterns := make(map[string]string)
+		for k, v := range namingConfig {
+			if str, ok := v.(string); ok {
+				patterns[k] = str
+			}
+		}
+
+		if len(patterns) > 0 {
+			rule := rules.NewNamingConventionRule(patterns)
+			if fixable, ok := interface{}(rule).(rules.FixableRule); ok {
+				fixes := fixable.Fix(files, dirs)
+				allFixes = append(allFixes, fixes...)
+			}
+		}
+	}
+
+	if len(allFixes) == 0 {
+		fmt.Println("No fixable violations found.")
+		return nil
+	}
+
+	// Apply fixes
+	f := fixer.New(dryRun, true)
+	return f.Apply(allFixes)
+}
+
+func runExportGraph(path string, format string) error {
+	// Load configuration
+	configs, err := config.FindConfigs(path)
+	if err != nil {
+		return fmt.Errorf("failed to load config: %w", err)
+	}
+
+	cfg := config.Merge(configs...)
+
+	// Walk the filesystem
+	w := walker.New(path).WithExclude(cfg.Exclude)
+	if err := w.Walk(); err != nil {
+		return fmt.Errorf("failed to walk filesystem: %w", err)
+	}
+
+	files := w.GetFiles()
+
+	// Build import graph
+	builder := graph.NewBuilder(path, cfg.Layers)
+	importGraph, err := builder.Build(files)
+	if err != nil {
+		return fmt.Errorf("failed to build import graph: %w", err)
+	}
+
+	// Export graph in requested format
+	exporter := export.NewGraphExporter(importGraph)
+
+	var output string
+	switch format {
+	case "dot":
+		output = exporter.ExportDOT()
+	case "mermaid":
+		output = exporter.ExportMermaid()
+	case "json":
+		output = exporter.ExportJSON()
+	default:
+		return fmt.Errorf("unknown export format: %s (supported: dot, mermaid, json)", format)
+	}
+
+	fmt.Print(output)
 	return nil
 }
 
@@ -152,32 +264,45 @@ func printHelp() {
 	fmt.Println(`structurelint - Project structure and architecture linter
 
 Usage:
-  structurelint [options] [path]   Lint the project at path (default: current directory)
-  structurelint --init [path]      Generate configuration by analyzing project
-  structurelint --version          Show version information
-  structurelint --help             Show this help message
+  structurelint [options] [path]        Lint the project at path (default: current directory)
+  structurelint --init [path]           Generate configuration by analyzing project
+  structurelint --export-graph <fmt>    Export dependency graph visualization
+  structurelint --version               Show version information
+  structurelint --help                  Show this help message
 
 Options:
   -v, --version                Show version information
   -h, --help                   Show help message
       --init                   Initialize configuration for your project
       --format <format>        Output format: text, json, junit (default: text)
+      --export-graph <format>  Export dependency graph: dot, mermaid, json
+      --fix                    Automatically fix violations when possible
+      --dry-run                Show what would be fixed without making changes
 
 Configuration:
   structurelint looks for .structurelint.yml or .structurelint.yaml files
   in the current directory and parent directories.
 
 Examples:
-  structurelint                     Lint current directory
-  structurelint --init              Generate config based on current project
-  structurelint --format json .     Output violations as JSON
-  structurelint --format junit ./src  Output violations as JUnit XML
-  structurelint /path/to/project    Lint specific directory
+  structurelint                          Lint current directory
+  structurelint --init                   Generate config based on current project
+  structurelint --format json .          Output violations as JSON
+  structurelint --format junit ./src     Output violations as JUnit XML
+  structurelint /path/to/project         Lint specific directory
+  structurelint --export-graph dot .     Export dependency graph in DOT format
+  structurelint --export-graph mermaid . Export dependency graph in Mermaid format
+  structurelint --fix .                  Automatically fix violations
+  structurelint --dry-run .              Preview fixes without applying them
 
 Output Formats:
   text    - Human-readable text output (default)
   json    - JSON format for machine parsing and CI/CD integration
   junit   - JUnit XML format for Jenkins, GitHub Actions, etc.
+
+Graph Export Formats:
+  dot     - Graphviz DOT format (pipe to: dot -Tpng -o graph.png)
+  mermaid - Mermaid diagram format (use in GitHub/GitLab markdown)
+  json    - JSON format with nodes and edges
 
 Initialization:
   The --init command analyzes your project to detect:

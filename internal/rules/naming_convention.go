@@ -165,6 +165,145 @@ func matchesPattern(path, pattern string) bool {
 	return false
 }
 
+// Fix generates fixes for naming convention violations
+func (r *NamingConventionRule) Fix(files []walker.FileInfo, dirs map[string]*walker.DirInfo) []Fix {
+	var fixes []Fix
+
+	for _, file := range files {
+		for pattern, convention := range r.Patterns {
+			if matchesPattern(file.Path, pattern) {
+				if !r.matchesConvention(file.Path, pattern, convention) {
+					// Generate a fix to rename the file
+					newName := r.convertToConvention(file.Path, pattern, convention)
+					if newName != "" && newName != file.Path {
+						fixes = append(fixes, Fix{
+							FilePath: file.Path,
+							Action:   "rename",
+							OldValue: file.AbsPath,
+							NewValue: filepath.Join(filepath.Dir(file.AbsPath), filepath.Base(newName)),
+						})
+					}
+				}
+			}
+		}
+	}
+
+	return fixes
+}
+
+// convertToConvention converts a filename to the specified convention
+func (r *NamingConventionRule) convertToConvention(path, pattern, convention string) string {
+	// Extract the relevant part of the path to convert
+	dir := filepath.Dir(path)
+	base := filepath.Base(path)
+	ext := filepath.Ext(base)
+	nameWithoutExt := strings.TrimSuffix(base, ext)
+
+	// Convert the name
+	var converted string
+	switch strings.ToLower(convention) {
+	case "camelcase":
+		converted = toCamelCase(nameWithoutExt)
+	case "pascalcase":
+		converted = toPascalCase(nameWithoutExt)
+	case "kebab-case", "kebabcase":
+		converted = toKebabCase(nameWithoutExt)
+	case "snake_case", "snakecase":
+		converted = toSnakeCase(nameWithoutExt)
+	case "lowercase":
+		converted = strings.ToLower(nameWithoutExt)
+	case "uppercase":
+		converted = strings.ToUpper(nameWithoutExt)
+	default:
+		return ""
+	}
+
+	// Reconstruct the full path
+	newBase := converted + ext
+	if dir == "." {
+		return newBase
+	}
+	return filepath.Join(dir, newBase)
+}
+
+// toCamelCase converts a string to camelCase
+func toCamelCase(s string) string {
+	// Split on common delimiters
+	words := splitWords(s)
+	if len(words) == 0 {
+		return s
+	}
+
+	result := strings.ToLower(words[0])
+	for i := 1; i < len(words); i++ {
+		if len(words[i]) > 0 {
+			result += strings.ToUpper(string(words[i][0])) + strings.ToLower(words[i][1:])
+		}
+	}
+	return result
+}
+
+// toPascalCase converts a string to PascalCase
+func toPascalCase(s string) string {
+	words := splitWords(s)
+	var result string
+	for _, word := range words {
+		if len(word) > 0 {
+			result += strings.ToUpper(string(word[0])) + strings.ToLower(word[1:])
+		}
+	}
+	return result
+}
+
+// toKebabCase converts a string to kebab-case
+func toKebabCase(s string) string {
+	words := splitWords(s)
+	for i := range words {
+		words[i] = strings.ToLower(words[i])
+	}
+	return strings.Join(words, "-")
+}
+
+// toSnakeCase converts a string to snake_case
+func toSnakeCase(s string) string {
+	words := splitWords(s)
+	for i := range words {
+		words[i] = strings.ToLower(words[i])
+	}
+	return strings.Join(words, "_")
+}
+
+// splitWords splits a string into words based on common delimiters and case changes
+func splitWords(s string) []string {
+	var words []string
+	var currentWord strings.Builder
+
+	for i, r := range s {
+		if r == '-' || r == '_' || r == ' ' {
+			// Delimiter found
+			if currentWord.Len() > 0 {
+				words = append(words, currentWord.String())
+				currentWord.Reset()
+			}
+		} else if i > 0 && unicode.IsUpper(r) && unicode.IsLower(rune(s[i-1])) {
+			// CamelCase boundary (lowercase to uppercase)
+			if currentWord.Len() > 0 {
+				words = append(words, currentWord.String())
+				currentWord.Reset()
+			}
+			currentWord.WriteRune(r)
+		} else {
+			currentWord.WriteRune(r)
+		}
+	}
+
+	if currentWord.Len() > 0 {
+		words = append(words, currentWord.String())
+	}
+
+	return words
+}
+
 // NewNamingConventionRule creates a new NamingConventionRule
 func NewNamingConventionRule(patterns map[string]string) *NamingConventionRule {
 	return &NamingConventionRule{
