@@ -2,6 +2,7 @@ package linter
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/structurelint/structurelint/internal/config"
 	"github.com/structurelint/structurelint/internal/graph"
@@ -11,7 +12,8 @@ import (
 
 // Linter is the main linter orchestrator
 type Linter struct {
-	config *config.Config
+	config         *config.Config
+	productionMode bool
 }
 
 // Violation is an alias for rules.Violation
@@ -19,7 +21,15 @@ type Violation = rules.Violation
 
 // New creates a new Linter
 func New() *Linter {
-	return &Linter{}
+	return &Linter{
+		productionMode: false,
+	}
+}
+
+// WithProductionMode enables production mode (excludes test files from analysis)
+func (l *Linter) WithProductionMode(enabled bool) *Linter {
+	l.productionMode = enabled
+	return l
 }
 
 // Lint runs the linter on the given path
@@ -42,6 +52,14 @@ func (l *Linter) Lint(path string) ([]Violation, error) {
 	files := w.GetFiles()
 	dirs := w.GetDirs()
 
+	// Filter files for production mode if enabled
+	var filteredFiles []walker.FileInfo
+	if l.productionMode {
+		filteredFiles = l.filterProductionFiles(files)
+	} else {
+		filteredFiles = files
+	}
+
 	// Build import graph if layers are configured (Phase 1) or Phase 2 rules are enabled
 	var importGraph *graph.ImportGraph
 	needsGraph := len(l.config.Layers) > 0 ||
@@ -52,7 +70,8 @@ func (l *Linter) Lint(path string) ([]Violation, error) {
 	if needsGraph {
 		builder := graph.NewBuilder(path, l.config.Layers)
 		var err error
-		importGraph, err = builder.Build(files)
+		// Use filtered files for production mode
+		importGraph, err = builder.Build(filteredFiles)
 		if err != nil {
 			return nil, fmt.Errorf("failed to build import graph: %w", err)
 		}
@@ -349,4 +368,44 @@ func (l *Linter) getStringMapFromMap(m map[string]interface{}, key string) map[s
 		return result
 	}
 	return nil
+}
+
+// filterProductionFiles filters out test files from the file list
+func (l *Linter) filterProductionFiles(files []walker.FileInfo) []walker.FileInfo {
+	var production []walker.FileInfo
+
+	for _, file := range files {
+		if !l.isTestFile(file.Path) {
+			production = append(production, file)
+		}
+	}
+
+	return production
+}
+
+// isTestFile checks if a file is a test file based on common patterns
+func (l *Linter) isTestFile(path string) bool {
+	// Common test file patterns
+	testPatterns := []string{
+		"_test.go",       // Go tests
+		"_test.ts",       // TypeScript tests
+		"_test.js",       // JavaScript tests
+		".test.ts",       // TypeScript tests (alternative)
+		".test.js",       // JavaScript tests (alternative)
+		".spec.ts",       // TypeScript specs
+		".spec.js",       // JavaScript specs
+		"test_",          // Python tests
+		"__tests__/",     // Jest tests directory
+		"/test/",         // Generic test directory
+		"/tests/",        // Generic tests directory
+		"spec/",          // RSpec or similar
+	}
+
+	for _, pattern := range testPatterns {
+		if strings.Contains(path, pattern) {
+			return true
+		}
+	}
+
+	return false
 }

@@ -39,6 +39,7 @@ func run() error {
 	exportGraphFlag := fs.String("export-graph", "", "Export dependency graph: dot, mermaid, json")
 	fixFlag := fs.Bool("fix", false, "Automatically fix violations")
 	dryRunFlag := fs.Bool("dry-run", false, "Show what would be fixed without making changes")
+	productionFlag := fs.Bool("production", false, "Analyze only production code (exclude test files from graph)")
 
 	// Parse flags
 	if err := fs.Parse(os.Args[1:]); err != nil {
@@ -85,7 +86,7 @@ func run() error {
 	}
 
 	// Create and run linter
-	l := linter.New()
+	l := linter.New().WithProductionMode(*productionFlag)
 	violations, err := l.Lint(path)
 	if err != nil {
 		return err
@@ -278,6 +279,7 @@ Options:
       --export-graph <format>  Export dependency graph: dot, mermaid, json
       --fix                    Automatically fix violations when possible
       --dry-run                Show what would be fixed without making changes
+      --production             Analyze only production code (exclude test files)
 
 Configuration:
   structurelint looks for .structurelint.yml or .structurelint.yaml files
@@ -293,6 +295,7 @@ Examples:
   structurelint --export-graph mermaid . Export dependency graph in Mermaid format
   structurelint --fix .                  Automatically fix violations
   structurelint --dry-run .              Preview fixes without applying them
+  structurelint --production .           Find dead code in production (excludes tests)
 
 Output Formats:
   text    - Human-readable text output (default)
