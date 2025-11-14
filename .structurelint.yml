@@ -5,6 +5,7 @@ exclude:
   - .git/**
   - .github/**
   - docs/**
+  - vscode-extension/**  # TypeScript extension, not Go code
 
 rules:
   # Phase 0: Basic filesystem rules

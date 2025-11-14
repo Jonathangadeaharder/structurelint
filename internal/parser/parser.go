@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+
+	"github.com/structurelint/structurelint/pkg/plugin"
 )
 
 // Import represents an import statement found in a source file
@@ -47,6 +49,25 @@ func (p *Parser) ParseFile(filePath string) ([]Import, error) {
 	case ".py":
 		return p.parsePython(filePath)
 	default:
+		// Check if a plugin parser is registered for this extension
+		if pluginParser, exists := plugin.GetRegistry().GetParser(ext); exists {
+			pluginImports, err := pluginParser.ParseImports(filePath)
+			if err != nil {
+				return nil, err
+			}
+
+			// Convert plugin imports to internal format
+			imports := make([]Import, len(pluginImports))
+			for i, imp := range pluginImports {
+				imports[i] = Import{
+					SourceFile: filePath,
+					ImportPath: imp.ImportPath,
+					IsRelative: imp.IsRelative,
+				}
+			}
+			return imports, nil
+		}
+
 		// Unsupported file type, return empty
 		return []Import{}, nil
 	}
@@ -64,6 +85,25 @@ func (p *Parser) ParseExports(filePath string) ([]Export, error) {
 	case ".py":
 		return p.parsePythonExports(filePath)
 	default:
+		// Check if a plugin parser is registered for this extension
+		if pluginParser, exists := plugin.GetRegistry().GetParser(ext); exists {
+			pluginExports, err := pluginParser.ParseExports(filePath)
+			if err != nil {
+				return nil, err
+			}
+
+			// Convert plugin exports to internal format
+			var exports []Export
+			for _, exp := range pluginExports {
+				exports = append(exports, Export{
+					SourceFile: filePath,
+					Names:      []string{exp.Name},
+					IsDefault:  exp.Kind == "default",
+				})
+			}
+			return exports, nil
+		}
+
 		// Unsupported file type, return empty
 		return []Export{}, nil
 	}

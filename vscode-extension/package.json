@@ -1,0 +1,117 @@
+{
+  "name": "structurelint",
+  "displayName": "structurelint",
+  "description": "Architectural linting and structure validation for your codebase",
+  "version": "0.1.0",
+  "publisher": "structurelint",
+  "engines": {
+    "vscode": "^1.75.0"
+  },
+  "categories": [
+    "Linters"
+  ],
+  "keywords": [
+    "linter",
+    "architecture",
+    "structure",
+    "validation",
+    "quality"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "structurelint.lint",
+        "title": "structurelint: Lint Workspace"
+      },
+      {
+        "command": "structurelint.lintFile",
+        "title": "structurelint: Lint Current File"
+      },
+      {
+        "command": "structurelint.fix",
+        "title": "structurelint: Fix Violations"
+      },
+      {
+        "command": "structurelint.exportGraph",
+        "title": "structurelint: Export Dependency Graph"
+      }
+    ],
+    "configuration": {
+      "title": "structurelint",
+      "properties": {
+        "structurelint.enable": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable structurelint linting"
+        },
+        "structurelint.executablePath": {
+          "type": "string",
+          "default": "structurelint",
+          "description": "Path to structurelint executable"
+        },
+        "structurelint.lintOnSave": {
+          "type": "boolean",
+          "default": true,
+          "description": "Run structurelint on file save"
+        },
+        "structurelint.lintOnOpen": {
+          "type": "boolean",
+          "default": true,
+          "description": "Run structurelint when opening a file"
+        },
+        "structurelint.additionalArgs": {
+          "type": "array",
+          "default": [],
+          "description": "Additional command-line arguments for structurelint"
+        },
+        "structurelint.productionMode": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable production mode (exclude test files from analysis)"
+        }
+      }
+    },
+    "problemMatchers": [
+      {
+        "name": "structurelint",
+        "owner": "structurelint",
+        "fileLocation": "relative",
+        "pattern": {
+          "regexp": "^(.+):\\s+(.+)$",
+          "file": 1,
+          "message": 2
+        }
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "lint": "eslint src --ext ts",
+    "package": "vsce package",
+    "publish": "vsce publish"
+  },
+  "devDependencies": {
+    "@types/node": "^18.0.0",
+    "@types/vscode": "^1.75.0",
+    "@typescript-eslint/eslint-plugin": "^5.0.0",
+    "@typescript-eslint/parser": "^5.0.0",
+    "eslint": "^8.0.0",
+    "typescript": "^4.9.0",
+    "vsce": "^2.15.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/structurelint/structurelint"
+  },
+  "bugs": {
+    "url": "https://github.com/structurelint/structurelint/issues"
+  },
+  "homepage": "https://github.com/structurelint/structurelint#readme",
+  "license": "MIT"
+}
