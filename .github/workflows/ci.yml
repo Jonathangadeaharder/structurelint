@@ -2,7 +2,10 @@ name: CI
 
 on:
   push:
-    branches: [ main, master ]
+    branches:
+      - main
+      - master
+      - claude/software-quality-metrics-framework-01WfgH2HcdXAPN1gViMK79QV  # Temporary: for artifact testing
   pull_request:
     branches: [ main, master ]
 
