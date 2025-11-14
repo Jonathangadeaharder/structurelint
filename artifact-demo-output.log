@@ -1,0 +1,41 @@
+=== RUN   TestCognitiveComplexity_Simple
+--- PASS: TestCognitiveComplexity_Simple (0.00s)
+=== RUN   TestCognitiveComplexity_SingleIf
+--- PASS: TestCognitiveComplexity_SingleIf (0.00s)
+=== RUN   TestCognitiveComplexity_NestedIf
+--- PASS: TestCognitiveComplexity_NestedIf (0.00s)
+=== RUN   TestCognitiveComplexity_ForLoop
+--- PASS: TestCognitiveComplexity_ForLoop (0.00s)
+=== RUN   TestCognitiveComplexity_NestedLoopAndIf
+--- PASS: TestCognitiveComplexity_NestedLoopAndIf (0.00s)
+=== RUN   TestCognitiveComplexity_Switch
+--- PASS: TestCognitiveComplexity_Switch (0.00s)
+=== RUN   TestCognitiveComplexity_ElseIf
+--- PASS: TestCognitiveComplexity_ElseIf (0.00s)
+=== RUN   TestCognitiveComplexity_DeeplyNested
+--- PASS: TestCognitiveComplexity_DeeplyNested (0.00s)
+=== RUN   TestCognitiveComplexity_BranchStatements
+--- PASS: TestCognitiveComplexity_BranchStatements (0.00s)
+=== RUN   TestCognitiveComplexity_Analyzer_AnalyzeFile
+--- PASS: TestCognitiveComplexityAnalyzer_AnalyzeFile (0.00s)
+=== RUN   TestHalstead_Simple
+--- PASS: TestHalstead_Simple (0.00s)
+=== RUN   TestHalstead_IfStatement
+--- PASS: TestHalstead_IfStatement (0.00s)
+=== RUN   TestHalstead_Loop
+--- PASS: TestHalstead_Loop (0.00s)
+=== RUN   TestHalstead_ComplexFunction
+--- PASS: TestHalstead_ComplexFunction (0.00s)
+=== RUN   TestHalstead_BinaryOperators
+--- PASS: TestHalstead_BinaryOperators (0.00s)
+=== RUN   TestHalsteadAnalyzer_AnalyzeFile
+--- PASS: TestHalsteadAnalyzer_AnalyzeFile (0.00s)
+=== RUN   TestArtifactDemo_IntentionalFailure
+    artifact_test_demo.go:9: 🎯 DEMO: This intentional test failure will trigger automatic log artifact upload!
+    artifact_test_demo.go:10: Check the 'Artifacts' section at the bottom of the workflow run to download test.log
+    artifact_test_demo.go:11: The artifact will contain this complete output plus all other test results
+--- FAIL: TestArtifactDemo_IntentionalFailure (0.00s)
+FAIL
+coverage: 85.7% of statements
+FAIL	github.com/structurelint/structurelint/internal/metrics	0.234s
+FAIL
