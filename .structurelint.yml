@@ -46,6 +46,7 @@ rules:
     exemptions:
       - "cmd/**/*.go"                       # Entry points don't need tests
       - "**/*_gen.go"                       # Generated files
+      - "pkg/api/**/*.go"                   # Public API with comprehensive example tests
 
   test-location:
     integration-test-dir: "tests"    # Allow integration tests in tests/ folder
@@ -53,6 +54,7 @@ rules:
     exemptions:
       - "testdata/**"
       - "internal/rules/rules_test.go"  # Integration test for all rules
+      - "pkg/api/example_test.go"       # Public API example tests
 
   # Phase 4: File Content Templates
   file-content:

@@ -11,13 +11,14 @@ import (
 
 // Config represents a .structurelint.yml configuration file
 type Config struct {
-	Root        bool                   `yaml:"root"`
-	Extends     interface{}            `yaml:"extends"` // string or []string
-	Exclude     []string               `yaml:"exclude"` // Patterns to exclude from linting
-	Rules       map[string]interface{} `yaml:"rules"`
-	Overrides   []Override             `yaml:"overrides"`
-	Layers      []Layer                `yaml:"layers"`      // Phase 1: Layer definitions
-	Entrypoints []string               `yaml:"entrypoints"` // Phase 2: Entry points for orphan detection
+	Root            bool                   `yaml:"root"`
+	Extends         interface{}            `yaml:"extends"` // string or []string
+	Exclude         []string               `yaml:"exclude"` // Patterns to exclude from linting
+	Rules           map[string]interface{} `yaml:"rules"`
+	Overrides       []Override             `yaml:"overrides"`
+	Layers          []Layer                `yaml:"layers"`            // Phase 1: Layer definitions
+	Entrypoints     []string               `yaml:"entrypoints"`       // Phase 2: Entry points for orphan detection
+	DependencyRules []DependencyRule       `yaml:"dependency-rules"`  // Phase 6: Granular dependency rules
 }
 
 // Override represents a configuration override for specific file patterns
@@ -31,6 +32,21 @@ type Layer struct {
 	Name      string   `yaml:"name"`
 	Path      string   `yaml:"path"`
 	DependsOn []string `yaml:"dependsOn"`
+}
+
+// DependencyRule represents a granular dependency validation rule (Phase 6)
+type DependencyRule struct {
+	Name     string           `yaml:"name"`
+	Severity string           `yaml:"severity"` // error, warn
+	From     DependencySelector `yaml:"from"`
+	To       DependencySelector `yaml:"to"`
+	Rule     string           `yaml:"rule"` // Pre-built rules like "no-circular"
+}
+
+// DependencySelector specifies which modules to match
+type DependencySelector struct {
+	Path    string `yaml:"path"`
+	PathNot string `yaml:"pathNot"`
 }
 
 // MaxDepthRule represents the max-depth rule configuration
@@ -277,6 +293,11 @@ func Merge(configs ...*Config) *Config {
 		// Append entrypoints (Phase 2)
 		if len(config.Entrypoints) > 0 {
 			result.Entrypoints = append(result.Entrypoints, config.Entrypoints...)
+		}
+
+		// Append dependency rules (Phase 6)
+		if len(config.DependencyRules) > 0 {
+			result.DependencyRules = append(result.DependencyRules, config.DependencyRules...)
 		}
 
 		// Root flag is taken from the last config that sets it

@@ -45,6 +45,11 @@ func (r *FileContentRule) Check(files []walker.FileInfo, dirs map[string]*walker
 			continue
 		}
 
+		// Check if file has directive to ignore this rule
+		if shouldIgnore, _ := ShouldIgnoreFile(file, r.Name()); shouldIgnore {
+			continue
+		}
+
 		// Check if this file matches any template pattern
 		for pattern, templateName := range r.Templates {
 			if matchesGlobPattern(file.Path, pattern) {

@@ -141,11 +141,23 @@ func runFix(path string, dryRun bool) error {
 	files := w.GetFiles()
 	dirs := w.GetDirs()
 
+	// Build import graph if needed for unused exports
+	var importGraph *graph.ImportGraph
+	needsGraph := cfg.Rules["disallow-unused-exports"] != nil
+
+	if needsGraph {
+		builder := graph.NewBuilder(path, cfg.Layers)
+		var err error
+		importGraph, err = builder.Build(files)
+		if err != nil {
+			return fmt.Errorf("failed to build import graph: %w", err)
+		}
+	}
+
 	// Collect all fixes from fixable rules
 	var allFixes []rules.Fix
 
-	// For now, we only support fixing naming-convention violations
-	// TODO: Add support for more fixable rules
+	// Fix naming-convention violations
 	if namingConfig, ok := cfg.Rules["naming-convention"].(map[string]interface{}); ok {
 		patterns := make(map[string]string)
 		for k, v := range namingConfig {
@@ -160,6 +172,15 @@ func runFix(path string, dryRun bool) error {
 				fixes := fixable.Fix(files, dirs)
 				allFixes = append(allFixes, fixes...)
 			}
+		}
+	}
+
+	// Fix unused exports
+	if _, ok := cfg.Rules["disallow-unused-exports"]; ok && importGraph != nil {
+		rule := rules.NewUnusedExportsRule(importGraph)
+		if fixable, ok := interface{}(rule).(rules.FixableRule); ok {
+			fixes := fixable.Fix(files, dirs)
+			allFixes = append(allFixes, fixes...)
 		}
 	}
 

@@ -214,3 +214,17 @@ func (g *ImportGraph) FindLayerByName(name string) *config.Layer {
 	}
 	return nil
 }
+
+// AllFilesInfo returns file information for all files in the graph
+// This is used by the public API for architectural rule checking
+func (g *ImportGraph) AllFilesInfo() []walker.FileInfo {
+	var result []walker.FileInfo
+	for _, path := range g.AllFiles {
+		result = append(result, walker.FileInfo{
+			Path:    path,
+			AbsPath: path,
+			IsDir:   false,
+		})
+	}
+	return result
+}

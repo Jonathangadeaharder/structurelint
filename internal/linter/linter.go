@@ -65,7 +65,8 @@ func (l *Linter) Lint(path string) ([]Violation, error) {
 	needsGraph := len(l.config.Layers) > 0 ||
 		l.isRuleEnabled("enforce-layer-boundaries") ||
 		l.isRuleEnabled("disallow-orphaned-files") ||
-		l.isRuleEnabled("disallow-unused-exports")
+		l.isRuleEnabled("disallow-unused-exports") ||
+		len(l.config.DependencyRules) > 0
 
 	if needsGraph {
 		builder := graph.NewBuilder(path, l.config.Layers)
@@ -159,6 +160,11 @@ func (l *Linter) addComplexRules(rulesList *[]rules.Rule, importGraph *graph.Imp
 
 		if _, ok := l.getRuleConfig("disallow-unused-exports"); ok {
 			*rulesList = append(*rulesList, rules.NewUnusedExportsRule(importGraph))
+		}
+
+		// Granular dependency rules (Phase 6)
+		if len(l.config.DependencyRules) > 0 {
+			*rulesList = append(*rulesList, rules.NewGranularDependencyRule(l.config.DependencyRules, importGraph))
 		}
 	}
 
