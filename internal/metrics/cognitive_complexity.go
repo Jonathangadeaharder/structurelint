@@ -116,7 +116,8 @@ func calculateCognitiveComplexity(body *ast.BlockStmt, initialNesting int) int {
 					// else-if doesn't add nesting, treated as continuation
 					visit(elseIf, nestingLevel)
 				} else if elseBlock, ok := n.Else.(*ast.BlockStmt); ok {
-					// Regular else block
+					// Regular else block - adds +1 complexity
+					complexity += 1
 					for _, stmt := range elseBlock.List {
 						visit(stmt, nestingLevel+1)
 					}
@@ -202,10 +203,10 @@ func calculateCognitiveComplexity(body *ast.BlockStmt, initialNesting int) int {
 			}
 
 		case *ast.BranchStmt:
-			// break, continue, goto add complexity (flow breaks)
-			// return does not (it's the natural exit)
-			if n.Tok != token.RETURN {
-				complexity += 1 + nestingLevel
+			// Only goto adds complexity (+1 without nesting penalty)
+			// break, continue, and return do not add complexity
+			if n.Tok == token.GOTO {
+				complexity += 1
 			}
 
 		case *ast.BinaryExpr:

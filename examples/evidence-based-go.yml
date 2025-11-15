@@ -123,7 +123,7 @@ rules:
 # Why Cognitive Complexity > Cyclomatic Complexity:
 # - CC treats "if (a && b && c)" the same as "if { if { if {...} } }"
 # - CoC penalizes the nested version (3x higher) - matches human perception
-# - A 20-case switch has CC=20, but CoC=1 (it's easy to read linearly)
+# - A 20-case switch has CC=20, CoC=21, but still easier than nested ifs
 #
 # Why Halstead Effort Matters:
 # - CoC only measures control-flow complexity

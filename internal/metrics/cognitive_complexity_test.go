@@ -125,15 +125,15 @@ func elseIf(x int) {
 		println("one")
 	} else if x == 2 {    // +1 (else-if doesn't add nesting)
 		println("two")
-	} else {
+	} else {              // +1 (else adds complexity)
 		println("other")
 	}
 }
 `
-	// Expected: 1 + 1 = 2
+	// Expected: 1 + 1 + 1 = 3
 	complexity := analyzeCode(t, code)
-	if complexity != 2 {
-		t.Errorf("Expected complexity 2 for if-else-if, got %d", complexity)
+	if complexity != 3 {
+		t.Errorf("Expected complexity 3 for if-else-if, got %d", complexity)
 	}
 }
 
@@ -165,16 +165,16 @@ package main
 func withBreak(items []int) {
 	for _, item := range items {  // +1
 		if item == 0 {            // +1 + 1 (nesting level 1) = +2
-			break                 // +1 + 2 (nesting level 2) = +3
+			break                 // +0 (break does not add complexity per spec)
 		}
 		println(item)
 	}
 }
 `
-	// Expected: 1 + 2 + 3 = 6
+	// Expected: 1 + 2 = 3 (break/continue don't add complexity, only goto does)
 	complexity := analyzeCode(t, code)
-	if complexity != 6 {
-		t.Errorf("Expected complexity 6 with break statement, got %d", complexity)
+	if complexity != 3 {
+		t.Errorf("Expected complexity 3 with break statement, got %d", complexity)
 	}
 }
 

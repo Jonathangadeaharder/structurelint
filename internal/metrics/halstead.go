@@ -22,6 +22,24 @@ import (
 	"math"
 )
 
+// goBuiltins contains all Go built-in types, functions, and constants
+var goBuiltins = map[string]bool{
+	// Built-in types
+	"bool": true, "byte": true, "complex64": true, "complex128": true,
+	"error": true, "float32": true, "float64": true,
+	"int": true, "int8": true, "int16": true, "int32": true, "int64": true,
+	"rune": true, "string": true,
+	"uint": true, "uint8": true, "uint16": true, "uint32": true, "uint64": true, "uintptr": true,
+
+	// Built-in functions
+	"append": true, "cap": true, "close": true, "complex": true, "copy": true,
+	"delete": true, "imag": true, "len": true, "make": true, "new": true,
+	"panic": true, "print": true, "println": true, "real": true, "recover": true,
+
+	// Constants
+	"true": true, "false": true, "iota": true, "nil": true,
+}
+
 // HalsteadMetrics represents the complete Halstead metrics for a code unit
 type HalsteadMetrics struct {
 	DistinctOperators int     // n1: unique operators
@@ -295,23 +313,7 @@ func calculateHalstead(body *ast.BlockStmt) HalsteadMetrics {
 
 // isBuiltin checks if an identifier is a built-in type or function
 func isBuiltin(name string) bool {
-	builtins := map[string]bool{
-		// Built-in types
-		"bool": true, "byte": true, "complex64": true, "complex128": true,
-		"error": true, "float32": true, "float64": true,
-		"int": true, "int8": true, "int16": true, "int32": true, "int64": true,
-		"rune": true, "string": true,
-		"uint": true, "uint8": true, "uint16": true, "uint32": true, "uint64": true, "uintptr": true,
-
-		// Built-in functions
-		"append": true, "cap": true, "close": true, "complex": true, "copy": true,
-		"delete": true, "imag": true, "len": true, "make": true, "new": true,
-		"panic": true, "print": true, "println": true, "real": true, "recover": true,
-
-		// Constants
-		"true": true, "false": true, "iota": true, "nil": true,
-	}
-	return builtins[name]
+	return goBuiltins[name]
 }
 
 // getFunctionNameHalstead extracts the function name for Halstead metrics

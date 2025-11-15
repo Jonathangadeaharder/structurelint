@@ -471,8 +471,10 @@ func processItems(items []Item) {
             }
         }
     }
-    // vs. switch with 20 cases: CC=20, CoC=1 (easy to read!)
 }
+
+// Note: A switch with 20 cases would have CC=20, CoC=21 (1 for switch + 20 for cases)
+// but nested ifs are much harder to understand due to nesting penalties
 ```
 
 #### 2. Halstead Metrics
