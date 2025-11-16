@@ -117,6 +117,13 @@ jobs:
       - name: Build
         run: |
           go build -v ./cmd/structurelint 2>&1 | tee build.log
+        if: runner.os != 'Windows'
+
+      - name: Build (Windows)
+        run: |
+          go build -v ./cmd/structurelint 2>&1 | Tee-Object -FilePath build.log
+        if: runner.os == 'Windows'
+        shell: pwsh
 
       - name: Upload build logs on failure
         if: failure()
