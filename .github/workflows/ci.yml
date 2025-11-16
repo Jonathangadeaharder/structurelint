@@ -2,10 +2,7 @@ name: CI
 
 on:
   push:
-    branches:
-      - main
-      - master
-      - claude/software-quality-metrics-framework-01WfgH2HcdXAPN1gViMK79QV  # Temporary: for artifact testing
+    branches: [ main, master ]
   pull_request:
     branches: [ main, master ]
 
@@ -13,15 +10,10 @@ jobs:
   test:
     name: Test
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          persist-credentials: true
 
       - name: Set up Go
         uses: actions/setup-go@v5
@@ -40,25 +32,7 @@ jobs:
         run: go mod download
 
       - name: Run tests
-        run: |
-          go test -v -race -coverprofile=coverage.out ./... 2>&1 | tee test.log
-
-      - name: Commit test log back to repository (demo only)
-        if: always()
-        run: |
-          git config user.name "GitHub Actions"
-          git config user.email "actions@github.com"
-          git add test.log || true
-          git commit -m "CI: Add test log from workflow run" || true
-          git push || true
-
-      - name: Upload test logs on failure
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-logs-${{ runner.os }}
-          path: test.log
-          retention-days: 7
+        run: go test -v -race -coverprofile=coverage.out ./...
 
       - name: Upload coverage
         uses: codecov/codecov-action@v4
@@ -80,17 +54,10 @@ jobs:
           go-version: '1.24'
 
       - name: Run golangci-lint
-        run: |
-          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin latest
-          golangci-lint run --timeout=5m 2>&1 | tee lint.log
-
-      - name: Upload lint logs on failure
-        if: failure()
-        uses: actions/upload-artifact@v4
+        uses: golangci/golangci-lint-action@v6
         with:
-          name: lint-logs-${{ runner.os }}
-          path: lint.log
-          retention-days: 7
+          version: latest
+          args: --timeout=5m
 
   complexity:
     name: Check Complexity
@@ -111,16 +78,8 @@ jobs:
       - name: Check cyclomatic complexity
         run: |
           # Allow up to complexity 17 (current max is 16)
-          gocyclo -over 17 . 2>&1 | tee complexity.log || true
+          gocyclo -over 17 . || true
           echo "Complexity check complete"
-
-      - name: Upload complexity logs on failure
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: complexity-logs-${{ runner.os }}
-          path: complexity.log
-          retention-days: 7
 
   build:
     name: Build
@@ -139,35 +98,18 @@ jobs:
           go-version: '1.24'
 
       - name: Build
-        run: |
-          go build -v ./cmd/structurelint 2>&1 | tee build.log
-
-      - name: Upload build logs on failure
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-logs-${{ matrix.os }}
-          path: build.log
-          retention-days: 7
+        run: go build -v ./cmd/structurelint
 
       - name: Run structurelint on itself
         run: |
-          go run ./cmd/structurelint . 2>&1 | tee structurelint-self-check.log
+          go run ./cmd/structurelint .
         if: runner.os != 'Windows'
 
       - name: Run structurelint on itself (Windows)
         run: |
-          go run ./cmd/structurelint . 2>&1 | Tee-Object -FilePath structurelint-self-check.log
+          go run ./cmd/structurelint .
         if: runner.os == 'Windows'
         shell: pwsh
-
-      - name: Upload self-check logs on failure
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: self-check-logs-${{ matrix.os }}
-          path: structurelint-self-check.log
-          retention-days: 7
 
   self-lint:
     name: Self-Lint (Dogfooding)
@@ -183,28 +125,15 @@ jobs:
           go-version: '1.24'
 
       - name: Build structurelint
-        run: |
-          go build -o structurelint ./cmd/structurelint 2>&1 | tee self-lint-build.log
+        run: go build -o structurelint ./cmd/structurelint
 
       - name: Run structurelint on itself
-        run: |
-          ./structurelint . 2>&1 | tee self-lint-run.log
+        run: ./structurelint .
 
       - name: Verify no violations
         run: |
-          if ./structurelint . | tee self-lint-verify.log | grep -q "violation"; then
+          if ./structurelint . | grep -q "violation"; then
             echo "structurelint found violations in its own codebase!"
             exit 1
           fi
           echo "✓ structurelint passes its own checks"
-
-      - name: Upload self-lint logs on failure
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: self-lint-logs-${{ runner.os }}
-          path: |
-            self-lint-build.log
-            self-lint-run.log
-            self-lint-verify.log
-          retention-days: 7
