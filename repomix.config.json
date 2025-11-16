@@ -26,12 +26,8 @@
       "**/*.exe",
       "**/*.bin",
       "**/vendor/**",
-      "**/.git/**",
-      "**/node_modules/**",
       "**/coverage.out",
       "**/structurelint",
-      "repomix-output.txt",
-      "**/.DS_Store",
       "**/*.tmp"
     ]
   },
