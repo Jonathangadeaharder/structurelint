@@ -104,166 +104,114 @@ func (a *HalsteadAnalyzer) AnalyzeFile(node *ast.File) FileMetrics {
 
 // calculateHalstead computes the Halstead metrics for a code block
 func calculateHalstead(body *ast.BlockStmt) HalsteadMetrics {
-	operators := make(map[string]int)     // operator -> count
-	operands := make(map[string]int)      // operand -> count
-	totalOperators := 0
-	totalOperands := 0
+	counter := &halsteadCounter{
+		operators:      make(map[string]int),
+		operands:       make(map[string]int),
+		totalOperators: 0,
+		totalOperands:  0,
+	}
 
-	// Traverse the AST and count operators and operands
-	ast.Inspect(body, func(n ast.Node) bool {
-		if n == nil {
-			return false
-		}
+	ast.Inspect(body, counter.visit)
 
-		switch node := n.(type) {
-		// Operators
-		case *ast.BinaryExpr:
-			op := node.Op.String()
-			operators[op]++
-			totalOperators++
-			return true
+	return counter.computeMetrics()
+}
 
-		case *ast.UnaryExpr:
-			op := node.Op.String()
-			operators[op]++
-			totalOperators++
-			return true
+// halsteadCounter tracks operator and operand counts
+type halsteadCounter struct {
+	operators      map[string]int
+	operands       map[string]int
+	totalOperators int
+	totalOperands  int
+}
 
-		case *ast.AssignStmt:
-			op := node.Tok.String()
-			operators[op]++
-			totalOperators++
-			return true
+func (h *halsteadCounter) visit(n ast.Node) bool {
+	if n == nil {
+		return false
+	}
 
-		case *ast.IncDecStmt:
-			op := node.Tok.String()
-			operators[op]++
-			totalOperators++
-			return true
+	switch node := n.(type) {
+	case *ast.BinaryExpr:
+		h.addOperator(node.Op.String())
+	case *ast.UnaryExpr:
+		h.addOperator(node.Op.String())
+	case *ast.AssignStmt:
+		h.addOperator(node.Tok.String())
+	case *ast.IncDecStmt:
+		h.addOperator(node.Tok.String())
+	case *ast.IfStmt:
+		h.addOperator("if")
+	case *ast.ForStmt:
+		h.addOperator("for")
+	case *ast.RangeStmt:
+		h.addOperator("range")
+	case *ast.SwitchStmt:
+		h.addOperator("switch")
+	case *ast.TypeSwitchStmt:
+		h.addOperator("type-switch")
+	case *ast.SelectStmt:
+		h.addOperator("select")
+	case *ast.CaseClause:
+		h.handleCaseClause(node)
+	case *ast.CommClause:
+		h.addOperator("case")
+	case *ast.BranchStmt:
+		h.addOperator(node.Tok.String())
+	case *ast.ReturnStmt:
+		h.addOperator("return")
+	case *ast.DeferStmt:
+		h.addOperator("defer")
+	case *ast.GoStmt:
+		h.addOperator("go")
+	case *ast.CallExpr:
+		h.addOperator("()")
+	case *ast.IndexExpr:
+		h.addOperator("[]")
+	case *ast.SliceExpr:
+		h.addOperator("[:]")
+	case *ast.StarExpr:
+		h.addOperator("*")
+	case *ast.TypeAssertExpr:
+		h.addOperator(".(type)")
+	case *ast.SendStmt:
+		h.addOperator("<-")
+	case *ast.Ident:
+		h.handleIdent(node)
+	case *ast.BasicLit:
+		h.addOperand(node.Value)
+	}
 
-		case *ast.IfStmt:
-			operators["if"]++
-			totalOperators++
-			return true
+	return true
+}
 
-		case *ast.ForStmt:
-			operators["for"]++
-			totalOperators++
-			return true
+func (h *halsteadCounter) addOperator(op string) {
+	h.operators[op]++
+	h.totalOperators++
+}
 
-		case *ast.RangeStmt:
-			operators["range"]++
-			totalOperators++
-			return true
+func (h *halsteadCounter) addOperand(operand string) {
+	h.operands[operand]++
+	h.totalOperands++
+}
 
-		case *ast.SwitchStmt:
-			operators["switch"]++
-			totalOperators++
-			return true
+func (h *halsteadCounter) handleCaseClause(node *ast.CaseClause) {
+	if len(node.List) > 0 {
+		h.addOperator("case")
+	} else {
+		h.addOperator("default")
+	}
+}
 
-		case *ast.TypeSwitchStmt:
-			operators["type-switch"]++
-			totalOperators++
-			return true
+func (h *halsteadCounter) handleIdent(node *ast.Ident) {
+	if !token.IsKeyword(node.Name) && !isBuiltin(node.Name) {
+		h.addOperand(node.Name)
+	}
+}
 
-		case *ast.SelectStmt:
-			operators["select"]++
-			totalOperators++
-			return true
-
-		case *ast.CaseClause:
-			if len(node.List) > 0 {
-				operators["case"]++
-				totalOperators++
-			} else {
-				operators["default"]++
-				totalOperators++
-			}
-			return true
-
-		case *ast.CommClause:
-			operators["case"]++
-			totalOperators++
-			return true
-
-		case *ast.BranchStmt:
-			op := node.Tok.String()
-			operators[op]++
-			totalOperators++
-			return true
-
-		case *ast.ReturnStmt:
-			operators["return"]++
-			totalOperators++
-			return true
-
-		case *ast.DeferStmt:
-			operators["defer"]++
-			totalOperators++
-			return true
-
-		case *ast.GoStmt:
-			operators["go"]++
-			totalOperators++
-			return true
-
-		case *ast.CallExpr:
-			operators["()"]++ // Function call operator
-			totalOperators++
-			return true
-
-		case *ast.IndexExpr:
-			operators["[]"]++ // Array/slice index operator
-			totalOperators++
-			return true
-
-		case *ast.SliceExpr:
-			operators["[:]"]++ // Slice operator
-			totalOperators++
-			return true
-
-		case *ast.StarExpr:
-			operators["*"]++ // Pointer dereference or type
-			totalOperators++
-			return true
-
-		case *ast.TypeAssertExpr:
-			operators[".(type)"]++ // Type assertion
-			totalOperators++
-			return true
-
-		case *ast.SendStmt:
-			operators["<-"]++ // Channel send
-			totalOperators++
-			return true
-
-		// Operands
-		case *ast.Ident:
-			// Skip keywords that we've already counted as operators
-			if !token.IsKeyword(node.Name) {
-				// Skip built-in types and predeclared identifiers in some contexts
-				if !isBuiltin(node.Name) {
-					operands[node.Name]++
-					totalOperands++
-				}
-			}
-			return true
-
-		case *ast.BasicLit:
-			// Literal values (numbers, strings, etc.)
-			operands[node.Value]++
-			totalOperands++
-			return true
-		}
-
-		return true
-	})
-
-	// Calculate Halstead metrics
-	n1 := len(operators)
-	n2 := len(operands)
-	N1 := totalOperators
-	N2 := totalOperands
+func (h *halsteadCounter) computeMetrics() HalsteadMetrics {
+	n1 := len(h.operators)
+	n2 := len(h.operands)
+	N1 := h.totalOperators
+	N2 := h.totalOperands
 
 	vocabulary := n1 + n2
 	length := N1 + N2
