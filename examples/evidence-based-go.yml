@@ -1,0 +1,142 @@
+# Evidence-Based Software Quality Metrics for Go Projects
+#
+# This configuration uses scientifically-validated metrics based on:
+# - Systematic Literature Reviews (SLRs)
+# - Meta-analyses
+# - Neuroscience studies (EEG cognitive load measurement)
+#
+# Key Improvements over Traditional Metrics:
+# 1. Cognitive Complexity (CoC) replaces Cyclomatic Complexity (CC)
+#    - Evidence: r=0.54 correlation with comprehension time
+#    - Penalizes nesting (matches human cognitive load)
+#    - Better predictor of maintainability
+#
+# 2. Halstead Effort complements Cognitive Complexity
+#    - Evidence: rs=0.901 correlation with brain activity (EEG)
+#    - Captures data complexity (vocabulary, operators, operands)
+#    - CoC measures control-flow, Halstead measures data-flow
+
+root: true
+
+rules:
+  # ============================================================================
+  # DEPRECATED: Traditional Cyclomatic Complexity
+  # ============================================================================
+  # Evidence shows LOC often outperforms CC in defect prediction
+  # CC deviates considerably from programmer perception of complexity
+  # Recommendation: Use max-cognitive-complexity instead
+  max-cyclomatic-complexity: 0  # Disabled (deprecated)
+
+  # ============================================================================
+  # RECOMMENDED: Evidence-Based Complexity Metrics
+  # ============================================================================
+
+  # Cognitive Complexity - Best predictor of code understandability
+  # Meta-analysis: r=0.54 correlation with comprehension time
+  # Thresholds:
+  #   0-5:  Simple, easy to understand
+  #   6-10: Moderate complexity
+  #   11-15: High complexity, consider refactoring
+  #   16+:  Very high complexity, should refactor
+  max-cognitive-complexity:
+    max: 15
+    file-patterns:
+      - "**/*.go"
+
+  # Halstead Effort - Best predictor of cognitive load
+  # EEG Study: rs=0.901 correlation with measured brain activity
+  # Thresholds:
+  #   0-10,000:     Low effort
+  #   10,000-50,000: Moderate effort
+  #   50,000-100,000: High effort
+  #   100,000+:     Very high effort, high cognitive load
+  max-halstead-effort:
+    max: 100000
+    file-patterns:
+      - "**/*.go"
+
+  # ============================================================================
+  # Structural Quality Rules
+  # ============================================================================
+
+  max-depth: { max: 7 }
+  max-files-in-dir: { max: 20 }
+  max-subdirs: { max: 10 }
+
+  naming-convention:
+    "**/*.go": "snake_case"
+    "cmd/**/": "snake_case"
+
+# ============================================================================
+# Architectural Layers (Clean Architecture Example)
+# ============================================================================
+# CK Suite metrics (CBO, RFC, LCOM5) for OO design would be implemented
+# separately for layer-specific validation
+
+layers:
+  - name: 'domain'
+    path: 'internal/domain/**'
+    dependsOn: []  # Domain has no dependencies
+
+  - name: 'application'
+    path: 'internal/application/**'
+    dependsOn: ['domain']
+
+  - name: 'infrastructure'
+    path: 'internal/infrastructure/**'
+    dependsOn: ['domain', 'application']
+
+rules:
+  enforce-layer-boundaries: true
+
+# ============================================================================
+# Dead Code Detection (Phase 2)
+# ============================================================================
+# Process metrics (code churn, revisions) would provide even stronger
+# defect prediction when integrated with version control
+
+entrypoints:
+  - "cmd/**/main.go"
+  - "**/*_test.go"
+
+rules:
+  disallow-orphaned-files: true
+  disallow-unused-exports: true
+
+# ============================================================================
+# Test Validation (Phase 3)
+# ============================================================================
+
+rules:
+  test-adjacency:
+    pattern: "adjacent"
+    file-patterns:
+      - "**/*.go"
+    exemptions:
+      - "cmd/**/*.go"
+      - "**/*_gen.go"
+
+# ============================================================================
+# Evidence-Based Interpretation Guide
+# ============================================================================
+#
+# Why Cognitive Complexity > Cyclomatic Complexity:
+# - CC treats "if (a && b && c)" the same as "if { if { if {...} } }"
+# - CoC penalizes the nested version (3x higher) - matches human perception
+# - A 20-case switch has CC=20, but CoC=1 (it's easy to read linearly)
+#
+# Why Halstead Effort Matters:
+# - CoC only measures control-flow complexity
+# - Halstead measures data complexity (tracking variables, state changes)
+# - EEG studies show Halstead correlates 90%+ with actual brain activity
+# - Both metrics needed for complete picture
+#
+# Evidence Hierarchy:
+# 1. Process Metrics (churn, revisions, bug fixes) - Strongest predictor
+# 2. CK Suite (CBO, RFC, LCOM5) - Strong for OO code
+# 3. Cognitive Complexity - Strong for understandability
+# 4. Halstead Effort - Strong for cognitive load
+# 5. LOC - Simple but effective baseline (must control for in models)
+# 6. Cyclomatic Complexity - Weak predictor (deprecated)
+#
+# ============================================================================

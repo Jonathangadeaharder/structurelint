@@ -418,6 +418,195 @@ jobs:
           structurelint .
 ```
 
+## Phase 5: Evidence-Based Software Quality Metrics ✨ NEW
+
+### Overview
+
+Phase 5 adds **scientifically-validated software quality metrics** based on systematic literature reviews, meta-analyses, and neuroscience research. This framework moves beyond traditional metrics like Cyclomatic Complexity to provide better predictors of code quality, maintainability, and defect-proneness.
+
+### Why Evidence-Based Metrics?
+
+Traditional metrics have significant limitations:
+
+**Cyclomatic Complexity (CC) - The Problem**:
+- ❌ Weak predictor of maintainability (mathematical model is "unsatisfactory")
+- ❌ Deviates from human perception (EEG studies show poor correlation with cognitive load)
+- ❌ Often outperformed by simple Lines of Code (LOC) in defect prediction
+- ❌ Treats `switch` with 20 cases (easy to read) same as 20 nested `if` statements (hard to read)
+
+**Evidence-Based Alternatives**:
+- ✅ **Cognitive Complexity**: r=0.54 correlation with comprehension time (meta-analysis)
+- ✅ **Halstead Effort**: rs=0.901 correlation with measured brain activity (EEG study)
+- ✅ Combined metrics provide complete picture of code complexity
+
+### Implemented Metrics
+
+#### 1. Cognitive Complexity (CoC)
+
+**Evidence Level**: Meta-analysis of 14 studies
+**Correlation**: r=0.54 with comprehension time, r=-0.29 with subjective difficulty
+
+**Why Superior to Cyclomatic Complexity**:
+- Penalizes nesting (matches exponential increase in human cognitive load)
+- Ignores shorthand operators that improve readability (`&&`, `||`, `?:`)
+- Based on human assessment, not mathematical models
+
+**Calculation Rules**:
+```
+1. Base complexity = 0 (not 1 like CC)
+2. +1 for each flow break: if, for, while, catch, switch, goto
+3. +1 additional for each level of nesting
+4. No penalty for shorthand operators in sequence
+```
+
+**Example**:
+```go
+// Cyclomatic Complexity = 4
+// Cognitive Complexity = 7
+func processItems(items []Item) {
+    for _, item := range items {        // +1 (for) = 1
+        if item.IsActive {              // +2 (+1 for if, +1 for nesting) = 3
+            if item.HasPermission {     // +3 (+1 for if, +2 for nesting) = 6
+                process(item)
+            }
+        }
+    }
+    // vs. switch with 20 cases: CC=20, CoC=1 (easy to read!)
+}
+```
+
+#### 2. Halstead Metrics
+
+**Evidence Level**: Neuroscience (EEG study)
+**Correlation**: rs=0.901 with measured cognitive load
+
+**Why Critical**:
+- Captures **data complexity** (vocabulary, operators, operands)
+- **Complements** Cognitive Complexity (which captures control-flow)
+- Highest correlation with actual brain activity during code comprehension
+
+**Metrics Calculated**:
+```
+n1 = distinct operators (if, +, =, func, etc.)
+n2 = distinct operands (variables, constants)
+N1 = total operators
+N2 = total operands
+
+Volume (V) = N × log₂(n)              // Information content in bits
+Difficulty (D) = (n1/2) × (N2/n2)     // How hard to write/understand
+Effort (E) = D × V                     // Mental effort required ⭐ PRIMARY METRIC
+```
+
+### Configuration
+
+#### Replace Cyclomatic Complexity with Evidence-Based Metrics
+
+```yaml
+root: true
+
+rules:
+  # DEPRECATED: Traditional Cyclomatic Complexity
+  max-cyclomatic-complexity: 0  # Disable (deprecated)
+
+  # RECOMMENDED: Evidence-Based Metrics
+  max-cognitive-complexity:
+    max: 15
+    file-patterns:
+      - "**/*.go"
+      - "**/*.ts"
+      - "**/*.py"
+
+  max-halstead-effort:
+    max: 100000
+    file-patterns:
+      - "**/*.go"
+```
+
+### Thresholds and Interpretation
+
+#### Cognitive Complexity Thresholds
+- **0-5**: Simple, easy to understand ✅
+- **6-10**: Moderate complexity, acceptable ⚠️
+- **11-15**: High complexity, consider refactoring 🔶
+- **16-25**: Very high complexity, should refactor 🔴
+- **26+**: Extremely complex, high maintenance risk 🚨
+
+#### Halstead Effort Thresholds
+- **0-10,000**: Low effort ✅
+- **10,000-50,000**: Moderate effort ⚠️
+- **50,000-100,000**: High effort 🔶
+- **100,000+**: Very high effort, high cognitive load 🚨
+
+### Example Configurations
+
+#### Evidence-Based Go Project
+```yaml
+root: true
+
+rules:
+  # Replace CC with Cognitive Complexity
+  max-cyclomatic-complexity: 0  # Disabled
+  max-cognitive-complexity:
+    max: 15
+    file-patterns: ["**/*.go"]
+
+  # Add Halstead for data complexity
+  max-halstead-effort:
+    max: 100000
+    file-patterns: ["**/*.go"]
+```
+
+See complete examples:
+- `examples/evidence-based-go.yml`
+- `examples/evidence-based-typescript.yml`
+
+### Metric Comparison Table
+
+| Metric | Evidence Level | Use Case | Correlation | Status |
+|--------|---------------|----------|-------------|--------|
+| **Cognitive Complexity** | Meta-analysis | Understandability | r=0.54 with time | ✅ Recommended |
+| **Halstead Effort** | EEG Study | Cognitive Load | rs=0.901 with brain | ✅ Recommended |
+| Cyclomatic Complexity | Outdated | Testing Paths | Often < LOC | ⚠️ Deprecated |
+| Lines of Code | Strong | Size Baseline | Strong predictor | ✅ Use as control |
+
+### Scientific Evidence
+
+**Cognitive Complexity**:
+- Schnappinger et al. (2020). "Meta-Analysis of Cognitive Complexity"
+- Finding: r=0.54 correlation with comprehension time across 14 studies
+- Conclusion: "First validated code-based metric reflecting code understandability"
+
+**Halstead Effort**:
+- Scalabrino et al. (2022). "EEG Study on Code Complexity Metrics"
+- Finding: rs=0.901 correlation with measured cognitive load (brain activity)
+- Conclusion: CC-based metrics "deviate considerably," Halstead captures data complexity
+
+**Why Both Metrics Are Needed**:
+- **Low CoC + High Halstead**: Data-flow nightmare (complex state, many variables)
+- **High CoC + Low Halstead**: Control-flow nightmare (deep nesting, conditionals)
+- **Both Required**: Complete picture of cognitive complexity
+
+### Future Enhancements (Phase 6+)
+
+**CK Suite (Object-Oriented Metrics)**:
+- ✅ Evidence Level: Multiple SLRs, 2023 large-scale study
+- 🔮 CBO (Coupling Between Objects): Strong defect predictor
+- 🔮 RFC (Response For a Class): Interaction complexity
+- 🔮 LCOM5 (Lack of Cohesion): "Among highest-performing metrics" (2023)
+
+**Process Metrics** (Strongest Predictors):
+- ✅ Evidence Level: SLR - "Overall effectively better than static code attributes"
+- 🔮 Code Churn: Lines added/deleted/modified
+- 🔮 Revision Count: Number of commits
+- 🔮 Bug Fix Count: Historical defect-proneness
+- 🔮 Developer Count: Ownership diffusion
+
+**Statistical Framework**:
+- 🔮 Multivariate logistic regression
+- 🔮 LOC confounding variable control
+- 🔮 Project-specific feature selection
+- 🔮 Defect probability prediction
+
 ## Roadmap
 
 ### Phase 0 - Core Filesystem Linting ✅ COMPLETE
@@ -448,7 +637,13 @@ jobs:
 - ✅ Pattern enforcement (required/forbidden patterns)
 - ✅ Content structure validation (must-start-with, must-end-with)
 
-### Phase 5 - Automatic Configuration 🎯 COMPLETE
+### Phase 5 - Evidence-Based Quality Metrics ✅ COMPLETE
+- ✅ Cognitive Complexity (replaces Cyclomatic Complexity)
+- ✅ Halstead Metrics (Volume, Difficulty, Effort)
+- ✅ Scientific evidence documentation
+- ✅ Example configurations
+
+### Phase 6 - Automatic Configuration ✅ COMPLETE
 - ✅ `--init` command for automatic configuration generation
 - ✅ Language detection (8+ languages)
 - ✅ Test pattern recognition
@@ -456,6 +651,10 @@ jobs:
 - ✅ Project metrics analysis
 
 ### Future Enhancements
+- 🔮 CK Suite metrics (CBO, RFC, LCOM5) for OO languages
+- 🔮 Process metrics from Git history (churn, revisions, bug fixes)
+- 🔮 Statistical framework with LOC control
+- 🔮 Multivariate defect prediction models
 - 🔮 Monorepo support with per-package configurations
 - 🔮 Framework-specific detection (pytest, Jest, JUnit)
 - 🔮 Integration test directory detection
