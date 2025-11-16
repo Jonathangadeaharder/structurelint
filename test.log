@@ -27,7 +27,7 @@
 --- PASS: TestFindConfigsNoConfigFound (0.00s)
 PASS
 coverage: 51.3% of statements
-ok  	github.com/structurelint/structurelint/internal/config	1.021s	coverage: 51.3% of statements
+ok  	github.com/structurelint/structurelint/internal/config	1.019s	coverage: 51.3% of statements
 === RUN   TestNewBuilder
 --- PASS: TestNewBuilder (0.00s)
 === RUN   TestBuild_EmptyFileList
@@ -173,7 +173,7 @@ ok  	github.com/structurelint/structurelint/internal/graph	1.019s	coverage: 92.4
     --- PASS: Test_generateExemptions/java (0.00s)
 PASS
 coverage: 65.0% of statements
-ok  	github.com/structurelint/structurelint/internal/init	1.023s	coverage: 65.0% of statements
+ok  	github.com/structurelint/structurelint/internal/init	1.017s	coverage: 65.0% of statements
 === RUN   TestNew
 --- PASS: TestNew (0.00s)
 === RUN   TestGetRuleConfig_Exists
@@ -210,12 +210,7 @@ ok  	github.com/structurelint/structurelint/internal/init	1.023s	coverage: 65.0%
 --- PASS: TestCreateRules_MultipleRules (0.00s)
 PASS
 coverage: 44.4% of statements
-ok  	github.com/structurelint/structurelint/internal/linter	1.016s	coverage: 44.4% of statements
-=== RUN   TestArtifactDemo_IntentionalFailure
-    artifact_demo_test.go:9: 🎯 DEMO: This intentional test failure will trigger automatic log artifact upload!
-    artifact_demo_test.go:10: Check the 'Artifacts' section at the bottom of the workflow run to download test.log
-    artifact_demo_test.go:11: The artifact will contain this complete output plus all other test results
---- FAIL: TestArtifactDemo_IntentionalFailure (0.00s)
+ok  	github.com/structurelint/structurelint/internal/linter	1.017s	coverage: 44.4% of statements
 === RUN   TestCognitiveComplexity_Simple
 --- PASS: TestCognitiveComplexity_Simple (0.00s)
 === RUN   TestCognitiveComplexity_SingleIf
@@ -248,9 +243,9 @@ ok  	github.com/structurelint/structurelint/internal/linter	1.016s	coverage: 44.
 --- PASS: TestHalstead_BinaryOperators (0.00s)
 === RUN   TestHalsteadAnalyzer_AnalyzeFile
 --- PASS: TestHalsteadAnalyzer_AnalyzeFile (0.00s)
-FAIL
+PASS
 coverage: 64.3% of statements
-FAIL	github.com/structurelint/structurelint/internal/metrics	0.024s
+ok  	github.com/structurelint/structurelint/internal/metrics	1.018s	coverage: 64.3% of statements
 	github.com/structurelint/structurelint/internal/output		coverage: 0.0% of statements
 === RUN   TestParser_parseGoExports
 === RUN   TestParser_parseGoExports/exported_function
@@ -258,7 +253,7 @@ FAIL	github.com/structurelint/structurelint/internal/metrics	0.024s
 === RUN   TestParser_parseGoExports/exported_const_and_var
 === RUN   TestParser_parseGoExports/mixed_exports
 === RUN   TestParser_parseGoExports/no_exports
---- PASS: TestParser_parseGoExports (0.01s)
+--- PASS: TestParser_parseGoExports (0.00s)
     --- PASS: TestParser_parseGoExports/exported_function (0.00s)
     --- PASS: TestParser_parseGoExports/exported_type (0.00s)
     --- PASS: TestParser_parseGoExports/exported_const_and_var (0.00s)
@@ -300,7 +295,7 @@ FAIL	github.com/structurelint/structurelint/internal/metrics	0.024s
 --- PASS: TestResolveImportPath (0.00s)
 PASS
 coverage: 65.3% of statements
-ok  	github.com/structurelint/structurelint/internal/parser	1.038s	coverage: 65.3% of statements
+ok  	github.com/structurelint/structurelint/internal/parser	1.033s	coverage: 65.3% of statements
 === RUN   TestTestAdjacencyRule_Check_Adjacent
 === RUN   TestTestAdjacencyRule_Check_Adjacent/Go_file_with_test_-_no_violation
 === RUN   TestTestAdjacencyRule_Check_Adjacent/Go_file_without_test_-_violation
@@ -749,4 +744,3 @@ ok  	github.com/structurelint/structurelint/internal/rules	1.043s	coverage: 68.6
 PASS
 coverage: 81.7% of statements
 ok  	github.com/structurelint/structurelint/internal/walker	1.014s	coverage: 81.7% of statements
-FAIL
