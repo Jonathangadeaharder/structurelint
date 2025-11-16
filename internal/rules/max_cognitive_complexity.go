@@ -4,7 +4,7 @@
 // with comprehension time, making it superior to Cyclomatic Complexity for
 // measuring code understandability.
 //
-// @structurelint:ignore test-adjacency Covered by max_cognitive_complexity_test.go
+// @structurelint:ignore test-adjacency Rule implementation tested through integration tests in tests/ and internal/metrics/cognitive_complexity_test.go
 package rules
 
 import (

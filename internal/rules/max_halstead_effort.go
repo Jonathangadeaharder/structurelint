@@ -7,7 +7,7 @@
 // Halstead captures "data complexity" (vocabulary, operators, operands) which
 // complements Cognitive Complexity (control-flow complexity).
 //
-// @structurelint:ignore test-adjacency Covered by max_halstead_effort_test.go
+// @structurelint:ignore test-adjacency Rule implementation tested through integration tests in tests/ and internal/metrics/halstead_test.go
 package rules
 
 import (
