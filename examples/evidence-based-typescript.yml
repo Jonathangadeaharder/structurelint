@@ -1,0 +1,156 @@
+# Evidence-Based Software Quality Metrics for TypeScript/React Projects
+#
+# This configuration implements scientifically-validated metrics for
+# TypeScript/JavaScript codebases based on empirical research.
+
+root: true
+
+rules:
+  # ============================================================================
+  # Evidence-Based Complexity Metrics
+  # ============================================================================
+
+  # Cognitive Complexity - Superior to Cyclomatic Complexity
+  # - Meta-analysis shows r=0.54 correlation with comprehension time
+  # - Penalizes nesting (exponential cognitive load)
+  # - Ignores shorthand that improves readability
+  max-cognitive-complexity:
+    max: 15
+    file-patterns:
+      - "**/*.ts"
+      - "**/*.tsx"
+      - "**/*.js"
+      - "**/*.jsx"
+
+  # Halstead Effort - Captures data complexity
+  # - rs=0.901 correlation with EEG-measured cognitive load
+  # - Complements Cognitive Complexity
+  # - Tracks operators, operands, vocabulary
+  max-halstead-effort:
+    max: 120000  # Slightly higher for TypeScript (type annotations add operators)
+    file-patterns:
+      - "**/*.ts"
+      - "**/*.tsx"
+
+  # ============================================================================
+  # Project Structure Rules
+  # ============================================================================
+
+  max-depth: { max: 8 }
+  max-files-in-dir: { max: 20 }
+  max-subdirs: { max: 10 }
+
+  naming-convention:
+    "src/**/*.ts": "camelCase"
+    "src/**/*.tsx": "PascalCase"
+    "src/components/**/": "PascalCase"
+    "src/**/*.test.ts": "camelCase"
+    "src/**/*.spec.ts": "camelCase"
+
+  disallowed-patterns:
+    - "src/utils/**"      # Discourage generic utils (prefer specific modules)
+    - "src/helpers/**"    # Same as above
+    - "**/*.bak"
+    - "**/.DS_Store"
+
+# ============================================================================
+# Feature-Sliced Design Architecture
+# ============================================================================
+# Evidence shows architectural enforcement reduces defects
+
+layers:
+  - name: 'shared'
+    path: 'src/shared/**'
+    dependsOn: []
+
+  - name: 'entities'
+    path: 'src/entities/**'
+    dependsOn: ['shared']
+
+  - name: 'features'
+    path: 'src/features/**'
+    dependsOn: ['shared', 'entities']
+
+  - name: 'widgets'
+    path: 'src/widgets/**'
+    dependsOn: ['shared', 'entities', 'features']
+
+  - name: 'pages'
+    path: 'src/pages/**'
+    dependsOn: ['shared', 'entities', 'features', 'widgets']
+
+  - name: 'app'
+    path: 'src/app/**'
+    dependsOn: ['*']  # App layer can import from all
+
+rules:
+  enforce-layer-boundaries: true
+
+# ============================================================================
+# Dead Code Detection
+# ============================================================================
+
+entrypoints:
+  - "src/index.ts"
+  - "src/main.tsx"
+  - "**/*.test.ts"
+  - "**/*.test.tsx"
+  - "**/*.spec.ts"
+  - "**/__tests__/**"
+
+rules:
+  disallow-orphaned-files: true
+  disallow-unused-exports: true
+
+# ============================================================================
+# Test Validation
+# ============================================================================
+
+rules:
+  test-adjacency:
+    pattern: "adjacent"
+    file-patterns:
+      - "**/*.ts"
+      - "**/*.tsx"
+    exemptions:
+      - "**/*.d.ts"      # Type definitions
+      - "**/*.config.ts" # Configuration files
+      - "src/index.ts"   # Entry points
+      - "src/main.tsx"
+
+  test-location:
+    integration-test-dir: "tests"
+    allow-adjacent: true
+
+# ============================================================================
+# Documentation Requirements
+# ============================================================================
+
+rules:
+  file-existence:
+    "README.md": "exists:1"
+
+# ============================================================================
+# Evidence-Based Best Practices for React/TypeScript
+# ============================================================================
+#
+# Component Complexity:
+# - Keep components under CoC=15 for maintainability
+# - High Halstead Effort often indicates excessive props or state
+# - Consider splitting into smaller components or custom hooks
+#
+# Hook Complexity:
+# - Custom hooks should have low CoC (< 10)
+# - High Halstead suggests complex state management (consider reducer)
+#
+# Type Complexity:
+# - TypeScript type definitions add to Halstead (operators/operands)
+# - This is acceptable - types improve maintainability
+# - Focus on reducing control-flow complexity (CoC)
+#
+# CK Suite Metrics (future):
+# - CBO: Track component coupling (props drilling, context usage)
+# - RFC: Response set for component (all methods + callbacks)
+# - LCOM: Cohesion of component logic (split if low)
+#
+# ============================================================================
