@@ -9,6 +9,7 @@ import (
 )
 
 func TestHalstead_Simple(t *testing.T) {
+	// Arrange
 	code := `
 package main
 
@@ -16,8 +17,11 @@ func add(a, b int) int {
 	return a + b
 }
 `
+
+	// Act
 	metrics := analyzeHalstead(t, code)
 
+	// Assert
 	// Operators: func, return, +, int (type)
 	// Operands: add, a, b
 	// This is a simplified check - exact counts depend on AST traversal
@@ -31,6 +35,7 @@ func add(a, b int) int {
 }
 
 func TestHalstead_IfStatement(t *testing.T) {
+	// Arrange
 	code := `
 package main
 
@@ -41,8 +46,11 @@ func max(a, b int) int {
 	return b
 }
 `
+
+	// Act
 	metrics := analyzeHalstead(t, code)
 
+	// Assert
 	// Should have some operators and operands
 	// Exact counts depend on AST traversal, so we just check they're non-zero
 	if metrics.DistinctOperators == 0 {
@@ -60,6 +68,7 @@ func max(a, b int) int {
 }
 
 func TestHalstead_Loop(t *testing.T) {
+	// Arrange
 	code := `
 package main
 
@@ -71,8 +80,11 @@ func sum(numbers []int) int {
 	return total
 }
 `
+
+	// Act
 	metrics := analyzeHalstead(t, code)
 
+	// Assert
 	// Operators: func, :=, for, range, =, +, return
 	// Operands: sum, numbers, total, num, 0
 	if metrics.TotalOperators == 0 {
@@ -95,6 +107,7 @@ func sum(numbers []int) int {
 }
 
 func TestHalstead_ComplexFunction(t *testing.T) {
+	// Arrange
 	code := `
 package main
 
@@ -118,8 +131,11 @@ func process(items []string, threshold int) ([]string, error) {
 	return result, nil
 }
 `
+
+	// Act
 	metrics := analyzeHalstead(t, code)
 
+	// Assert
 	// This function has many operators and operands
 	// Verify basic properties
 	if metrics.DistinctOperators == 0 {
@@ -149,6 +165,7 @@ func process(items []string, threshold int) ([]string, error) {
 }
 
 func TestHalstead_BinaryOperators(t *testing.T) {
+	// Arrange
 	code := `
 package main
 
@@ -160,8 +177,11 @@ func calculate(a, b, c int) int {
 	return x + y + z + w
 }
 `
+
+	// Act
 	metrics := analyzeHalstead(t, code)
 
+	// Assert
 	// Should have binary operators: +, -, *, /, :=, return
 	if metrics.DistinctOperators < 5 {
 		t.Errorf("Expected at least 5 distinct operators, got %d", metrics.DistinctOperators)
@@ -209,6 +229,7 @@ func analyzeHalstead(t *testing.T, code string) HalsteadMetrics {
 }
 
 func TestHalsteadAnalyzer_AnalyzeFile(t *testing.T) {
+	// Arrange
 	code := `
 package main
 
@@ -227,8 +248,11 @@ func add(a, b int) int {
 	}
 
 	analyzer := NewHalsteadAnalyzer()
+
+	// Act
 	metrics := analyzer.AnalyzeFile(node)
 
+	// Assert
 	if len(metrics.Functions) != 2 {
 		t.Errorf("Expected 2 functions, got %d", len(metrics.Functions))
 	}

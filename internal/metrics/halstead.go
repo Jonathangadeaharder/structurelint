@@ -11,8 +11,6 @@
 // - Volume (V): Information content in bits
 // - Difficulty (D): How difficult to write/understand
 // - Effort (E): Mental effort required (D × V)
-//
-// @structurelint:ignore test-adjacency Covered by halstead_test.go
 package metrics
 
 import (

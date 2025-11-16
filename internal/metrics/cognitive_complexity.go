@@ -6,8 +6,6 @@
 // 1. Penalizes nesting (human cognitive load increases with nesting)
 // 2. Ignores shorthand structures (they improve readability)
 // 3. Based on human assessment, not mathematical models
-//
-// @structurelint:ignore test-adjacency Covered by cognitive_complexity_test.go
 package metrics
 
 import (
