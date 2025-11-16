@@ -1,0 +1,37 @@
+{
+  "output": {
+    "filePath": "repomix-output.txt",
+    "style": "plain",
+    "removeComments": false,
+    "removeEmptyLines": false,
+    "topFilesLength": 5,
+    "showLineNumbers": true
+  },
+  "include": [
+    "**/*.go",
+    "**/*.yml",
+    "**/*.yaml",
+    "**/*.md",
+    "go.mod",
+    "go.sum",
+    ".structurelint.yml",
+    ".golangci.yml",
+    "LICENSE",
+    "Makefile"
+  ],
+  "ignore": {
+    "useGitignore": true,
+    "useDefaultPatterns": true,
+    "customPatterns": [
+      "**/*.exe",
+      "**/*.bin",
+      "**/vendor/**",
+      "**/coverage.out",
+      "**/structurelint",
+      "**/*.tmp"
+    ]
+  },
+  "security": {
+    "enableSecurityCheck": true
+  }
+}

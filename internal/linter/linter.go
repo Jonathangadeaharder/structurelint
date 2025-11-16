@@ -114,35 +114,13 @@ func (l *Linter) createRules(files []walker.FileInfo, importGraph *graph.ImportG
 
 // addComplexRules adds rules that require more complex configuration
 func (l *Linter) addComplexRules(rulesList *[]rules.Rule, importGraph *graph.ImportGraph) {
-	// Max cyclomatic complexity rule (deprecated - use max-cognitive-complexity instead)
+	// Max cyclomatic complexity rule
 	if complexity, ok := l.getRuleConfig("max-cyclomatic-complexity"); ok {
 		if complexityMap, ok := complexity.(map[string]interface{}); ok {
 			max := l.getIntFromMap(complexityMap, "max")
 			filePatterns := l.getStringSliceFromMap(complexityMap, "file-patterns")
 			if max > 0 {
 				*rulesList = append(*rulesList, rules.NewMaxCyclomaticComplexityRule(max, filePatterns))
-			}
-		}
-	}
-
-	// Max cognitive complexity rule (evidence-based replacement for cyclomatic complexity)
-	if cognitiveComplexity, ok := l.getRuleConfig("max-cognitive-complexity"); ok {
-		if complexityMap, ok := cognitiveComplexity.(map[string]interface{}); ok {
-			max := l.getIntFromMap(complexityMap, "max")
-			filePatterns := l.getStringSliceFromMap(complexityMap, "file-patterns")
-			if max > 0 {
-				*rulesList = append(*rulesList, rules.NewMaxCognitiveComplexityRule(max, filePatterns))
-			}
-		}
-	}
-
-	// Max Halstead effort rule (evidence-based data complexity metric)
-	if halsteadEffort, ok := l.getRuleConfig("max-halstead-effort"); ok {
-		if effortMap, ok := halsteadEffort.(map[string]interface{}); ok {
-			max := l.getFloatFromMap(effortMap, "max")
-			filePatterns := l.getStringSliceFromMap(effortMap, "file-patterns")
-			if max > 0 {
-				*rulesList = append(*rulesList, rules.NewMaxHalsteadEffortRule(max, filePatterns))
 			}
 		}
 	}
@@ -340,18 +318,6 @@ func (l *Linter) getIntFromMap(m map[string]interface{}, key string) int {
 	// Also handle float64 (common from YAML parsing)
 	if val, ok := m[key].(float64); ok {
 		return int(val)
-	}
-	return 0
-}
-
-// getFloatFromMap extracts a float64 value from a map
-func (l *Linter) getFloatFromMap(m map[string]interface{}, key string) float64 {
-	if val, ok := m[key].(float64); ok {
-		return val
-	}
-	// Also handle int (convert to float64)
-	if val, ok := m[key].(int); ok {
-		return float64(val)
 	}
 	return 0
 }
