@@ -22,6 +22,19 @@ func main() {
 }
 
 func run() error {
+	// Check for subcommands
+	if len(os.Args) > 1 {
+		switch os.Args[1] {
+		case "clones":
+			return runClones(os.Args[2:])
+		case "help":
+			if len(os.Args) > 2 && os.Args[2] == "clones" {
+				printClonesHelp()
+				return nil
+			}
+		}
+	}
+
 	// Define flags
 	fs := flag.NewFlagSet("structurelint", flag.ContinueOnError)
 	formatFlag := fs.String("format", "text", "Output format: text, json, junit")
@@ -153,9 +166,14 @@ func printHelp() {
 
 Usage:
   structurelint [options] [path]   Lint the project at path (default: current directory)
+  structurelint clones [options]   Detect code clones (duplicated code)
   structurelint --init [path]      Generate configuration by analyzing project
   structurelint --version          Show version information
   structurelint --help             Show this help message
+
+Commands:
+  (default)                    Lint project structure and architecture
+  clones                       Detect code clones (see 'structurelint help clones')
 
 Options:
   -v, --version                Show version information
