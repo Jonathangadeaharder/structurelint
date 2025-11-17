@@ -1,0 +1,50 @@
+# Example configuration for GitHub workflow enforcement
+#
+# This demonstrates how to configure structurelint to enforce
+# GitHub Actions workflows for testing, security, and code quality.
+
+root: true
+
+rules:
+  # Phase 8: GitHub Workflow Enforcement
+  # Ensures CI/CD pipelines are properly configured
+  github-workflows:
+    # Require a workflow that runs tests
+    require-tests: true
+
+    # Require a workflow that performs security scanning
+    # (e.g., CodeQL, dependency scanning, secret detection)
+    require-security: true
+
+    # Require a workflow that checks code quality
+    # (e.g., linting, formatting, static analysis)
+    require-quality: true
+
+    # Optionally require specific jobs to be present
+    # required-jobs:
+    #   - test
+    #   - security
+    #   - lint
+
+    # Optionally require specific triggers
+    # Ensures workflows run on important events
+    # required-triggers:
+    #   - pull_request
+    #   - push
+
+# Example: Stricter enforcement for production projects
+# overrides:
+#   - files: ['src/**']
+#     rules:
+#       github-workflows:
+#         require-tests: true
+#         require-security: true
+#         require-quality: true
+#         required-triggers:
+#           - pull_request
+#           - push
+#         required-jobs:
+#           - test
+#           - integration
+#           - security-scan
+#           - lint

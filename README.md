@@ -39,6 +39,12 @@ As projects grow, their directory structures often degrade into chaos:
 - **Section validation** - Ensure documentation has required sections
 - **Pattern enforcement** - Require or forbid specific content patterns
 
+**Phase 8 - GitHub Workflow Enforcement:** ✨ NEW
+- **Test execution workflows** - Ensure CI/CD runs tests on PRs and pushes
+- **Security scanning** - Require CodeQL, dependency scanning, secret detection
+- **Code quality checks** - Enforce linting, formatting, coverage requirements
+- **Workflow validation** - Validate workflow structure, jobs, triggers, and steps
+
 ## Features
 
 - **Fast**: Written in Go for blazing-fast performance, suitable for pre-commit hooks
@@ -560,6 +566,183 @@ See complete examples:
 - `examples/evidence-based-go.yml`
 - `examples/evidence-based-typescript.yml`
 
+## Phase 8: GitHub Workflow Enforcement
+
+### Overview
+
+Phase 8 ensures your project has proper CI/CD pipelines configured through GitHub Actions workflows. It validates the presence and configuration of workflows for:
+
+1. **Test Execution** - Automated testing on pull requests and pushes
+2. **Security Scanning** - CodeQL, dependency scanning, secret detection
+3. **Code Quality** - Linting, formatting, static analysis
+
+### Why Enforce GitHub Workflows?
+
+Many projects lack proper CI/CD configuration, leading to:
+- ❌ Security vulnerabilities undetected in dependencies
+- ❌ Code quality degradation without automated checks
+- ❌ Broken code merged without running tests
+- ❌ Compliance issues from missing security scans
+
+structurelint ensures:
+- ✅ Workflows exist in `.github/workflows/` directory
+- ✅ Test workflows run on PRs and pushes
+- ✅ Security scanning is configured (CodeQL, etc.)
+- ✅ Code quality checks are enforced (linting, formatting)
+- ✅ Workflows are properly structured with valid jobs and steps
+
+### Configuration
+
+```yaml
+root: true
+
+rules:
+  # Phase 8: GitHub Workflow Enforcement
+  github-workflows:
+    # Require a workflow that runs tests
+    require-tests: true
+
+    # Require a workflow that performs security scanning
+    require-security: true
+
+    # Require a workflow that checks code quality
+    require-quality: true
+
+    # Optionally require specific jobs
+    required-jobs:
+      - test
+      - security
+      - lint
+
+    # Optionally require specific triggers
+    required-triggers:
+      - pull_request
+      - push
+```
+
+### Example Workflows
+
+#### Test Workflow
+
+```yaml
+# .github/workflows/test.yml
+name: CI Tests
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v4
+        with:
+          go-version: '1.21'
+      - run: go test -v -race -coverprofile=coverage.txt ./...
+```
+
+#### Security Workflow
+
+```yaml
+# .github/workflows/security.yml
+name: Security Scan
+on: [push, pull_request, schedule]
+jobs:
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: github/codeql-action/init@v2
+      - uses: github/codeql-action/analyze@v2
+```
+
+#### Quality Workflow
+
+```yaml
+# .github/workflows/quality.yml
+name: Code Quality
+on: [push, pull_request]
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: golangci/golangci-lint-action@v3
+```
+
+### Validation Checks
+
+structurelint validates:
+
+✅ **Workflow Presence**
+- `.github/workflows/` directory exists
+- At least one workflow file (`.yml` or `.yaml`) is present
+
+✅ **Workflow Types**
+- Test workflows contain keywords: `test`, `ci`, `build`
+- Security workflows contain: `security`, `scan`, `codeql`
+- Quality workflows contain: `quality`, `lint`, `format`, `coverage`
+
+✅ **Workflow Structure**
+- Workflows have `name` field
+- Workflows have `on` triggers
+- Workflows have at least one job
+- Jobs have `runs-on` specified
+- Jobs have steps defined
+
+✅ **Optional Requirements**
+- Specific triggers are present (e.g., `pull_request`)
+- Specific jobs are present (e.g., `test`, `security`)
+
+### Example Violations
+
+```
+.github/workflows: GitHub workflows directory not found.
+Add CI/CD workflows for testing, security, and code quality.
+
+.github/workflows: No test/CI workflow found.
+Add a workflow that runs tests on pull requests and pushes.
+
+.github/workflows: No security scanning workflow found.
+Add CodeQL, dependency scanning, or other security checks.
+
+.github/workflows: No code quality workflow found.
+Add linting, formatting, or coverage checks.
+
+.github/workflows/test.yml: Workflow missing 'name' field.
+Add a descriptive name for the workflow.
+
+.github/workflows/test.yml: Job 'test' missing 'runs-on' field.
+Specify the runner environment.
+```
+
+### Complete Examples
+
+See complete working examples:
+- [examples/github-workflows/](examples/github-workflows/) - Complete setup with test, security, and quality workflows
+- [docs/GITHUB_WORKFLOWS.md](docs/GITHUB_WORKFLOWS.md) - Comprehensive guide
+
+### Best Practices
+
+#### Test Workflows
+- ✅ Run on `pull_request` and `push` events
+- ✅ Use matrix testing for multiple versions
+- ✅ Cache dependencies for faster builds
+- ✅ Report coverage to Codecov/Coveralls
+- ✅ Separate unit tests from integration tests
+
+#### Security Workflows
+- ✅ Run CodeQL analysis weekly
+- ✅ Scan dependencies with govulncheck/Snyk
+- ✅ Scan for secrets with Trivy
+- ✅ Upload SARIF results to GitHub Security tab
+- ✅ Fail builds on critical vulnerabilities
+
+#### Quality Workflows
+- ✅ Enforce linting with golangci-lint/ESLint
+- ✅ Check formatting with gofmt/prettier
+- ✅ Require minimum test coverage
+- ✅ Run static analysis
+- ✅ Fail builds on quality violations
+
 ### Metric Comparison Table
 
 | Metric | Evidence Level | Use Case | Correlation | Status |
@@ -649,6 +832,16 @@ See complete examples:
 - ✅ Test pattern recognition
 - ✅ Smart defaults based on project structure
 - ✅ Project metrics analysis
+
+### Phase 8 - GitHub Workflow Enforcement ✅ COMPLETE
+- ✅ GitHub Actions workflow detection and validation
+- ✅ Test workflow enforcement (CI/CD for testing)
+- ✅ Security workflow enforcement (CodeQL, scanning)
+- ✅ Quality workflow enforcement (linting, formatting)
+- ✅ Workflow structure validation (name, triggers, jobs, steps)
+- ✅ Required trigger validation (pull_request, push, etc.)
+- ✅ Required job validation
+- ✅ Comprehensive documentation and examples
 
 ### Future Enhancements
 - 🔮 CK Suite metrics (CBO, RFC, LCOM5) for OO languages

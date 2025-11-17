@@ -1,0 +1,125 @@
+# Example Code Quality Workflow for structurelint GitHub workflow enforcement
+#
+# This workflow performs code quality checks including linting, formatting,
+# and static analysis. It demonstrates the minimum requirements for a quality workflow.
+
+name: Code Quality
+
+# Run on all pushes and pull requests
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  # Linting with golangci-lint
+  lint:
+    name: Lint Code
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.21'
+
+      - name: Run golangci-lint
+        uses: golangci/golangci-lint-action@v3
+        with:
+          version: latest
+          args: --timeout=5m
+
+  # Code formatting check
+  format:
+    name: Check Formatting
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.21'
+
+      - name: Check formatting
+        run: |
+          if [ -n "$(gofmt -l .)" ]; then
+            echo "Code is not formatted. Run 'gofmt -w .' to fix."
+            gofmt -l .
+            exit 1
+          fi
+
+      - name: Run go vet
+        run: go vet ./...
+
+  # Static analysis
+  staticcheck:
+    name: Static Analysis
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.21'
+
+      - name: Install staticcheck
+        run: go install honnef.co/go/tools/cmd/staticcheck@latest
+
+      - name: Run staticcheck
+        run: staticcheck ./...
+
+  # Test coverage check
+  coverage:
+    name: Test Coverage
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.21'
+
+      - name: Run tests with coverage
+        run: go test -v -race -coverprofile=coverage.txt -covermode=atomic ./...
+
+      - name: Check coverage threshold
+        run: |
+          coverage=$(go tool cover -func=coverage.txt | grep total | awk '{print $3}' | sed 's/%//')
+          echo "Total coverage: ${coverage}%"
+          if (( $(echo "$coverage < 80.0" | bc -l) )); then
+            echo "Coverage ${coverage}% is below threshold of 80%"
+            exit 1
+          fi
+
+  # Complexity analysis
+  complexity:
+    name: Complexity Analysis
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.21'
+
+      - name: Install gocyclo
+        run: go install github.com/fzipp/gocyclo/cmd/gocyclo@latest
+
+      - name: Check cyclomatic complexity
+        run: gocyclo -over 15 . || echo "Warning: High complexity detected"
