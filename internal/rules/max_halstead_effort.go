@@ -14,7 +14,6 @@ import (
 	"fmt"
 	"go/parser"
 	"go/token"
-	"strings"
 
 	"github.com/structurelint/structurelint/internal/metrics"
 	"github.com/structurelint/structurelint/internal/walker"
@@ -38,43 +37,39 @@ func (r *MaxHalsteadEffortRule) Check(files []walker.FileInfo, dirs map[string]*
 	// Filter files that should be ignored
 	files = FilterIgnoredFiles(files, r.Name())
 
-	analyzer := metrics.NewHalsteadAnalyzer()
+	goAnalyzer := metrics.NewHalsteadAnalyzer()
+	multiLangAnalyzer := metrics.NewMultiLanguageHalsteadAnalyzer()
 
 	for _, file := range files {
 		if file.IsDir {
 			continue
 		}
 
-		// Only check Go files (TODO: extend to other languages)
-		if !strings.HasSuffix(file.Path, ".go") {
-			continue
-		}
-
-		// Check if file matches any of the patterns (if specified)
-		if len(r.FilePatterns) > 0 {
-			matched := false
-			for _, pattern := range r.FilePatterns {
-				if matchesGlobPattern(file.Path, pattern) {
-					matched = true
-					break
-				}
-			}
-			if !matched {
-				continue
-			}
-		}
-
-		// Skip test files
-		if strings.HasSuffix(file.Path, "_test.go") {
-			continue
-		}
-
-		// Parse and analyze the file
-		fileViolations := r.analyzeFile(file, analyzer)
+		fileViolations := r.checkFile(file, goAnalyzer, multiLangAnalyzer)
 		violations = append(violations, fileViolations...)
 	}
 
 	return violations
+}
+
+// checkFile checks a single file for Halstead effort violations
+func (r *MaxHalsteadEffortRule) checkFile(
+	file walker.FileInfo,
+	goAnalyzer *metrics.HalsteadAnalyzer,
+	multiLangAnalyzer *metrics.MultiLanguageAnalyzer,
+) []Violation {
+	fileType := detectFileType(file.Path)
+
+	// Check if file should be analyzed
+	if !shouldAnalyzeFile(file.Path, fileType, r.FilePatterns) {
+		return nil
+	}
+
+	// Use appropriate analyzer based on file type
+	if fileType == FileTypeGo {
+		return r.analyzeFile(file, goAnalyzer)
+	}
+	return r.analyzeMultiLangFile(file, multiLangAnalyzer)
 }
 
 // analyzeFile analyzes a single Go file for Halstead effort
@@ -91,6 +86,31 @@ func (r *MaxHalsteadEffortRule) analyzeFile(file walker.FileInfo, analyzer *metr
 
 	// Analyze all functions
 	fileMetrics := analyzer.AnalyzeFile(node)
+
+	for _, funcMetric := range fileMetrics.Functions {
+		if funcMetric.Value > r.Max {
+			violations = append(violations, Violation{
+				Rule:    r.Name(),
+				Path:    file.Path,
+				Message: fmt.Sprintf("function '%s' has Halstead effort %.0f, exceeds max %.0f (evidence: rs=0.901 correlation with cognitive load)",
+					funcMetric.Name, funcMetric.Value, r.Max),
+			})
+		}
+	}
+
+	return violations
+}
+
+// analyzeMultiLangFile analyzes a Python/JavaScript/TypeScript file for Halstead effort
+func (r *MaxHalsteadEffortRule) analyzeMultiLangFile(file walker.FileInfo, analyzer *metrics.MultiLanguageAnalyzer) []Violation {
+	var violations []Violation
+
+	// Analyze the file using the multi-language analyzer
+	fileMetrics, err := analyzer.AnalyzeFileByPath(file.AbsPath)
+	if err != nil {
+		// Skip files that can't be analyzed (e.g., missing interpreter)
+		return violations
+	}
 
 	for _, funcMetric := range fileMetrics.Functions {
 		if funcMetric.Value > r.Max {
