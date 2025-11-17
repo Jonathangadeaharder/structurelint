@@ -38,39 +38,72 @@ func (r *MaxHalsteadEffortRule) Check(files []walker.FileInfo, dirs map[string]*
 	// Filter files that should be ignored
 	files = FilterIgnoredFiles(files, r.Name())
 
-	analyzer := metrics.NewHalsteadAnalyzer()
+	goAnalyzer := metrics.NewHalsteadAnalyzer()
+	multiLangAnalyzer := metrics.NewMultiLanguageHalsteadAnalyzer()
 
 	for _, file := range files {
 		if file.IsDir {
 			continue
 		}
 
-		// Only check Go files (TODO: extend to other languages)
-		if !strings.HasSuffix(file.Path, ".go") {
-			continue
-		}
-
-		// Check if file matches any of the patterns (if specified)
-		if len(r.FilePatterns) > 0 {
-			matched := false
-			for _, pattern := range r.FilePatterns {
-				if matchesGlobPattern(file.Path, pattern) {
-					matched = true
-					break
+		// Determine file type and analyzer to use
+		var fileViolations []Violation
+		if strings.HasSuffix(file.Path, ".go") {
+			// Check if file matches any of the patterns (if specified)
+			if len(r.FilePatterns) > 0 {
+				matched := false
+				for _, pattern := range r.FilePatterns {
+					if matchesGlobPattern(file.Path, pattern) {
+						matched = true
+						break
+					}
+				}
+				if !matched {
+					continue
 				}
 			}
-			if !matched {
+
+			// Skip test files
+			if strings.HasSuffix(file.Path, "_test.go") {
 				continue
 			}
-		}
 
-		// Skip test files
-		if strings.HasSuffix(file.Path, "_test.go") {
+			fileViolations = r.analyzeFile(file, goAnalyzer)
+		} else if strings.HasSuffix(file.Path, ".py") ||
+			strings.HasSuffix(file.Path, ".js") ||
+			strings.HasSuffix(file.Path, ".jsx") ||
+			strings.HasSuffix(file.Path, ".ts") ||
+			strings.HasSuffix(file.Path, ".tsx") {
+
+			// Check if file matches any of the patterns (if specified)
+			if len(r.FilePatterns) > 0 {
+				matched := false
+				for _, pattern := range r.FilePatterns {
+					if matchesGlobPattern(file.Path, pattern) {
+						matched = true
+						break
+					}
+				}
+				if !matched {
+					continue
+				}
+			}
+
+			// Skip test files
+			if strings.Contains(file.Path, "_test.py") ||
+				strings.Contains(file.Path, ".test.js") ||
+				strings.Contains(file.Path, ".test.ts") ||
+				strings.Contains(file.Path, ".spec.js") ||
+				strings.Contains(file.Path, ".spec.ts") {
+				continue
+			}
+
+			fileViolations = r.analyzeMultiLangFile(file, multiLangAnalyzer)
+		} else {
+			// Unsupported file type
 			continue
 		}
 
-		// Parse and analyze the file
-		fileViolations := r.analyzeFile(file, analyzer)
 		violations = append(violations, fileViolations...)
 	}
 
@@ -91,6 +124,31 @@ func (r *MaxHalsteadEffortRule) analyzeFile(file walker.FileInfo, analyzer *metr
 
 	// Analyze all functions
 	fileMetrics := analyzer.AnalyzeFile(node)
+
+	for _, funcMetric := range fileMetrics.Functions {
+		if funcMetric.Value > r.Max {
+			violations = append(violations, Violation{
+				Rule:    r.Name(),
+				Path:    file.Path,
+				Message: fmt.Sprintf("function '%s' has Halstead effort %.0f, exceeds max %.0f (evidence: rs=0.901 correlation with cognitive load)",
+					funcMetric.Name, funcMetric.Value, r.Max),
+			})
+		}
+	}
+
+	return violations
+}
+
+// analyzeMultiLangFile analyzes a Python/JavaScript/TypeScript file for Halstead effort
+func (r *MaxHalsteadEffortRule) analyzeMultiLangFile(file walker.FileInfo, analyzer *metrics.MultiLanguageAnalyzer) []Violation {
+	var violations []Violation
+
+	// Analyze the file using the multi-language analyzer
+	fileMetrics, err := analyzer.AnalyzeFileByPath(file.AbsPath)
+	if err != nil {
+		// Skip files that can't be analyzed (e.g., missing interpreter)
+		return violations
+	}
 
 	for _, funcMetric := range fileMetrics.Functions {
 		if funcMetric.Value > r.Max {
