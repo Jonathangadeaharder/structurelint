@@ -11,7 +11,6 @@ import (
 	"fmt"
 	"go/parser"
 	"go/token"
-	"strings"
 
 	"github.com/structurelint/structurelint/internal/metrics"
 	"github.com/structurelint/structurelint/internal/walker"
@@ -43,68 +42,31 @@ func (r *MaxCognitiveComplexityRule) Check(files []walker.FileInfo, dirs map[str
 			continue
 		}
 
-		// Determine file type and analyzer to use
-		var fileViolations []Violation
-		if strings.HasSuffix(file.Path, ".go") {
-			// Check if file matches any of the patterns (if specified)
-			if len(r.FilePatterns) > 0 {
-				matched := false
-				for _, pattern := range r.FilePatterns {
-					if matchesGlobPattern(file.Path, pattern) {
-						matched = true
-						break
-					}
-				}
-				if !matched {
-					continue
-				}
-			}
-
-			// Skip test files
-			if strings.HasSuffix(file.Path, "_test.go") {
-				continue
-			}
-
-			fileViolations = r.analyzeFile(file, goAnalyzer)
-		} else if strings.HasSuffix(file.Path, ".py") ||
-			strings.HasSuffix(file.Path, ".js") ||
-			strings.HasSuffix(file.Path, ".jsx") ||
-			strings.HasSuffix(file.Path, ".ts") ||
-			strings.HasSuffix(file.Path, ".tsx") {
-
-			// Check if file matches any of the patterns (if specified)
-			if len(r.FilePatterns) > 0 {
-				matched := false
-				for _, pattern := range r.FilePatterns {
-					if matchesGlobPattern(file.Path, pattern) {
-						matched = true
-						break
-					}
-				}
-				if !matched {
-					continue
-				}
-			}
-
-			// Skip test files
-			if strings.Contains(file.Path, "_test.py") ||
-				strings.Contains(file.Path, ".test.js") ||
-				strings.Contains(file.Path, ".test.ts") ||
-				strings.Contains(file.Path, ".spec.js") ||
-				strings.Contains(file.Path, ".spec.ts") {
-				continue
-			}
-
-			fileViolations = r.analyzeMultiLangFile(file, multiLangAnalyzer)
-		} else {
-			// Unsupported file type
-			continue
-		}
-
+		fileViolations := r.checkFile(file, goAnalyzer, multiLangAnalyzer)
 		violations = append(violations, fileViolations...)
 	}
 
 	return violations
+}
+
+// checkFile checks a single file for cognitive complexity violations
+func (r *MaxCognitiveComplexityRule) checkFile(
+	file walker.FileInfo,
+	goAnalyzer *metrics.CognitiveComplexityAnalyzer,
+	multiLangAnalyzer *metrics.MultiLanguageAnalyzer,
+) []Violation {
+	fileType := detectFileType(file.Path)
+
+	// Check if file should be analyzed
+	if !shouldAnalyzeFile(file.Path, fileType, r.FilePatterns) {
+		return nil
+	}
+
+	// Use appropriate analyzer based on file type
+	if fileType == FileTypeGo {
+		return r.analyzeFile(file, goAnalyzer)
+	}
+	return r.analyzeMultiLangFile(file, multiLangAnalyzer)
 }
 
 // analyzeFile analyzes a single Go file for cognitive complexity

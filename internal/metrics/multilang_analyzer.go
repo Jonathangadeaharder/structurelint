@@ -10,6 +10,13 @@ import (
 	"strings"
 )
 
+const (
+	// MetricCognitiveComplexity is the metric type for cognitive complexity
+	MetricCognitiveComplexity = "cognitive-complexity"
+	// MetricHalstead is the metric type for Halstead effort
+	MetricHalstead = "halstead"
+)
+
 // MultiLanguageAnalyzer provides metrics for multiple programming languages
 type MultiLanguageAnalyzer struct {
 	metricType string // "cognitive-complexity" or "halstead"
@@ -18,14 +25,14 @@ type MultiLanguageAnalyzer struct {
 // NewMultiLanguageCognitiveComplexityAnalyzer creates an analyzer for cognitive complexity
 func NewMultiLanguageCognitiveComplexityAnalyzer() *MultiLanguageAnalyzer {
 	return &MultiLanguageAnalyzer{
-		metricType: "cognitive-complexity",
+		metricType: MetricCognitiveComplexity,
 	}
 }
 
 // NewMultiLanguageHalsteadAnalyzer creates an analyzer for Halstead metrics
 func NewMultiLanguageHalsteadAnalyzer() *MultiLanguageAnalyzer {
 	return &MultiLanguageAnalyzer{
-		metricType: "halstead",
+		metricType: MetricHalstead,
 	}
 }
 
@@ -50,17 +57,19 @@ func (a *MultiLanguageAnalyzer) AnalyzeFileByPath(filePath string) (FileMetrics,
 
 // detectLanguage returns the programming language based on file extension
 func detectLanguage(filePath string) string {
-	ext := strings.ToLower(filepath.Ext(filePath))
-	switch ext {
-	case ".py":
-		return "python"
-	case ".js", ".jsx":
-		return "javascript"
-	case ".ts", ".tsx":
-		return "typescript"
-	default:
-		return "unknown"
+	extensionToLanguage := map[string]string{
+		".py":  "python",
+		".js":  "javascript",
+		".jsx": "javascript",
+		".ts":  "typescript",
+		".tsx": "typescript",
 	}
+
+	ext := strings.ToLower(filepath.Ext(filePath))
+	if lang, ok := extensionToLanguage[ext]; ok {
+		return lang
+	}
+	return "unknown"
 }
 
 // analyzePythonFile analyzes a Python file using the Python script

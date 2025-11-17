@@ -1,7 +1,8 @@
 {
   "name": "scripts",
   "version": "1.0.0",
-  "description": "",
+  "private": true,
+  "description": "Language-specific metrics calculators for structurelint (Python, JavaScript, TypeScript)",
   "main": "js_metrics.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"

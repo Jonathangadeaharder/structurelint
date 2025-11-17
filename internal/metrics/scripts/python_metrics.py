@@ -7,8 +7,9 @@ Calculates cognitive complexity and Halstead metrics for Python code.
 import ast
 import sys
 import json
+import math
 from collections import defaultdict
-from typing import Dict, List, Any
+from typing import Dict, Any
 
 
 class CognitiveComplexityVisitor(ast.NodeVisitor):
@@ -55,6 +56,11 @@ class CognitiveComplexityVisitor(ast.NodeVisitor):
     def visit_If(self, node):
         """If statements add 1 + nesting_level to complexity."""
         self.complexity += 1 + self.nesting_level
+
+        # Visit the condition to catch boolean operators
+        if node.test:
+            self.visit(node.test)
+
         self.nesting_level += 1
 
         for stmt in node.body:
@@ -77,6 +83,13 @@ class CognitiveComplexityVisitor(ast.NodeVisitor):
     def visit_For(self, node):
         """For loops add 1 + nesting_level to complexity."""
         self.complexity += 1 + self.nesting_level
+
+        # Visit the iterator and target
+        if node.target:
+            self.visit(node.target)
+        if node.iter:
+            self.visit(node.iter)
+
         self.nesting_level += 1
 
         for stmt in node.body:
@@ -93,6 +106,11 @@ class CognitiveComplexityVisitor(ast.NodeVisitor):
     def visit_While(self, node):
         """While loops add 1 + nesting_level to complexity."""
         self.complexity += 1 + self.nesting_level
+
+        # Visit the condition to catch boolean operators
+        if node.test:
+            self.visit(node.test)
+
         self.nesting_level += 1
 
         for stmt in node.body:
@@ -349,8 +367,6 @@ class HalsteadVisitor(ast.NodeVisitor):
         vocabulary = n1 + n2
         length = N1 + N2
 
-        import math
-
         volume = 0.0
         if vocabulary > 0:
             volume = float(length) * math.log2(vocabulary)
@@ -459,6 +475,10 @@ def main():
         result = {'error': f'Unknown metric type: {metric_type}'}
 
     print(json.dumps(result, indent=2))
+
+    # Propagate failures so callers (e.g. the Go MultiLanguageAnalyzer) can detect them
+    if isinstance(result, dict) and result.get('error'):
+        sys.exit(1)
 
 
 if __name__ == '__main__':

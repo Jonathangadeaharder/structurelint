@@ -4,11 +4,10 @@
  * Calculates cognitive complexity and Halstead metrics.
  *
  * Requires: @babel/parser for robust JS/TS parsing
- * Install: npm install -g @babel/parser
+ * Install: npm install (in the scripts directory)
  */
 
 const fs = require('fs');
-const path = require('path');
 
 // Try to load @babel/parser
 let parser;
@@ -16,7 +15,7 @@ try {
     parser = require('@babel/parser');
 } catch (e) {
     console.error(JSON.stringify({
-        error: '@babel/parser not found. Please install with: npm install -g @babel/parser',
+        error: '@babel/parser not found. Please install dependencies with: npm install',
         functions: [],
         file_level: {}
     }));
