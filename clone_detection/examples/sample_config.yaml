@@ -1,0 +1,52 @@
+# Sample configuration for Semantic Clone Detection
+# Save as config.yaml and use with the CLI or Python API
+
+# Model Configuration
+model:
+  # GraphCodeBERT model
+  name: "microsoft/graphcodebert-base"  # Can be a HuggingFace model or local path
+  device: "cuda"  # "cuda" for GPU, "cpu" for CPU, null for auto-detect
+  batch_size: 32  # Batch size for embedding generation
+  max_length: 512  # Maximum sequence length (GraphCodeBERT limit)
+
+# Index Configuration
+index:
+  type: "IndexIVFPQ"  # FAISS index type (production standard)
+  dimension: 768  # GraphCodeBERT embedding dimension
+  nlist: 4096  # Number of IVF clusters (increase for larger datasets)
+  m: 64  # PQ sub-vectors (must divide dimension evenly)
+  nbits: 8  # Bits per PQ code (8 is standard)
+  nprobe: 16  # Clusters to probe at query time (trade-off: 16=fast, 32=accurate)
+  use_gpu: false  # Use GPU for FAISS (requires faiss-gpu)
+
+# Parsing Configuration
+parsing:
+  # Languages to parse
+  languages:
+    - python
+    - javascript
+    - java
+    - go
+    - cpp
+    - csharp
+
+  # Tokenization chunk size
+  chunk_size: 512
+
+  # Patterns to exclude during parsing
+  exclude_patterns:
+    - "**/node_modules/**"
+    - "**/__pycache__/**"
+    - "**/venv/**"
+    - "**/vendor/**"
+    - "**/build/**"
+    - "**/dist/**"
+    - "**/*.min.js"
+    - "**/*_test.go"  # Optionally exclude tests
+    - "**/*.test.ts"
+    - "**/test_*.py"
+
+# Query Configuration
+query:
+  default_similarity: 0.95  # Minimum cosine similarity (0-1)
+  max_results: 100  # Maximum number of results to return
