@@ -53,6 +53,7 @@ rules:
     exemptions:
       - "testdata/**"
       - "internal/rules/rules_test.go"  # Integration test for all rules
+      - "tests/**/*.py"  # Python integration tests for clone detection
 
   # Phase 4: File Content Templates
   file-content:
