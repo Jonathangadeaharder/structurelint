@@ -3,6 +3,7 @@ package rules
 import "testing"
 
 func TestDetectFileType(t *testing.T) {
+	// Arrange
 	tests := []struct {
 		path     string
 		expected FileType
@@ -21,7 +22,10 @@ func TestDetectFileType(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.path, func(t *testing.T) {
+			// Act
 			result := detectFileType(tt.path)
+
+			// Assert
 			if result != tt.expected {
 				t.Errorf("detectFileType(%q) = %v, want %v", tt.path, result, tt.expected)
 			}
@@ -30,6 +34,7 @@ func TestDetectFileType(t *testing.T) {
 }
 
 func TestIsTestFile(t *testing.T) {
+	// Arrange
 	tests := []struct {
 		path     string
 		fileType FileType
@@ -65,7 +70,10 @@ func TestIsTestFile(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.path, func(t *testing.T) {
+			// Act
 			result := isTestFile(tt.path, tt.fileType)
+
+			// Assert
 			if result != tt.expected {
 				t.Errorf("isTestFile(%q, %v) = %v, want %v", tt.path, tt.fileType, result, tt.expected)
 			}
@@ -74,6 +82,7 @@ func TestIsTestFile(t *testing.T) {
 }
 
 func TestMatchesAnyGlob(t *testing.T) {
+	// Arrange
 	tests := []struct {
 		name     string
 		path     string
@@ -114,7 +123,10 @@ func TestMatchesAnyGlob(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			// Act
 			result := matchesAnyGlob(tt.path, tt.patterns)
+
+			// Assert
 			if result != tt.expected {
 				t.Errorf("matchesAnyGlob(%q, %v) = %v, want %v", tt.path, tt.patterns, result, tt.expected)
 			}
@@ -123,6 +135,7 @@ func TestMatchesAnyGlob(t *testing.T) {
 }
 
 func TestShouldAnalyzeFile(t *testing.T) {
+	// Arrange
 	tests := []struct {
 		name         string
 		path         string
@@ -183,7 +196,10 @@ func TestShouldAnalyzeFile(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			// Act
 			result := shouldAnalyzeFile(tt.path, tt.fileType, tt.filePatterns)
+
+			// Assert
 			if result != tt.expected {
 				t.Errorf("shouldAnalyzeFile(%q, %v, %v) = %v, want %v",
 					tt.path, tt.fileType, tt.filePatterns, result, tt.expected)

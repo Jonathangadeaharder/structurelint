@@ -7,6 +7,7 @@ import (
 )
 
 func TestDetectLanguage(t *testing.T) {
+	// Arrange
 	tests := []struct {
 		filePath string
 		expected string
@@ -24,7 +25,10 @@ func TestDetectLanguage(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.filePath, func(t *testing.T) {
+			// Act
 			result := detectLanguage(tt.filePath)
+
+			// Assert
 			if result != tt.expected {
 				t.Errorf("detectLanguage(%q) = %q, want %q", tt.filePath, result, tt.expected)
 			}
@@ -33,8 +37,10 @@ func TestDetectLanguage(t *testing.T) {
 }
 
 func TestNewMultiLanguageCognitiveComplexityAnalyzer(t *testing.T) {
+	// Act
 	analyzer := NewMultiLanguageCognitiveComplexityAnalyzer()
 
+	// Assert
 	if analyzer == nil {
 		t.Fatal("NewMultiLanguageCognitiveComplexityAnalyzer() returned nil")
 	}
@@ -49,8 +55,10 @@ func TestNewMultiLanguageCognitiveComplexityAnalyzer(t *testing.T) {
 }
 
 func TestNewMultiLanguageHalsteadAnalyzer(t *testing.T) {
+	// Act
 	analyzer := NewMultiLanguageHalsteadAnalyzer()
 
+	// Assert
 	if analyzer == nil {
 		t.Fatal("NewMultiLanguageHalsteadAnalyzer() returned nil")
 	}
@@ -65,7 +73,10 @@ func TestNewMultiLanguageHalsteadAnalyzer(t *testing.T) {
 }
 
 func TestGetScriptPath(t *testing.T) {
+	// Act
 	scriptPath, err := getScriptPath("python_metrics.py")
+
+	// Assert
 	if err != nil {
 		t.Fatalf("getScriptPath() error = %v", err)
 	}
@@ -82,9 +93,9 @@ func TestGetScriptPath(t *testing.T) {
 }
 
 func TestAnalyzeFileByPath_UnsupportedLanguage(t *testing.T) {
+	// Arrange
 	analyzer := NewMultiLanguageCognitiveComplexityAnalyzer()
 
-	// Create a temporary file with unsupported extension
 	tmpFile, err := os.CreateTemp("", "test*.go")
 	if err != nil {
 		t.Fatalf("Failed to create temp file: %v", err)
@@ -92,7 +103,10 @@ func TestAnalyzeFileByPath_UnsupportedLanguage(t *testing.T) {
 	defer os.Remove(tmpFile.Name())
 	tmpFile.Close()
 
+	// Act
 	_, err = analyzer.AnalyzeFileByPath(tmpFile.Name())
+
+	// Assert
 	if err == nil {
 		t.Error("AnalyzeFileByPath() with .go file should return error, got nil")
 	}
@@ -104,16 +118,15 @@ func TestAnalyzeFileByPath_UnsupportedLanguage(t *testing.T) {
 }
 
 func TestAnalyzePythonFile_ValidPython(t *testing.T) {
+	// Arrange
 	analyzer := NewMultiLanguageCognitiveComplexityAnalyzer()
 
-	// Create a temporary Python file
 	tmpFile, err := os.CreateTemp("", "test*.py")
 	if err != nil {
 		t.Fatalf("Failed to create temp file: %v", err)
 	}
 	defer os.Remove(tmpFile.Name())
 
-	// Write simple Python code
 	pythonCode := `def simple_function(x):
     return x + 1
 
@@ -128,9 +141,10 @@ def complex_function(x):
 	}
 	tmpFile.Close()
 
+	// Act
 	metrics, err := analyzer.AnalyzeFileByPath(tmpFile.Name())
 
-	// If Python is not available, skip the test
+	// Assert
 	if err != nil && containsString(err.Error(), "failed to execute") {
 		t.Skip("Python interpreter not available, skipping test")
 	}
@@ -147,23 +161,21 @@ def complex_function(x):
 		t.Error("Expected at least one function in metrics")
 	}
 
-	// Verify we got metrics for both functions
 	if len(metrics.Functions) != 2 {
 		t.Errorf("Got %d functions, want 2", len(metrics.Functions))
 	}
 }
 
 func TestAnalyzeJavaScriptFile_ValidJS(t *testing.T) {
+	// Arrange
 	analyzer := NewMultiLanguageCognitiveComplexityAnalyzer()
 
-	// Create a temporary JavaScript file
 	tmpFile, err := os.CreateTemp("", "test*.js")
 	if err != nil {
 		t.Fatalf("Failed to create temp file: %v", err)
 	}
 	defer os.Remove(tmpFile.Name())
 
-	// Write simple JavaScript code
 	jsCode := `function simpleFunction(x) {
     return x + 1;
 }
@@ -182,9 +194,10 @@ function complexFunction(x) {
 	}
 	tmpFile.Close()
 
+	// Act
 	metrics, err := analyzer.AnalyzeFileByPath(tmpFile.Name())
 
-	// If Node.js is not available or @babel/parser is missing, skip the test
+	// Assert
 	if err != nil && (containsString(err.Error(), "failed to execute") || containsString(err.Error(), "@babel/parser")) {
 		t.Skip("Node.js or @babel/parser not available, skipping test")
 	}
