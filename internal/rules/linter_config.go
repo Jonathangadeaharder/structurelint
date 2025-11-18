@@ -108,7 +108,9 @@ func (r *LinterConfigRule) detectLanguages(files []walker.FileInfo) map[string]b
 		case ".ts", ".tsx":
 			languages["typescript"] = true
 		case ".js", ".jsx":
-			languages["javascript"] = true
+			// Treat JavaScript as TypeScript for linter enforcement
+			// since ESLint, Prettier, and other TS tools work for both
+			languages["typescript"] = true
 		case ".go":
 			languages["go"] = true
 		case ".html", ".htm":
@@ -263,7 +265,12 @@ func (r *LinterConfigRule) hasConfigFile(files []walker.FileInfo, configFiles []
 
 			// Handle pattern matching (e.g., .eslintrc*)
 			if strings.Contains(expectedFile, "*") {
-				matched, _ := filepath.Match(expectedFile, filename)
+				matched, err := filepath.Match(expectedFile, filename)
+				if err != nil {
+					// This should not happen with hardcoded patterns
+					// but skip this pattern if there's an error
+					continue
+				}
 				if matched {
 					return true
 				}
@@ -354,10 +361,23 @@ func (r *LinterConfigRule) formatMissingLinterMessage(config LinterConfig) strin
 		toolNames = append(toolNames, step)
 	}
 
+	// Format config files display
+	var configFilesDisplay string
+	if len(configFileNames) == 0 {
+		configFilesDisplay = "(no standard config files)"
+	} else {
+		// Show up to 5 config file names
+		displayCount := min(5, len(configFileNames))
+		configFilesDisplay = strings.Join(configFileNames[:displayCount], ", ")
+		if len(configFileNames) > 5 {
+			configFilesDisplay += ", ..."
+		}
+	}
+
 	message := fmt.Sprintf(
 		"No %s linter configuration found. Expected one of: %s, or a GitHub workflow running: %s",
 		config.Language,
-		strings.Join(configFileNames[:min(5, len(configFileNames))], ", "),
+		configFilesDisplay,
 		strings.Join(toolNames, ", "),
 	)
 

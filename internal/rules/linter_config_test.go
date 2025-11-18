@@ -289,6 +289,26 @@ func TestLinterConfigRule_TsconfigJson(t *testing.T) {
 	}
 }
 
+func TestLinterConfigRule_JavaScriptFilesRequireTypeScriptLinters(t *testing.T) {
+	// Arrange
+	rule := &LinterConfigRule{
+		RequireTypeScript: true,
+	}
+	files := []walker.FileInfo{
+		{Path: "app.js", ParentPath: ".", IsDir: false},
+		{Path: ".eslintrc.json", ParentPath: ".", IsDir: false},
+	}
+
+	// Act
+	violations := rule.Check(files, make(map[string]*walker.DirInfo))
+
+	// Assert
+	// JavaScript files should be treated as TypeScript for linter purposes
+	if len(violations) != 0 {
+		t.Errorf("Expected no violations for JS files with ESLint config, got %d violations", len(violations))
+	}
+}
+
 func TestLinterConfigRule_HTMLWithHTMLHintConfig(t *testing.T) {
 	// Arrange
 	rule := &LinterConfigRule{
