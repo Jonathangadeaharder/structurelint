@@ -51,7 +51,8 @@ func (l *Linter) Lint(path string) ([]Violation, error) {
 	needsGraph := len(l.config.Layers) > 0 ||
 		l.isRuleEnabled("enforce-layer-boundaries") ||
 		l.isRuleEnabled("disallow-orphaned-files") ||
-		l.isRuleEnabled("disallow-unused-exports")
+		l.isRuleEnabled("disallow-unused-exports") ||
+		l.isRuleEnabled("property-enforcement")
 
 	if needsGraph {
 		builder := graph.NewBuilder(path, l.config.Layers)
@@ -211,6 +212,19 @@ func (l *Linter) addComplexRules(rulesList *[]rules.Rule, importGraph *graph.Imp
 
 		if _, ok := l.getRuleConfig("disallow-unused-exports"); ok {
 			*rulesList = append(*rulesList, rules.NewUnusedExportsRule(importGraph))
+		}
+
+		// Property enforcement rule - comprehensive dependency management
+		if propertyConfig, ok := l.getRuleConfig("property-enforcement"); ok {
+			if configMap, ok := propertyConfig.(map[string]interface{}); ok {
+				config := rules.PropertyEnforcementConfig{
+					MaxDependenciesPerFile: l.getIntFromMap(configMap, "max_dependencies_per_file"),
+					MaxDependencyDepth:     l.getIntFromMap(configMap, "max_dependency_depth"),
+					DetectCycles:           l.getBoolFromMap(configMap, "detect_cycles"),
+					ForbiddenPatterns:      l.getStringSliceFromMap(configMap, "forbidden_patterns"),
+				}
+				*rulesList = append(*rulesList, rules.NewPropertyEnforcementRule(importGraph, config))
+			}
 		}
 	}
 
