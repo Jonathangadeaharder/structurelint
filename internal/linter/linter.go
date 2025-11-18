@@ -214,6 +214,33 @@ func (l *Linter) addComplexRules(rulesList *[]rules.Rule, importGraph *graph.Imp
 		}
 	}
 
+	// Path-based layer rule (Priority 3 - doesn't require import graph)
+	if ruleConfig, ok := l.getRuleConfig("path-based-layers"); ok {
+		if configMap, ok := ruleConfig.(map[string]interface{}); ok {
+			if layersConfig, ok := configMap["layers"].([]interface{}); ok {
+				var pathLayers []rules.PathLayer
+				for _, layerInterface := range layersConfig {
+					layerMap, ok := layerInterface.(map[string]interface{})
+					if !ok {
+						continue
+					}
+
+					layer := rules.PathLayer{
+						Name:           l.getStringFromMap(layerMap, "name"),
+						Patterns:       l.getStringSliceFromMap(layerMap, "patterns"),
+						CanDependOn:    l.getStringSliceFromMap(layerMap, "canDependOn"),
+						ForbiddenPaths: l.getStringSliceFromMap(layerMap, "forbiddenPaths"),
+					}
+					pathLayers = append(pathLayers, layer)
+				}
+
+				if len(pathLayers) > 0 {
+					*rulesList = append(*rulesList, rules.NewPathBasedLayerRule(pathLayers))
+				}
+			}
+		}
+	}
+
 	// Test validation rules (Phase 3)
 	l.addTestValidationRules(rulesList)
 

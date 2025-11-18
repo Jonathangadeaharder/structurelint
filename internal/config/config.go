@@ -36,6 +36,14 @@ type Layer struct {
 	DependsOn []string `yaml:"dependsOn"`
 }
 
+// PathBasedLayer represents a path-based layer (Priority 3 feature)
+type PathBasedLayer struct {
+	Name           string   `yaml:"name"`
+	Patterns       []string `yaml:"patterns"`       // Regex/glob patterns for matching files
+	CanDependOn    []string `yaml:"canDependOn"`    // Names of layers this can depend on
+	ForbiddenPaths []string `yaml:"forbiddenPaths"` // Path patterns this layer cannot contain
+}
+
 // MaxDepthRule represents the max-depth rule configuration
 type MaxDepthRule struct {
 	Max int `yaml:"max"`
