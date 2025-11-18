@@ -14,12 +14,14 @@ import (
 // GitHubWorkflowsRule enforces the presence and configuration of GitHub Actions workflows
 // for test execution, security scanning, and code quality checks.
 type GitHubWorkflowsRule struct {
-	RequireTests    bool     `yaml:"require-tests"`
-	RequireSecurity bool     `yaml:"require-security"`
-	RequireQuality  bool     `yaml:"require-quality"`
-	RequiredJobs    []string `yaml:"required-jobs"`
-	RequiredTriggers []string `yaml:"required-triggers"`
-	AllowMissing    []string `yaml:"allow-missing"`
+	RequireTests          bool     `yaml:"require-tests"`
+	RequireSecurity       bool     `yaml:"require-security"`
+	RequireQuality        bool     `yaml:"require-quality"`
+	RequiredJobs          []string `yaml:"required-jobs"`
+	RequiredTriggers      []string `yaml:"required-triggers"`
+	AllowMissing          []string `yaml:"allow-missing"`
+	RequireLogCommits     bool     `yaml:"require-log-commits"`
+	RequireRepomixArtifact bool    `yaml:"require-repomix-artifact"`
 }
 
 // WorkflowFile represents a parsed GitHub Actions workflow file
@@ -38,9 +40,11 @@ type WorkflowJob struct {
 
 // WorkflowStep represents a step in a workflow job
 type WorkflowStep struct {
-	Name string `yaml:"name"`
-	Uses string `yaml:"uses"`
-	Run  string `yaml:"run"`
+	Name string                 `yaml:"name"`
+	Uses string                 `yaml:"uses"`
+	Run  string                 `yaml:"run"`
+	If   string                 `yaml:"if"`
+	With map[string]interface{} `yaml:"with"`
 }
 
 // Name returns the rule name
@@ -343,17 +347,101 @@ func (r *GitHubWorkflowsRule) validateJob(path, jobName string, job WorkflowJob)
 		})
 	}
 
+	// Check for logging requirements
+	if r.RequireLogCommits && !r.hasLogCommitSteps(job) {
+		violations = append(violations, Violation{
+			Rule:    r.Name(),
+			Path:    path,
+			Message: fmt.Sprintf("Job '%s' missing log commit steps. Add steps to commit and push execution logs to the triggering branch so agents can pull and review results. Example: use 'git add *.log && git commit -m \"Add logs\" && git push'.", jobName),
+		})
+	}
+
+	if r.RequireRepomixArtifact && !r.hasRepomixArtifactSteps(job) {
+		violations = append(violations, Violation{
+			Rule:    r.Name(),
+			Path:    path,
+			Message: fmt.Sprintf("Job '%s' missing repomix artifact steps. Add steps to run repomix and upload the codebase summary as an artifact for agent context. Example: run 'npx repomix' and use 'actions/upload-artifact@v4' to upload the output.", jobName),
+		})
+	}
+
 	return violations
+}
+
+// hasLogCommitSteps checks if a job has steps that commit logs to the branch
+func (r *GitHubWorkflowsRule) hasLogCommitSteps(job WorkflowJob) bool {
+	hasLogCreation := false
+	hasGitCommit := false
+	hasGitPush := false
+
+	for _, step := range job.Steps {
+		runLower := strings.ToLower(step.Run)
+
+		// Check for log file creation (tee or redirection to .log files)
+		if strings.Contains(runLower, "tee") && strings.Contains(runLower, ".log") {
+			hasLogCreation = true
+		}
+		if strings.Contains(runLower, ">.log") || strings.Contains(runLower, ">>.log") {
+			hasLogCreation = true
+		}
+
+		// Check for git commit operations
+		if strings.Contains(runLower, "git commit") || strings.Contains(runLower, "git add") {
+			hasGitCommit = true
+		}
+
+		// Check for git push operations
+		if strings.Contains(runLower, "git push") {
+			hasGitPush = true
+		}
+	}
+
+	// All three components are required: log creation, git commit, and git push
+	return hasLogCreation && hasGitCommit && hasGitPush
+}
+
+// hasRepomixArtifactSteps checks if a job has steps that run repomix and upload the artifact
+func (r *GitHubWorkflowsRule) hasRepomixArtifactSteps(job WorkflowJob) bool {
+	hasRepomixRun := false
+	hasArtifactUpload := false
+
+	for _, step := range job.Steps {
+		runLower := strings.ToLower(step.Run)
+
+		// Check for repomix execution (npx repomix, npm repomix, etc.)
+		if strings.Contains(runLower, "repomix") {
+			hasRepomixRun = true
+		}
+
+		// Check if step uses upload-artifact action
+		if strings.Contains(step.Uses, "upload-artifact") {
+			// Check if it uploads repomix output (typically .xml, .txt, or repomix-output)
+			if step.With != nil {
+				if path, ok := step.With["path"]; ok {
+					pathStr := strings.ToLower(fmt.Sprintf("%v", path))
+					if strings.Contains(pathStr, "repomix") ||
+						strings.Contains(pathStr, "output.xml") ||
+						strings.Contains(pathStr, "output.txt") {
+						hasArtifactUpload = true
+					}
+				}
+			}
+		}
+	}
+
+	// Both repomix execution and artifact upload are required
+	return hasRepomixRun && hasArtifactUpload
 }
 
 // NewGitHubWorkflowsRule creates a new GitHubWorkflowsRule
 func NewGitHubWorkflowsRule(config GitHubWorkflowsRule) *GitHubWorkflowsRule {
 	return &GitHubWorkflowsRule{
-		RequireTests:     config.RequireTests,
-		RequireSecurity:  config.RequireSecurity,
-		RequireQuality:   config.RequireQuality,
-		RequiredJobs:     config.RequiredJobs,
-		RequiredTriggers: config.RequiredTriggers,
-		AllowMissing:     config.AllowMissing,
+		RequireTests:          config.RequireTests,
+		RequireSecurity:       config.RequireSecurity,
+		RequireQuality:        config.RequireQuality,
+		RequiredJobs:          config.RequiredJobs,
+		RequiredTriggers:      config.RequiredTriggers,
+		AllowMissing:          config.AllowMissing,
+		RequireLogCommits:     config.RequireLogCommits,
+		RequireRepomixArtifact: config.RequireRepomixArtifact,
 	}
 }

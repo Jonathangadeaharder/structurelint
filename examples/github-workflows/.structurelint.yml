@@ -20,6 +20,14 @@ rules:
     # (e.g., linting, formatting, static analysis)
     require-quality: true
 
+    # Optionally require workflows to commit logs to the branch
+    # Allows agents to pull and review execution results
+    # require-log-commits: true
+
+    # Optionally require workflows to package codebase with repomix and upload as artifact
+    # Provides comprehensive codebase context for agents
+    # require-repomix-artifact: true
+
     # Optionally require specific jobs to be present
     # required-jobs:
     #   - test

@@ -48,6 +48,12 @@ rules:
     # Require a workflow that checks code quality
     require-quality: true
 
+    # Optionally require workflows to commit logs to the branch
+    require-log-commits: false
+
+    # Optionally require workflows to package codebase with repomix and upload as artifact
+    require-repomix-artifact: false
+
     # Optionally require specific jobs
     required-jobs:
       - test
@@ -193,6 +199,93 @@ rules:
 ```
 .github/workflows/test.yml: Required job 'integration' not found in workflow.
 ```
+
+### 8. Execution Log Commits
+
+Optionally enforce that workflows commit execution logs back to the triggering branch, allowing agents and developers to review results:
+
+```yaml
+rules:
+  github-workflows:
+    require-log-commits: true  # Require workflows to commit logs to the branch
+```
+
+This ensures workflows:
+- Create log files (using `tee` or redirection to `.log` files)
+- Commit logs using `git add` and `git commit`
+- Push logs back to the triggering branch using `git push`
+
+**Violation**:
+```
+.github/workflows/test.yml: Job 'test' missing log commit steps.
+Add steps to commit and push execution logs to the triggering branch
+so agents can pull and review results.
+Example: use 'git add *.log && git commit -m "Add logs" && git push'.
+```
+
+**Valid Example**:
+```yaml
+name: Tests
+on: [push]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run tests
+        run: go test ./... 2>&1 | tee test.log
+      - name: Commit logs
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add *.log
+          git commit -m "Add test execution logs [skip ci]"
+          git push
+```
+
+### 9. Repomix Codebase Artifact
+
+Optionally require workflows to package the codebase with repomix and upload as an artifact for agent context:
+
+```yaml
+rules:
+  github-workflows:
+    require-repomix-artifact: true  # Require workflows to upload repomix codebase summary
+```
+
+This ensures workflows:
+- Run repomix to create a comprehensive codebase summary
+- Upload the repomix output as an artifact for agent analysis
+
+**Violation**:
+```
+.github/workflows/test.yml: Job 'test' missing repomix artifact steps.
+Add steps to run repomix and upload the codebase summary as an artifact for agent context.
+Example: run 'npx repomix' and use 'actions/upload-artifact@v4' to upload the output.
+```
+
+**Valid Example**:
+```yaml
+name: Tests
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run tests
+        run: go test ./...
+      - name: Generate repomix summary
+        run: npx repomix
+      - name: Upload repomix artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: repomix-output-${{ github.sha }}
+          path: repomix-output.txt
+          retention-days: 7
+```
+
+**Note**: Repomix creates a comprehensive codebase summary that agents can use to understand the full context of your project, making it easier for automated tools to analyze failures and suggest fixes.
 
 ## Example Workflows
 
