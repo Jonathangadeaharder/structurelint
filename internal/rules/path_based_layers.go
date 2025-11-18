@@ -121,6 +121,7 @@ func (r *PathBasedLayerRule) checkFileLocation(
 	fileToLayer map[string]*PathLayer,
 ) []Violation {
 	var violations []Violation
+	violationPaths := make(map[string]bool) // Track which patterns have already triggered violations
 
 	// Check forbidden paths
 	for _, forbiddenPattern := range layer.ForbiddenPaths {
@@ -141,10 +142,108 @@ func (r *PathBasedLayerRule) checkFileLocation(
 					forbiddenPattern,
 				),
 			})
+			// Mark this pattern as having triggered a violation
+			violationPaths[forbiddenPattern] = true
+		}
+	}
+
+	// Check CanDependOn constraints by inferring forbidden layers
+	// If a layer specifies what it can depend on, implicitly forbid other layers
+	if len(layer.CanDependOn) > 0 {
+		// Build set of forbidden layer names (all layers except self and allowed dependencies)
+		forbiddenLayers := r.getForbiddenLayersFromCanDependOn(layer)
+		
+		// Check if file path contains patterns from forbidden layers
+		for _, forbiddenLayerName := range forbiddenLayers {
+			// Find the forbidden layer definition to get its patterns
+			var forbiddenLayer *PathLayer
+			for i := range r.Layers {
+				if r.Layers[i].Name == forbiddenLayerName {
+					forbiddenLayer = &r.Layers[i]
+					break
+				}
+			}
+			
+			if forbiddenLayer == nil {
+				continue
+			}
+			
+			// Check if file path contains the forbidden layer's path segments
+			// For example, if "presentation" can depend on "business" but not "data",
+			// flag files like "src/presentation/utils/data/cache.py"
+			for _, pattern := range forbiddenLayer.Patterns {
+				// Extract the layer-specific path segment from the pattern
+				// e.g., "src/data/**" -> check for "/data/" in the path
+				layerSegment := r.extractLayerSegment(pattern)
+				if layerSegment != "" && strings.Contains(file.Path, layerSegment) {
+					// Skip if we already reported this via ForbiddenPaths
+					// Check if any ForbiddenPath matches this layer segment
+					skipDuplicate := false
+					for forbiddenPattern := range violationPaths {
+						if strings.Contains(forbiddenPattern, strings.Trim(layerSegment, "/")) {
+							skipDuplicate = true
+							break
+						}
+					}
+					
+					if !skipDuplicate {
+						violations = append(violations, Violation{
+							Rule: r.Name(),
+							Path: file.Path,
+							Message: fmt.Sprintf(
+								"layer '%s' file contains path from layer '%s' which is not in its allowed dependencies (canDependOn: %v)",
+								layer.Name,
+								forbiddenLayerName,
+								layer.CanDependOn,
+							),
+						})
+					}
+				}
+			}
 		}
 	}
 
 	return violations
+}
+
+// getForbiddenLayersFromCanDependOn returns layer names that are implicitly forbidden
+// based on the CanDependOn configuration
+func (r *PathBasedLayerRule) getForbiddenLayersFromCanDependOn(layer *PathLayer) []string {
+	var forbidden []string
+	allowedMap := make(map[string]bool)
+	allowedMap[layer.Name] = true // Layer can reference itself
+	
+	for _, allowed := range layer.CanDependOn {
+		allowedMap[allowed] = true
+	}
+	
+	for i := range r.Layers {
+		otherLayer := &r.Layers[i]
+		if !allowedMap[otherLayer.Name] {
+			forbidden = append(forbidden, otherLayer.Name)
+		}
+	}
+	
+	return forbidden
+}
+
+// extractLayerSegment extracts the key path segment from a layer pattern
+// e.g., "src/data/**" -> "/data/", "src/business/**" -> "/business/"
+func (r *PathBasedLayerRule) extractLayerSegment(pattern string) string {
+	// Remove glob wildcards
+	cleaned := strings.ReplaceAll(pattern, "**", "")
+	cleaned = strings.ReplaceAll(cleaned, "*", "")
+	cleaned = strings.Trim(cleaned, "/")
+	
+	// Extract the last meaningful segment before wildcards
+	// For "src/data/**", we want "data"
+	parts := strings.Split(cleaned, "/")
+	if len(parts) >= 2 {
+		// Return as "/segment/" to match in paths
+		return "/" + parts[len(parts)-1] + "/"
+	}
+	
+	return ""
 }
 
 // globToRegex converts a simple glob pattern to regex

@@ -1,5 +1,9 @@
 package rules
 
+import (
+	"github.com/structurelint/structurelint/internal/walker"
+)
+
 // InfrastructureProfile identifies infrastructure code directories
 // These directories typically contain declarative configs that need different validation
 type InfrastructureProfile struct {
@@ -61,11 +65,12 @@ func (p *InfrastructureProfile) FilterInfrastructureFiles(files []interface{}) [
 		// Support both FileInfo and string paths
 		var path string
 		switch f := file.(type) {
+		case *walker.FileInfo:
+			path = f.Path
 		case string:
 			path = f
 		default:
-			// Try to extract path via type assertion to walker.FileInfo
-			// This is a generic implementation
+			// Log a warning or handle unexpected types if necessary
 			continue
 		}
 
