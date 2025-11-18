@@ -51,6 +51,12 @@ func (r *LinterConfigRule) Name() string {
 	return "linter-config"
 }
 
+// languageCheck represents a language to check for linter configuration
+type languageCheck struct {
+	enabled      bool
+	languageKey  string
+}
+
 // Check validates linter configuration requirements
 func (r *LinterConfigRule) Check(files []walker.FileInfo, dirs map[string]*walker.DirInfo) []Violation {
 	var violations []Violation
@@ -61,60 +67,27 @@ func (r *LinterConfigRule) Check(files []walker.FileInfo, dirs map[string]*walke
 	// Define linter configurations for each language
 	linterConfigs := r.getLinterConfigs()
 
-	// Check each language
-	if r.RequirePython && languages["python"] {
-		pythonViolations := r.checkLanguageLinters(files, linterConfigs["python"])
-		violations = append(violations, pythonViolations...)
+	// Define language checks to perform
+	languageChecks := []languageCheck{
+		{r.RequirePython, "python"},
+		{r.RequireTypeScript, "typescript"},
+		{r.RequireGo, "go"},
+		{r.RequireHTML, "html"},
+		{r.RequireCSS, "css"},
+		{r.RequireSQL, "sql"},
+		{r.RequireRust, "rust"},
+		{r.RequireMarkdown, "markdown"},
+		{r.RequireJava, "java"},
+		{r.RequireCpp, "cpp"},
+		{r.RequireCSharp, "csharp"},
 	}
 
-	if r.RequireTypeScript && languages["typescript"] {
-		tsViolations := r.checkLanguageLinters(files, linterConfigs["typescript"])
-		violations = append(violations, tsViolations...)
-	}
-
-	if r.RequireGo && languages["go"] {
-		goViolations := r.checkLanguageLinters(files, linterConfigs["go"])
-		violations = append(violations, goViolations...)
-	}
-
-	if r.RequireHTML && languages["html"] {
-		htmlViolations := r.checkLanguageLinters(files, linterConfigs["html"])
-		violations = append(violations, htmlViolations...)
-	}
-
-	if r.RequireCSS && languages["css"] {
-		cssViolations := r.checkLanguageLinters(files, linterConfigs["css"])
-		violations = append(violations, cssViolations...)
-	}
-
-	if r.RequireSQL && languages["sql"] {
-		sqlViolations := r.checkLanguageLinters(files, linterConfigs["sql"])
-		violations = append(violations, sqlViolations...)
-	}
-
-	if r.RequireRust && languages["rust"] {
-		rustViolations := r.checkLanguageLinters(files, linterConfigs["rust"])
-		violations = append(violations, rustViolations...)
-	}
-
-	if r.RequireMarkdown && languages["markdown"] {
-		markdownViolations := r.checkLanguageLinters(files, linterConfigs["markdown"])
-		violations = append(violations, markdownViolations...)
-	}
-
-	if r.RequireJava && languages["java"] {
-		javaViolations := r.checkLanguageLinters(files, linterConfigs["java"])
-		violations = append(violations, javaViolations...)
-	}
-
-	if r.RequireCpp && languages["cpp"] {
-		cppViolations := r.checkLanguageLinters(files, linterConfigs["cpp"])
-		violations = append(violations, cppViolations...)
-	}
-
-	if r.RequireCSharp && languages["csharp"] {
-		csharpViolations := r.checkLanguageLinters(files, linterConfigs["csharp"])
-		violations = append(violations, csharpViolations...)
+	// Check each enabled language
+	for _, check := range languageChecks {
+		if check.enabled && languages[check.languageKey] {
+			langViolations := r.checkLanguageLinters(files, linterConfigs[check.languageKey])
+			violations = append(violations, langViolations...)
+		}
 	}
 
 	return violations
