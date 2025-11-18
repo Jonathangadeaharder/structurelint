@@ -5,8 +5,8 @@ import (
 )
 
 func TestInfrastructureProfile_GitHubActions(t *testing.T) {
+	// Arrange
 	profile := NewInfrastructureProfile(nil)
-
 	tests := []struct {
 		path     string
 		expected bool
@@ -18,7 +18,10 @@ func TestInfrastructureProfile_GitHubActions(t *testing.T) {
 	}
 
 	for _, tt := range tests {
+		// Act
 		result := profile.IsInfrastructure(tt.path)
+
+		// Assert
 		if result != tt.expected {
 			t.Errorf("IsInfrastructure(%q) = %v, want %v", tt.path, result, tt.expected)
 		}
@@ -26,8 +29,8 @@ func TestInfrastructureProfile_GitHubActions(t *testing.T) {
 }
 
 func TestInfrastructureProfile_Docker(t *testing.T) {
+	// Arrange
 	profile := NewInfrastructureProfile(nil)
-
 	tests := []struct {
 		path     string
 		expected bool
@@ -39,7 +42,10 @@ func TestInfrastructureProfile_Docker(t *testing.T) {
 	}
 
 	for _, tt := range tests {
+		// Act
 		result := profile.IsInfrastructure(tt.path)
+
+		// Assert
 		if result != tt.expected {
 			t.Errorf("IsInfrastructure(%q) = %v, want %v", tt.path, result, tt.expected)
 		}
@@ -47,8 +53,8 @@ func TestInfrastructureProfile_Docker(t *testing.T) {
 }
 
 func TestInfrastructureProfile_Kubernetes(t *testing.T) {
+	// Arrange
 	profile := NewInfrastructureProfile(nil)
-
 	tests := []struct {
 		path     string
 		expected bool
@@ -60,7 +66,10 @@ func TestInfrastructureProfile_Kubernetes(t *testing.T) {
 	}
 
 	for _, tt := range tests {
+		// Act
 		result := profile.IsInfrastructure(tt.path)
+
+		// Assert
 		if result != tt.expected {
 			t.Errorf("IsInfrastructure(%q) = %v, want %v", tt.path, result, tt.expected)
 		}
@@ -68,8 +77,8 @@ func TestInfrastructureProfile_Kubernetes(t *testing.T) {
 }
 
 func TestInfrastructureProfile_Terraform(t *testing.T) {
+	// Arrange
 	profile := NewInfrastructureProfile(nil)
-
 	tests := []struct {
 		path     string
 		expected bool
@@ -81,7 +90,10 @@ func TestInfrastructureProfile_Terraform(t *testing.T) {
 	}
 
 	for _, tt := range tests {
+		// Act
 		result := profile.IsInfrastructure(tt.path)
+
+		// Assert
 		if result != tt.expected {
 			t.Errorf("IsInfrastructure(%q) = %v, want %v", tt.path, result, tt.expected)
 		}
@@ -89,8 +101,8 @@ func TestInfrastructureProfile_Terraform(t *testing.T) {
 }
 
 func TestInfrastructureProfile_Scripts(t *testing.T) {
+	// Arrange
 	profile := NewInfrastructureProfile(nil)
-
 	tests := []struct {
 		path     string
 		expected bool
@@ -102,7 +114,10 @@ func TestInfrastructureProfile_Scripts(t *testing.T) {
 	}
 
 	for _, tt := range tests {
+		// Act
 		result := profile.IsInfrastructure(tt.path)
+
+		// Assert
 		if result != tt.expected {
 			t.Errorf("IsInfrastructure(%q) = %v, want %v", tt.path, result, tt.expected)
 		}
@@ -110,12 +125,12 @@ func TestInfrastructureProfile_Scripts(t *testing.T) {
 }
 
 func TestInfrastructureProfile_UserPatterns(t *testing.T) {
+	// Arrange
 	userPatterns := []string{
 		"deployment/**",
 		"config/**",
 	}
 	profile := NewInfrastructureProfile(userPatterns)
-
 	tests := []struct {
 		path     string
 		expected bool
@@ -127,7 +142,10 @@ func TestInfrastructureProfile_UserPatterns(t *testing.T) {
 	}
 
 	for _, tt := range tests {
+		// Act
 		result := profile.IsInfrastructure(tt.path)
+
+		// Assert
 		if result != tt.expected {
 			t.Errorf("IsInfrastructure(%q) = %v, want %v", tt.path, result, tt.expected)
 		}
@@ -135,8 +153,8 @@ func TestInfrastructureProfile_UserPatterns(t *testing.T) {
 }
 
 func TestInfrastructureProfile_ShouldExemptFromRule(t *testing.T) {
+	// Arrange
 	profile := NewInfrastructureProfile(nil)
-
 	tests := []struct {
 		path     string
 		rule     string
@@ -151,7 +169,10 @@ func TestInfrastructureProfile_ShouldExemptFromRule(t *testing.T) {
 	}
 
 	for _, tt := range tests {
+		// Act
 		result := profile.ShouldExemptFromRule(tt.path, tt.rule)
+
+		// Assert
 		if result != tt.expected {
 			t.Errorf("ShouldExemptFromRule(%q, %q) = %v, want %v", tt.path, tt.rule, result, tt.expected)
 		}
@@ -159,8 +180,8 @@ func TestInfrastructureProfile_ShouldExemptFromRule(t *testing.T) {
 }
 
 func TestInfrastructureProfile_GitLabCI(t *testing.T) {
+	// Arrange
 	profile := NewInfrastructureProfile(nil)
-
 	tests := []struct {
 		path     string
 		expected bool
@@ -171,7 +192,10 @@ func TestInfrastructureProfile_GitLabCI(t *testing.T) {
 	}
 
 	for _, tt := range tests {
+		// Act
 		result := profile.IsInfrastructure(tt.path)
+
+		// Assert
 		if result != tt.expected {
 			t.Errorf("IsInfrastructure(%q) = %v, want %v", tt.path, result, tt.expected)
 		}
@@ -179,8 +203,8 @@ func TestInfrastructureProfile_GitLabCI(t *testing.T) {
 }
 
 func TestInfrastructureProfile_Ansible(t *testing.T) {
+	// Arrange
 	profile := NewInfrastructureProfile(nil)
-
 	tests := []struct {
 		path     string
 		expected bool
@@ -191,7 +215,10 @@ func TestInfrastructureProfile_Ansible(t *testing.T) {
 	}
 
 	for _, tt := range tests {
+		// Act
 		result := profile.IsInfrastructure(tt.path)
+
+		// Assert
 		if result != tt.expected {
 			t.Errorf("IsInfrastructure(%q) = %v, want %v", tt.path, result, tt.expected)
 		}
@@ -199,8 +226,8 @@ func TestInfrastructureProfile_Ansible(t *testing.T) {
 }
 
 func TestInfrastructureProfile_Helm(t *testing.T) {
+	// Arrange
 	profile := NewInfrastructureProfile(nil)
-
 	tests := []struct {
 		path     string
 		expected bool
@@ -211,7 +238,10 @@ func TestInfrastructureProfile_Helm(t *testing.T) {
 	}
 
 	for _, tt := range tests {
+		// Act
 		result := profile.IsInfrastructure(tt.path)
+
+		// Assert
 		if result != tt.expected {
 			t.Errorf("IsInfrastructure(%q) = %v, want %v", tt.path, result, tt.expected)
 		}
@@ -219,6 +249,7 @@ func TestInfrastructureProfile_Helm(t *testing.T) {
 }
 
 func TestMatchesGlobPattern_RecursiveWildcard(t *testing.T) {
+	// Arrange
 	tests := []struct {
 		path     string
 		pattern  string
@@ -231,7 +262,10 @@ func TestMatchesGlobPattern_RecursiveWildcard(t *testing.T) {
 	}
 
 	for _, tt := range tests {
+		// Act
 		result := matchesGlobPattern(tt.path, tt.pattern)
+
+		// Assert
 		if result != tt.expected {
 			t.Errorf("matchesGlobPattern(%q, %q) = %v, want %v", tt.path, tt.pattern, result, tt.expected)
 		}

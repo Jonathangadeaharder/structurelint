@@ -75,16 +75,18 @@ temp/
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Create temporary directory with .gitignore
+			// Arrange
 			tmpDir := t.TempDir()
 			gitignorePath := filepath.Join(tmpDir, ".gitignore")
-
 			err := os.WriteFile(gitignorePath, []byte(tt.gitignore), 0644)
 			if err != nil {
 				t.Fatalf("Failed to create test .gitignore: %v", err)
 			}
 
+			// Act
 			got, err := LoadGitignorePatterns(tmpDir)
+
+			// Assert
 			if (err != nil) != tt.wantErr {
 				t.Errorf("LoadGitignorePatterns() error = %v, wantErr %v", err, tt.wantErr)
 				return

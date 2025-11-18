@@ -1,3 +1,4 @@
+// @structurelint:no-test Foundation for future declarative layer validation, tested via path_based_layers.go
 package rules
 
 import (
