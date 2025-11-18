@@ -16,6 +16,7 @@ import (
 type TestLocationRule struct {
 	IntegrationTestDir string   // Directory for integration tests (e.g., "tests", "test")
 	AllowAdjacent      bool     // Allow tests adjacent to source
+	FilePatterns       []string // Glob patterns to scope which files to check (REQUIRED)
 	Exemptions         []string // Patterns to exempt from checking
 }
 
@@ -55,6 +56,11 @@ func (r *TestLocationRule) Check(files []walker.FileInfo, dirs map[string]*walke
 		}
 
 		if !r.isTestFile(file.Path) {
+			continue
+		}
+
+		// Skip files that don't match configured patterns
+		if !r.matchesFilePattern(file.Path) {
 			continue
 		}
 
@@ -166,6 +172,16 @@ func (r *TestLocationRule) getSourceFileName(testFileName, ext string) string {
 	return ""
 }
 
+// matchesFilePattern checks if a file matches any of the configured patterns
+func (r *TestLocationRule) matchesFilePattern(path string) bool {
+	for _, pattern := range r.FilePatterns {
+		if matchesGlobPattern(path, pattern) {
+			return true
+		}
+	}
+	return false
+}
+
 // isExempted checks if a file is exempted from validation
 func (r *TestLocationRule) isExempted(path string) bool {
 	for _, exemption := range r.Exemptions {
@@ -177,10 +193,11 @@ func (r *TestLocationRule) isExempted(path string) bool {
 }
 
 // NewTestLocationRule creates a new TestLocationRule
-func NewTestLocationRule(integrationTestDir string, allowAdjacent bool, exemptions []string) *TestLocationRule {
+func NewTestLocationRule(integrationTestDir string, allowAdjacent bool, filePatterns []string, exemptions []string) *TestLocationRule {
 	return &TestLocationRule{
 		IntegrationTestDir: integrationTestDir,
 		AllowAdjacent:      allowAdjacent,
+		FilePatterns:       filePatterns,
 		Exemptions:         exemptions,
 	}
 }

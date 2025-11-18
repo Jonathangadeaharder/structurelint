@@ -192,9 +192,10 @@ func (l *Linter) addTestValidationRules(rulesList *[]rules.Rule) {
 		if locMap, ok := testLoc.(map[string]interface{}); ok {
 			integrationDir := l.getStringFromMap(locMap, "integration-test-dir")
 			allowAdjacent := l.getBoolFromMap(locMap, "allow-adjacent")
+			filePatterns := l.getStringSliceFromMap(locMap, "file-patterns")
 			exemptions := l.getStringSliceFromMap(locMap, "exemptions")
 
-			*rulesList = append(*rulesList, rules.NewTestLocationRule(integrationDir, allowAdjacent, exemptions))
+			*rulesList = append(*rulesList, rules.NewTestLocationRule(integrationDir, allowAdjacent, filePatterns, exemptions))
 		}
 	}
 }

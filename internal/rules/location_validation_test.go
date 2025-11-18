@@ -11,6 +11,7 @@ func TestTestLocationRule_Check(t *testing.T) {
 		name               string
 		integrationTestDir string
 		allowAdjacent      bool
+		filePatterns       []string
 		exemptions         []string
 		files              []walker.FileInfo
 		wantViolCount      int
@@ -19,6 +20,7 @@ func TestTestLocationRule_Check(t *testing.T) {
 			name:               "test adjacent to source - allowed",
 			integrationTestDir: "tests",
 			allowAdjacent:      true,
+			filePatterns:       []string{"**/*_test.go"},
 			files: []walker.FileInfo{
 				{Path: "main.go", IsDir: false},
 				{Path: "main_test.go", IsDir: false},
@@ -29,6 +31,7 @@ func TestTestLocationRule_Check(t *testing.T) {
 			name:               "test in integration dir - allowed",
 			integrationTestDir: "tests",
 			allowAdjacent:      false,
+			filePatterns:       []string{"**/*_test.go"},
 			files: []walker.FileInfo{
 				{Path: "tests/integration_test.go", IsDir: false},
 			},
@@ -38,6 +41,7 @@ func TestTestLocationRule_Check(t *testing.T) {
 			name:               "orphaned test - adjacent not allowed",
 			integrationTestDir: "tests",
 			allowAdjacent:      false,
+			filePatterns:       []string{"**/*_test.go"},
 			files: []walker.FileInfo{
 				{Path: "main_test.go", IsDir: false},
 			},
@@ -47,6 +51,7 @@ func TestTestLocationRule_Check(t *testing.T) {
 			name:               "test with source nearby - allowed when adjacent enabled",
 			integrationTestDir: "tests",
 			allowAdjacent:      true,
+			filePatterns:       []string{"**/*_test.go"},
 			files: []walker.FileInfo{
 				{Path: "src/utils.go", IsDir: false},
 				{Path: "src/utils_test.go", IsDir: false},
@@ -57,9 +62,34 @@ func TestTestLocationRule_Check(t *testing.T) {
 			name:               "exempted test - no violation",
 			integrationTestDir: "tests",
 			allowAdjacent:      false,
+			filePatterns:       []string{"**/*_test.go"},
 			exemptions:         []string{"testdata/**"},
 			files: []walker.FileInfo{
 				{Path: "testdata/fixture_test.go", IsDir: false},
+			},
+			wantViolCount: 0,
+		},
+		{
+			name:               "python test ignored by file pattern",
+			integrationTestDir: "tests",
+			allowAdjacent:      false,
+			filePatterns:       []string{"**/*_test.go"}, // Only Go tests
+			files: []walker.FileInfo{
+				{Path: "tests/test_module.py", IsDir: false}, // Python test
+			},
+			wantViolCount: 0, // Should be ignored (doesn't match pattern)
+		},
+		{
+			name:               "multiple language patterns",
+			integrationTestDir: "tests",
+			allowAdjacent:      true,
+			filePatterns:       []string{"**/*_test.go", "**/*.test.ts"},
+			files: []walker.FileInfo{
+				{Path: "main.go", IsDir: false},
+				{Path: "main_test.go", IsDir: false},
+				{Path: "utils.ts", IsDir: false},
+				{Path: "utils.test.ts", IsDir: false},
+				{Path: "test_module.py", IsDir: false}, // Python - ignored
 			},
 			wantViolCount: 0,
 		},
@@ -68,7 +98,7 @@ func TestTestLocationRule_Check(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Arrange
-			rule := NewTestLocationRule(tt.integrationTestDir, tt.allowAdjacent, tt.exemptions)
+			rule := NewTestLocationRule(tt.integrationTestDir, tt.allowAdjacent, tt.filePatterns, tt.exemptions)
 
 			// Act
 			violations := rule.Check(tt.files, nil)
@@ -138,8 +168,69 @@ func TestTestLocationRule_getSourceFileName(t *testing.T) {
 }
 
 func TestTestLocationRule_Name(t *testing.T) {
-	rule := NewTestLocationRule("tests", true, nil)
-	if got := rule.Name(); got != "test-location" {
-		t.Errorf("Name() = %v, want test-location", got)
+	// Arrange
+	rule := NewTestLocationRule("tests", true, []string{"**/*_test.go"}, nil)
+
+	// Act
+	name := rule.Name()
+
+	// Assert
+	if name != "test-location" {
+		t.Errorf("Name() = %v, want test-location", name)
+	}
+}
+
+func TestTestLocationRule_matchesFilePattern(t *testing.T) {
+	tests := []struct {
+		name         string
+		filePatterns []string
+		path         string
+		want         bool
+	}{
+		{
+			name:         "go test matches pattern",
+			filePatterns: []string{"**/*_test.go"},
+			path:         "internal/foo_test.go",
+			want:         true,
+		},
+		{
+			name:         "python test does not match go pattern",
+			filePatterns: []string{"**/*_test.go"},
+			path:         "tests/test_bar.py",
+			want:         false,
+		},
+		{
+			name:         "multiple patterns - go matches",
+			filePatterns: []string{"**/*_test.go", "**/*.test.ts"},
+			path:         "src/utils_test.go",
+			want:         true,
+		},
+		{
+			name:         "multiple patterns - typescript matches",
+			filePatterns: []string{"**/*_test.go", "**/*.test.ts"},
+			path:         "src/utils.test.ts",
+			want:         true,
+		},
+		{
+			name:         "multiple patterns - python does not match",
+			filePatterns: []string{"**/*_test.go", "**/*.test.ts"},
+			path:         "tests/test_module.py",
+			want:         false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Arrange
+			rule := &TestLocationRule{FilePatterns: tt.filePatterns}
+
+			// Act
+			got := rule.matchesFilePattern(tt.path)
+
+			// Assert
+			if got != tt.want {
+				t.Errorf("matchesFilePattern(%q) = %v, want %v", tt.path, got, tt.want)
+			}
+		})
 	}
 }

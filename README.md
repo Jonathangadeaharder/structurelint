@@ -1190,13 +1190,27 @@ rules:
 
 #### Test Location Validation
 
+The `test-location` rule ensures test files are properly located. Use `file-patterns` to scope validation to specific languages in mixed-language projects.
+
 ```yaml
 rules:
   test-location:
     integration-test-dir: "tests"    # Directory for integration tests
     allow-adjacent: true              # Allow unit tests next to source
+    file-patterns:                    # Glob patterns for files to check (REQUIRED)
+      - "**/*_test.go"                # Only validate Go test files
     exemptions:
       - "testdata/**"                 # Test fixtures
+```
+
+**For mixed-language projects**, use `file-patterns` to avoid false violations:
+
+```yaml
+# Go + Python project: Only validate Go tests
+test-location:
+  integration-test-dir: "tests"
+  allow-adjacent: true
+  file-patterns: ["**/*_test.go"]  # Python tests automatically ignored
 ```
 
 #### Using @structurelint:no-test Directive
@@ -1282,6 +1296,8 @@ rules:
   test-location:
     integration-test-dir: "tests"
     allow-adjacent: true
+    file-patterns:
+      - "**/*_test.go"
 ```
 
 #### Python Project with Separate Tests
@@ -1301,6 +1317,9 @@ rules:
   test-location:
     integration-test-dir: "tests"
     allow-adjacent: false
+    file-patterns:
+      - "**/test_*.py"
+      - "**/*_test.py"
 ```
 
 ### Using --init for Test Configuration
