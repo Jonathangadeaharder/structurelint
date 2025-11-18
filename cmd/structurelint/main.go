@@ -25,12 +25,20 @@ func run() error {
 	// Check for subcommands
 	if len(os.Args) > 1 {
 		switch os.Args[1] {
+		case "graph":
+			return runGraph(os.Args[2:])
 		case "clones":
 			return runClones(os.Args[2:])
 		case "help":
-			if len(os.Args) > 2 && os.Args[2] == "clones" {
-				printClonesHelp()
-				return nil
+			if len(os.Args) > 2 {
+				switch os.Args[2] {
+				case "graph":
+					printGraphHelp()
+					return nil
+				case "clones":
+					printClonesHelp()
+					return nil
+				}
 			}
 		}
 	}
@@ -166,6 +174,7 @@ func printHelp() {
 
 Usage:
   structurelint [options] [path]   Lint the project at path (default: current directory)
+  structurelint graph [options]    Visualize dependency graphs
   structurelint clones [options]   Detect code clones (duplicated code)
   structurelint --init [path]      Generate configuration by analyzing project
   structurelint --version          Show version information
@@ -173,6 +182,7 @@ Usage:
 
 Commands:
   (default)                    Lint project structure and architecture
+  graph                        Visualize dependency graphs (see 'structurelint help graph')
   clones                       Detect code clones (see 'structurelint help clones')
 
 Options:
