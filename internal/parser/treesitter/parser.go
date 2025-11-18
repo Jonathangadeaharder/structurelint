@@ -62,9 +62,9 @@ func New(lang Language) (*Parser, error) {
 
 // Parse parses the source code and returns a syntax tree
 func (p *Parser) Parse(sourceCode []byte) (*sitter.Tree, error) {
-	tree, err := p.parser.ParseCtx(nil, nil, sourceCode)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse: %w", err)
+	tree := p.parser.Parse(nil, sourceCode)
+	if tree == nil {
+		return nil, fmt.Errorf("failed to parse: tree is nil")
 	}
 	return tree, nil
 }

@@ -36,7 +36,7 @@ func (r *MaxCognitiveComplexityRule) Check(files []walker.FileInfo, dirs map[str
 	files = FilterIgnoredFiles(files, r.Name())
 
 	goAnalyzer := metrics.NewCognitiveComplexityAnalyzer()
-	multiLangAnalyzer := metrics.NewMultiLanguageCognitiveComplexityAnalyzer()
+	multiLangAnalyzer := metrics.NewCognitiveComplexityAnalyzerV2()
 
 	for _, file := range files {
 		if file.IsDir {
@@ -54,7 +54,7 @@ func (r *MaxCognitiveComplexityRule) Check(files []walker.FileInfo, dirs map[str
 func (r *MaxCognitiveComplexityRule) checkFile(
 	file walker.FileInfo,
 	goAnalyzer *metrics.CognitiveComplexityAnalyzer,
-	multiLangAnalyzer *metrics.MultiLanguageAnalyzer,
+	multiLangAnalyzer *metrics.AnalyzerV2,
 ) []Violation {
 	fileType := detectFileType(file.Path)
 
@@ -117,16 +117,29 @@ func (r *MaxCognitiveComplexityRule) analyzeFileWithMax(file walker.FileInfo, an
 }
 
 // analyzeMultiLangFileWithMax analyzes a Python/JavaScript/TypeScript file for cognitive complexity with a specific max
-func (r *MaxCognitiveComplexityRule) analyzeMultiLangFileWithMax(file walker.FileInfo, analyzer *metrics.MultiLanguageAnalyzer, maxComplexity int) []Violation {
+func (r *MaxCognitiveComplexityRule) analyzeMultiLangFileWithMax(file walker.FileInfo, analyzer *metrics.AnalyzerV2, maxComplexity int) []Violation {
 	var violations []Violation
 
 	// Analyze the file using the multi-language analyzer
 	fileMetrics, err := analyzer.AnalyzeFileByPath(file.AbsPath)
 	if err != nil {
-		// Skip files that can't be analyzed (e.g., missing interpreter)
+		// Skip files that can't be analyzed
 		return violations
 	}
 
+	// V2 analyzer returns file-level metrics in FileLevel map
+	if complexity, ok := fileMetrics.FileLevel["cognitive_complexity"]; ok {
+		if int(complexity) > maxComplexity {
+			violations = append(violations, Violation{
+				Rule:    r.Name(),
+				Path:    file.Path,
+				Message: fmt.Sprintf("file has cognitive complexity %d, exceeds max %d (evidence: CoC correlates with comprehension time, r=0.54)",
+					int(complexity), maxComplexity),
+			})
+		}
+	}
+
+	// Also check function-level metrics if available
 	for _, funcMetric := range fileMetrics.Functions {
 		if funcMetric.Complexity > maxComplexity {
 			violations = append(violations, Violation{

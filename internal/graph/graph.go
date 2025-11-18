@@ -37,7 +37,7 @@ type ImportGraph struct {
 // Builder builds an import graph from the filesystem
 type Builder struct {
 	rootPath string
-	parser   *parser.Parser
+	parser   *parser.ParserV2
 	layers   []config.Layer
 }
 
@@ -45,7 +45,7 @@ type Builder struct {
 func NewBuilder(rootPath string, layers []config.Layer) *Builder {
 	return &Builder{
 		rootPath: rootPath,
-		parser:   parser.New(rootPath),
+		parser:   parser.NewV2(rootPath),
 		layers:   layers,
 	}
 }
