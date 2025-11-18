@@ -10,7 +10,7 @@ import (
 
 // AutoFix contains information about an automatic fix for a violation
 type AutoFix struct {
-	FilePath string // Path where the fix should be applied
+	FilePath string // Path where the fix should be applied (relative to project root)
 	Content  string // Content to write to the file
 }
 

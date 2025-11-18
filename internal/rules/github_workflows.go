@@ -508,7 +508,7 @@ func (r *GitHubWorkflowsRule) generateWorkflowAutoFix(rootDir string, workflowTy
 func (r *GitHubWorkflowsRule) generateTestWorkflow(language lang.Language, rootDir string) string {
 	switch language {
 	case lang.Go:
-		return fmt.Sprintf(`name: CI - Tests
+		return `name: CI - Tests
 
 on:
   push:
@@ -528,7 +528,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.21'
+          go-version: stable
 
       - name: Cache Go modules
         uses: actions/cache@v4
@@ -551,10 +551,10 @@ jobs:
           flags: unittests
           name: codecov-umbrella
           fail_ci_if_error: false
-`)
+`
 
 	case lang.Python:
-		return fmt.Sprintf(`name: CI - Tests
+		return `name: CI - Tests
 
 on:
   push:
@@ -590,6 +590,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
+          pip install pytest pytest-cov
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
           if [ -f pyproject.toml ]; then pip install -e .[dev]; fi
 
@@ -603,10 +604,10 @@ jobs:
           flags: unittests
           name: codecov-umbrella
           fail_ci_if_error: false
-`)
+`
 
 	case lang.TypeScript, lang.JavaScript, lang.React:
-		return fmt.Sprintf(`name: CI - Tests
+		return `name: CI - Tests
 
 on:
   push:
@@ -627,17 +628,19 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-
-      - name: Cache node modules
-        uses: actions/cache@v4
-        with:
-          path: ~/.npm
-          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-node-
+          cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci
+        run: |
+          if [ -f "yarn.lock" ]; then
+            npm install -g yarn
+            yarn install --frozen-lockfile
+          elif [ -f "pnpm-lock.yaml" ]; then
+            npm install -g pnpm
+            pnpm install --frozen-lockfile
+          else
+            npm ci
+          fi
 
       - name: Run tests
         run: npm test -- --coverage
@@ -649,10 +652,10 @@ jobs:
           flags: unittests
           name: codecov-umbrella
           fail_ci_if_error: false
-`)
+`
 
 	case lang.Rust:
-		return fmt.Sprintf(`name: CI - Tests
+		return `name: CI - Tests
 
 on:
   push:
@@ -670,11 +673,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          profile: minimal
-          override: true
+        uses: dtolnay/rust-toolchain@stable
 
       - name: Cache cargo registry
         uses: actions/cache@v4
@@ -709,10 +708,10 @@ jobs:
           flags: unittests
           name: codecov-umbrella
           fail_ci_if_error: false
-`)
+`
 
 	case lang.Java:
-		return fmt.Sprintf(`name: CI - Tests
+		return `name: CI - Tests
 
 on:
   push:
@@ -735,30 +734,41 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
+      - name: Setup Gradle
+        if: hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') != ''
+        uses: gradle/actions/setup-gradle@v3
+
       - name: Cache Maven packages
+        if: hashFiles('**/pom.xml') != ''
         uses: actions/cache@v4
         with:
           path: ~/.m2
           key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
           restore-keys: ${{ runner.os }}-m2
 
-      - name: Build with Maven
-        run: mvn -B package --file pom.xml
+      - name: Build and test with Gradle
+        if: hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') != ''
+        run: ./gradlew build test
 
-      - name: Run tests
-        run: mvn test
+      - name: Build and test with Maven
+        if: hashFiles('**/pom.xml') != ''
+        run: |
+          mvn -B package --file pom.xml
+          mvn test
 
-      - name: Generate coverage report
-        run: mvn jacoco:report
+      - name: Generate coverage report (Maven)
+        if: hashFiles('**/pom.xml') != ''
+        run: mvn jacoco:report || echo "JaCoCo not configured, skipping coverage"
+        continue-on-error: true
 
       - name: Upload coverage
         uses: codecov/codecov-action@v4
         with:
-          file: ./target/site/jacoco/jacoco.xml
+          files: ./target/site/jacoco/jacoco.xml,./build/reports/jacoco/test/jacocoTestReport.xml
           flags: unittests
           name: codecov-umbrella
           fail_ci_if_error: false
-`)
+`
 
 	default:
 		return ""
@@ -767,7 +777,10 @@ jobs:
 
 // generateSecurityWorkflow generates a security scanning workflow
 func (r *GitHubWorkflowsRule) generateSecurityWorkflow(language lang.Language) string {
-	return `name: Security Scanning
+	// Map language to CodeQL language identifier
+	codeqlLang := mapLanguageToCodeQL(language)
+
+	return fmt.Sprintf(`name: Security Scanning
 
 on:
   push:
@@ -786,11 +799,6 @@ jobs:
       contents: read
       security-events: write
 
-    strategy:
-      fail-fast: false
-      matrix:
-        language: [ 'go', 'javascript', 'python' ]  # Adjust based on your project
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -798,15 +806,13 @@ jobs:
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v3
         with:
-          languages: ${{ matrix.language }}
+          languages: %s
 
       - name: Autobuild
         uses: github/codeql-action/autobuild@v3
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3
-        with:
-          category: "/language:${{matrix.language}}"
 
   dependency-scan:
     name: Dependency Scanning
@@ -817,7 +823,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@0.28.0
         with:
           scan-type: 'fs'
           scan-ref: '.'
@@ -828,7 +834,27 @@ jobs:
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: 'trivy-results.sarif'
-`
+`, codeqlLang)
+}
+
+// mapLanguageToCodeQL maps internal language to CodeQL language identifier
+func mapLanguageToCodeQL(language lang.Language) string {
+	switch language {
+	case lang.Go:
+		return "go"
+	case lang.Python:
+		return "python"
+	case lang.TypeScript, lang.JavaScript, lang.React:
+		return "javascript"
+	case lang.Java:
+		return "java"
+	case lang.CSharp:
+		return "csharp"
+	case lang.Ruby:
+		return "ruby"
+	default:
+		return "go" // Default fallback
+	}
 }
 
 // generateQualityWorkflow generates a code quality workflow based on language
@@ -855,7 +881,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.21'
+          go-version: stable
 
       - name: Run golangci-lint
         uses: golangci/golangci-lint-action@v4
@@ -910,10 +936,12 @@ jobs:
         run: black --check .
 
       - name: Run pylint
-        run: pylint **/*.py || true
+        run: pylint **/*.py
+        continue-on-error: true
 
       - name: Run mypy
-        run: mypy . || true
+        run: mypy .
+        continue-on-error: true
 `
 
 	case lang.TypeScript, lang.JavaScript, lang.React:
@@ -938,9 +966,19 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+          cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci
+        run: |
+          if [ -f "yarn.lock" ]; then
+            npm install -g yarn
+            yarn install --frozen-lockfile
+          elif [ -f "pnpm-lock.yaml" ]; then
+            npm install -g pnpm
+            pnpm install --frozen-lockfile
+          else
+            npm ci
+          fi
 
       - name: Run ESLint
         run: npm run lint || npx eslint .
@@ -949,7 +987,8 @@ jobs:
         run: npx prettier --check .
 
       - name: Type check
-        run: npm run type-check || npx tsc --noEmit || true
+        run: npm run type-check || npx tsc --noEmit
+        continue-on-error: true
 `
 
 	case lang.Rust:
@@ -971,12 +1010,9 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up Rust
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: stable
-          profile: minimal
           components: rustfmt, clippy
-          override: true
 
       - name: Run rustfmt
         run: cargo fmt -- --check
