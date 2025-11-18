@@ -11,7 +11,8 @@ import (
 
 // Linter is the main linter orchestrator
 type Linter struct {
-	config *config.Config
+	config  *config.Config
+	rootDir string // Root directory being linted
 }
 
 // Violation is an alias for rules.Violation
@@ -24,8 +25,11 @@ func New() *Linter {
 
 // Lint runs the linter on the given path
 func (l *Linter) Lint(path string) ([]Violation, error) {
-	// Load configuration
-	configs, err := config.FindConfigs(path)
+	// Store root directory for later use
+	l.rootDir = path
+
+	// Load configuration with auto-loaded .gitignore patterns
+	configs, err := config.FindConfigsWithGitignore(path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load config: %w", err)
 	}
@@ -88,9 +92,8 @@ func (l *Linter) createRules(files []walker.FileInfo, importGraph *graph.ImportG
 		}
 	}
 
-	// String map rules (naming-convention, file-existence, regex-match)
+	// String map rules (file-existence, regex-match)
 	stringMapRules := map[string]func(map[string]string) rules.Rule{
-		"naming-convention": func(patterns map[string]string) rules.Rule { return rules.NewNamingConventionRule(patterns) },
 		"file-existence":    func(requirements map[string]string) rules.Rule { return rules.NewFileExistenceRule(requirements) },
 		"regex-match":       func(patterns map[string]string) rules.Rule { return rules.NewRegexMatchRule(patterns) },
 	}
@@ -101,9 +104,37 @@ func (l *Linter) createRules(files []walker.FileInfo, importGraph *graph.ImportG
 		}
 	}
 
+	// Naming convention rule - with language-aware defaults (Priority 2 feature)
+	if _, ok := l.getRuleConfig("naming-convention"); ok {
+		userPatterns, _ := l.getStringMapConfig("naming-convention")
+
+		// Check if auto-language-naming is enabled (default: true)
+		autoLanguageNaming := true
+		if l.config.AutoLanguageNaming != nil {
+			autoLanguageNaming = *l.config.AutoLanguageNaming
+		}
+
+		if autoLanguageNaming {
+			// Use language-aware naming with user overrides
+			if rule, err := rules.NewLanguageAwareNamingConventionRule(l.rootDir, userPatterns); err == nil {
+				rulesList = append(rulesList, rule)
+			}
+		} else {
+			// Traditional behavior - only use user patterns
+			if len(userPatterns) > 0 {
+				rulesList = append(rulesList, rules.NewNamingConventionRule(userPatterns))
+			}
+		}
+	}
+
 	// String slice rules
 	if patterns, ok := l.getStringSliceConfig("disallowed-patterns"); ok {
 		rulesList = append(rulesList, rules.NewDisallowedPatternsRule(patterns))
+	}
+
+	// Uniqueness constraints rule (Priority 2 feature)
+	if constraints, ok := l.getStringMapConfig("uniqueness-constraints"); ok {
+		rulesList = append(rulesList, rules.NewUniquenessConstraintsRule(constraints))
 	}
 
 	// Complex rules that need custom handling
@@ -126,9 +157,14 @@ func (l *Linter) addComplexRules(rulesList *[]rules.Rule, importGraph *graph.Imp
 	if cognitiveComplexity, ok := l.getRuleConfig("max-cognitive-complexity"); ok {
 		if complexityMap, ok := cognitiveComplexity.(map[string]interface{}); ok {
 			max := l.getIntFromMap(complexityMap, "max")
+			testMax := l.getIntFromMap(complexityMap, "test-max")
 			filePatterns := l.getStringSliceFromMap(complexityMap, "file-patterns")
 			if max > 0 {
-				*rulesList = append(*rulesList, rules.NewMaxCognitiveComplexityRule(max, filePatterns))
+				rule := rules.NewMaxCognitiveComplexityRule(max, filePatterns)
+				if testMax > 0 {
+					rule = rule.WithTestMax(testMax)
+				}
+				*rulesList = append(*rulesList, rule)
 			}
 		}
 	}
@@ -152,12 +188,56 @@ func (l *Linter) addComplexRules(rulesList *[]rules.Rule, importGraph *graph.Imp
 			}
 		}
 
-		if _, ok := l.getRuleConfig("disallow-orphaned-files"); ok {
-			*rulesList = append(*rulesList, rules.NewOrphanedFilesRule(importGraph, l.config.Entrypoints))
+		if ruleConfig, ok := l.getRuleConfig("disallow-orphaned-files"); ok {
+			rule := rules.NewOrphanedFilesRule(importGraph, l.config.Entrypoints)
+
+			// Check for entry-point-patterns in the rule config
+			if configMap, ok := ruleConfig.(map[string]interface{}); ok {
+				if patterns, ok := configMap["entry-point-patterns"].([]interface{}); ok {
+					var entryPointPatterns []string
+					for _, p := range patterns {
+						if str, ok := p.(string); ok {
+							entryPointPatterns = append(entryPointPatterns, str)
+						}
+					}
+					if len(entryPointPatterns) > 0 {
+						rule = rule.WithEntryPointPatterns(entryPointPatterns)
+					}
+				}
+			}
+
+			*rulesList = append(*rulesList, rule)
 		}
 
 		if _, ok := l.getRuleConfig("disallow-unused-exports"); ok {
 			*rulesList = append(*rulesList, rules.NewUnusedExportsRule(importGraph))
+		}
+	}
+
+	// Path-based layer rule (Priority 3 - doesn't require import graph)
+	if ruleConfig, ok := l.getRuleConfig("path-based-layers"); ok {
+		if configMap, ok := ruleConfig.(map[string]interface{}); ok {
+			if layersConfig, ok := configMap["layers"].([]interface{}); ok {
+				var pathLayers []rules.PathLayer
+				for _, layerInterface := range layersConfig {
+					layerMap, ok := layerInterface.(map[string]interface{})
+					if !ok {
+						continue
+					}
+
+					layer := rules.PathLayer{
+						Name:           l.getStringFromMap(layerMap, "name"),
+						Patterns:       l.getStringSliceFromMap(layerMap, "patterns"),
+						CanDependOn:    l.getStringSliceFromMap(layerMap, "canDependOn"),
+						ForbiddenPaths: l.getStringSliceFromMap(layerMap, "forbiddenPaths"),
+					}
+					pathLayers = append(pathLayers, layer)
+				}
+
+				if len(pathLayers) > 0 {
+					*rulesList = append(*rulesList, rules.NewPathBasedLayerRule(pathLayers))
+				}
+			}
 		}
 	}
 

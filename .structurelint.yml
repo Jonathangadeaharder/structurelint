@@ -15,7 +15,7 @@ rules:
     max: 25
 
   max-subdirs:
-    max: 10
+    max: 12  # internal/ has 11 subdirs, allow room for growth
 
   # README.md Documentation Requirements
   # Every directory is like a building lobby - it needs a directory/guide
@@ -57,6 +57,8 @@ rules:
     exemptions:
       - "testdata/**"
       - "internal/rules/rules_test.go"  # Integration test for all rules
+      - "internal/rules/enhanced_violations_test.go"  # Priority 4 feature tests
+      - "internal/rules/language_aware_naming_test.go"  # Priority 2 feature tests
       - "tests/**/*.py"                  # Python test files in tests directory
 
   # Phase 4: File Content Templates

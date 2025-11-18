@@ -10,8 +10,9 @@ import (
 
 // OrphanedFilesRule detects files that are not imported by any other file
 type OrphanedFilesRule struct {
-	Graph       *graph.ImportGraph
-	Entrypoints []string
+	Graph              *graph.ImportGraph
+	Entrypoints        []string // Top-level entrypoints (backward compatibility)
+	EntryPointPatterns []string // Additional entry point patterns from rule config
 }
 
 // Name returns the rule name
@@ -54,8 +55,15 @@ func (r *OrphanedFilesRule) Check(files []walker.FileInfo, dirs map[string]*walk
 
 // isEntrypoint checks if a file is an entrypoint
 func (r *OrphanedFilesRule) isEntrypoint(filePath string) bool {
-	// Check against configured entrypoints
+	// Check against configured entrypoints (top-level config, backward compatibility)
 	for _, pattern := range r.Entrypoints {
+		if matchesEntrypointPattern(filePath, pattern) {
+			return true
+		}
+	}
+
+	// Check against entry point patterns from rule config
+	for _, pattern := range r.EntryPointPatterns {
 		if matchesEntrypointPattern(filePath, pattern) {
 			return true
 		}
@@ -67,11 +75,14 @@ func (r *OrphanedFilesRule) isEntrypoint(filePath string) bool {
 		"main.go",
 		"main.ts",
 		"main.js",
+		"main.py",
 		"index.ts",
 		"index.js",
 		"app.ts",
 		"app.js",
+		"app.py",
 		"__init__.py",
+		"manage.py", // Django management script
 	}
 
 	for _, entry := range commonEntrypoints {
@@ -128,9 +139,16 @@ func matchesEntrypointPattern(filePath, pattern string) bool {
 // NewOrphanedFilesRule creates a new OrphanedFilesRule
 func NewOrphanedFilesRule(importGraph *graph.ImportGraph, entrypoints []string) *OrphanedFilesRule {
 	return &OrphanedFilesRule{
-		Graph:       importGraph,
-		Entrypoints: entrypoints,
+		Graph:              importGraph,
+		Entrypoints:        entrypoints,
+		EntryPointPatterns: []string{},
 	}
+}
+
+// WithEntryPointPatterns adds entry point patterns to the rule
+func (r *OrphanedFilesRule) WithEntryPointPatterns(patterns []string) *OrphanedFilesRule {
+	r.EntryPointPatterns = patterns
+	return r
 }
 
 // isConfigOrDocFile checks if a file is a configuration or documentation file
