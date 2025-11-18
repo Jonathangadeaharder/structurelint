@@ -1,0 +1,20 @@
+# Minimal requirements for semantic clone detection plugin server
+# Install with: pip install -r requirements-plugin.txt
+
+# Web framework
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+pydantic>=2.0.0
+
+# ML libraries (optional, gracefully degrade if missing)
+torch>=2.0.0
+transformers>=4.30.0
+faiss-cpu>=1.7.4  # or faiss-gpu for GPU support
+numpy>=1.24.0
+
+# Code parsing
+tree-sitter>=0.20.0
+
+# Utilities
+click>=8.1.0
+rich>=13.0.0
