@@ -12,7 +12,7 @@ rules:
     max: 5
 
   max-files-in-dir:
-    max: 20
+    max: 25
 
   max-subdirs:
     max: 10

@@ -40,6 +40,7 @@ The `examples` directory contains example projects and configuration files demon
 | `dead-code-detection.yml` | Phase 2 features | Orphaned files, unused exports |
 | `test-aaa-pattern.yml` | AAA pattern enforcement | Test structure consistency |
 | `test-gwt-naming.yml` | Given-When-Then naming | Descriptive test names + AAA |
+| `linter-enforcement.yml` | Linter configuration enforcement | Python, TypeScript, Go linters |
 
 ## Using Examples
 

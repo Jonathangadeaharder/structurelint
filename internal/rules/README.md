@@ -35,6 +35,12 @@ type Rule interface {
 - **disallow-orphaned-files**: Detects files not imported anywhere
 - **disallow-unused-exports**: Finds exported symbols that are never imported
 
+### Phase 8: GitHub Workflow Enforcement
+- **github-workflows**: Enforces presence and configuration of GitHub Actions workflows
+
+### Linter Configuration Enforcement
+- **linter-config**: Enforces presence of linter configurations for Python, TypeScript, and Go
+
 ## Adding New Rules
 
 1. Create a new file `your_rule.go`

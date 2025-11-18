@@ -1,0 +1,192 @@
+# Example: Linter Configuration Enforcement
+#
+# This configuration enforces that your project has proper linter configurations
+# set up for Python, TypeScript, Go, HTML, CSS, SQL, and Rust.
+#
+# The rule checks for:
+# 1. Configuration files (e.g., pyproject.toml, .eslintrc, .golangci.yml)
+# 2. GitHub workflows that run linters
+
+root: true
+
+rules:
+  # Enforce linter configuration for all languages
+  linter-config:
+    # Require Python linters (mypy, black, ruff, pylint, flake8)
+    # Expects: pyproject.toml, .flake8, setup.cfg, .pylintrc, mypy.ini, ruff.toml
+    # OR a GitHub workflow running: mypy, black, ruff, pylint, or flake8
+    require-python: true
+
+    # Require TypeScript linters (ESLint, Prettier, TSC)
+    # Expects: .eslintrc*, .prettierrc*, tsconfig.json
+    # OR a GitHub workflow running: eslint, prettier, or tsc
+    require-typescript: true
+
+    # Require Go linters (golangci-lint, gofmt, go vet)
+    # Expects: .golangci.yml, .golangci.yaml, golangci.yml, golangci.yaml
+    # OR a GitHub workflow running: golangci-lint, gofmt, go vet, or go fmt
+    require-go: true
+
+    # Require HTML linters (HTMLHint, html-validate, prettier)
+    # Expects: .htmlhintrc, .htmlvalidate.json, .prettierrc*
+    # OR a GitHub workflow running: htmlhint, html-validate, or prettier
+    require-html: true
+
+    # Require CSS linters (stylelint, prettier)
+    # Expects: .stylelintrc*, stylelint.config.js, .prettierrc*
+    # OR a GitHub workflow running: stylelint or prettier
+    require-css: true
+
+    # Require SQL linters (sqlfluff, sqlfmt)
+    # Expects: .sqlfluff, setup.cfg, pyproject.toml
+    # OR a GitHub workflow running: sqlfluff, sqlfmt, or sql-lint
+    require-sql: true
+
+    # Require Rust linters (clippy, rustfmt)
+    # Expects: rustfmt.toml, .rustfmt.toml, clippy.toml
+    # OR a GitHub workflow running: clippy, rustfmt, cargo clippy, or cargo fmt
+    require-rust: true
+
+# Optionally combine with GitHub workflow enforcement
+# to ensure linters run in CI/CD
+#
+# github-workflows:
+#   require-quality: true
+#   required-jobs:
+#     - lint
+
+# Example violations:
+#
+# Python project without linter config:
+#   .: No Python linter configuration found. Expected one of: pyproject.toml,
+#      .flake8, setup.cfg, .pylintrc, mypy.ini, or a GitHub workflow running:
+#      mypy, black, ruff, pylint, flake8
+#
+# TypeScript project without linter config:
+#   .: No TypeScript linter configuration found. Expected one of: .eslintrc,
+#      .eslintrc.json, .eslintrc.js, .eslintrc.yml, eslint.config.js, or a
+#      GitHub workflow running: eslint, prettier, tsc
+#
+# Go project without linter config:
+#   .: No Go linter configuration found. Expected one of: .golangci.yml,
+#      .golangci.yaml, golangci.yml, golangci.yaml, or a GitHub workflow
+#      running: golangci-lint, gofmt, go vet, go fmt
+#
+# HTML project without linter config:
+#   .: No HTML linter configuration found. Expected one of: .htmlhintrc,
+#      .htmlvalidate.json, .prettierrc, or a GitHub workflow running:
+#      htmlhint, html-validate, prettier
+#
+# CSS project without linter config:
+#   .: No CSS linter configuration found. Expected one of: .stylelintrc,
+#      .stylelintrc.json, .stylelintrc.js, stylelint.config.js, or a GitHub
+#      workflow running: stylelint, prettier
+#
+# SQL project without linter config:
+#   .: No SQL linter configuration found. Expected one of: .sqlfluff,
+#      setup.cfg, pyproject.toml, or a GitHub workflow running: sqlfluff,
+#      sqlfmt, sql-lint
+#
+# Rust project without linter config:
+#   .: No Rust linter configuration found. Expected one of: rustfmt.toml,
+#      .rustfmt.toml, clippy.toml, or a GitHub workflow running: clippy,
+#      rustfmt, cargo clippy, cargo fmt
+
+# How it works:
+#
+# 1. Language Detection:
+#    - Scans your project for .py, .ts, .tsx, .go files
+#    - Only checks linter config for languages that are present
+#
+# 2. Configuration File Check:
+#    - Looks for standard linter config files in project root
+#    - Examples: pyproject.toml, .eslintrc.json, .golangci.yml
+#
+# 3. GitHub Workflow Check:
+#    - Parses .github/workflows/*.yml files
+#    - Checks if any workflow step runs the linters
+#    - Example: "run: black --check ." counts as black configuration
+#
+# 4. Pass Condition:
+#    - Rule passes if EITHER config file OR workflow step exists
+#    - This allows flexibility in how you enforce linting
+
+# Example Python linter configurations:
+#
+# pyproject.toml (recommended):
+# [tool.black]
+# line-length = 100
+# target-version = ['py39']
+#
+# [tool.mypy]
+# python_version = "3.9"
+# strict = true
+#
+# [tool.ruff]
+# line-length = 100
+# select = ["E", "F", "I"]
+
+# Example TypeScript linter configurations:
+#
+# .eslintrc.json:
+# {
+#   "extends": ["eslint:recommended"],
+#   "rules": {
+#     "no-console": "error"
+#   }
+# }
+#
+# .prettierrc.json:
+# {
+#   "semi": true,
+#   "singleQuote": true
+# }
+
+# Example Go linter configuration:
+#
+# .golangci.yml:
+# linters:
+#   enable:
+#     - gofmt
+#     - golint
+#     - govet
+#     - errcheck
+
+# Example HTML linter configuration:
+#
+# .htmlhintrc:
+# {
+#   "tagname-lowercase": true,
+#   "attr-lowercase": true,
+#   "attr-value-double-quotes": true,
+#   "doctype-first": true
+# }
+
+# Example CSS linter configuration:
+#
+# .stylelintrc.json:
+# {
+#   "extends": "stylelint-config-standard",
+#   "rules": {
+#     "indentation": 2,
+#     "color-hex-case": "lower"
+#   }
+# }
+
+# Example SQL linter configuration:
+#
+# .sqlfluff:
+# [sqlfluff]
+# dialect = postgres
+# templater = jinja
+#
+# [sqlfluff:rules]
+# max_line_length = 120
+
+# Example Rust linter configuration:
+#
+# rustfmt.toml:
+# max_width = 100
+# hard_tabs = false
+# tab_spaces = 4
+# edition = "2021"

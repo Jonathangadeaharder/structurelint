@@ -743,6 +743,326 @@ See complete working examples:
 - ✅ Run static analysis
 - ✅ Fail builds on quality violations
 
+## Linter Configuration Enforcement
+
+### Overview
+
+The `linter-config` rule ensures your project has proper linter configurations set up for Python, TypeScript, and Go. This helps maintain code quality by enforcing the use of industry-standard linting tools.
+
+### Why Enforce Linter Configuration?
+
+Many projects lack proper linter setup, leading to:
+- ❌ Inconsistent code style across the team
+- ❌ Type errors and bugs that could be caught early
+- ❌ Code quality degradation over time
+- ❌ Difficult code reviews due to style inconsistencies
+
+structurelint ensures:
+- ✅ Linter configuration files exist (e.g., `pyproject.toml`, `.eslintrc`, `.golangci.yml`)
+- ✅ GitHub workflows run linters automatically
+- ✅ Multi-language projects have appropriate linters for each language
+
+### Configuration
+
+```yaml
+root: true
+
+rules:
+  # Enforce linter configuration
+  linter-config:
+    # Require Python linters (mypy, black, ruff, pylint, flake8)
+    require-python: true
+
+    # Require TypeScript linters (ESLint, Prettier, TSC)
+    require-typescript: true
+
+    # Require Go linters (golangci-lint, gofmt, go vet)
+    require-go: true
+
+    # Require HTML linters (HTMLHint, html-validate, prettier)
+    require-html: true
+
+    # Require CSS linters (stylelint, prettier)
+    require-css: true
+
+    # Require SQL linters (sqlfluff, sqlfmt)
+    require-sql: true
+
+    # Require Rust linters (clippy, rustfmt)
+    require-rust: true
+```
+
+### Supported Linters
+
+#### Python
+- **mypy** - Static type checker
+- **black** - Code formatter
+- **ruff** - Fast Python linter (Rust-based)
+- **pylint** - Comprehensive code analyzer
+- **flake8** - Style guide enforcement
+
+**Expected config files:**
+- `pyproject.toml` (modern, recommended)
+- `.flake8`
+- `setup.cfg`
+- `.pylintrc`
+- `mypy.ini`
+- `ruff.toml`
+
+#### TypeScript/JavaScript
+- **ESLint** - Linting utility
+- **Prettier** - Code formatter
+- **TSC** - TypeScript compiler
+
+**Expected config files:**
+- `.eslintrc`, `.eslintrc.json`, `.eslintrc.js`, `.eslintrc.yml`
+- `eslint.config.js` (flat config)
+- `.prettierrc`, `.prettierrc.json`, `.prettierrc.js`
+- `prettier.config.js`
+- `tsconfig.json`
+
+#### Go
+- **golangci-lint** - Fast Go linters runner
+- **gofmt** - Go code formatter
+- **go vet** - Go static analysis tool
+
+**Expected config files:**
+- `.golangci.yml`, `.golangci.yaml`
+- `golangci.yml`, `golangci.yaml`
+
+#### HTML
+- **HTMLHint** - HTML linter
+- **html-validate** - HTML validator
+- **prettier** - Code formatter (also handles HTML)
+
+**Expected config files:**
+- `.htmlhintrc`
+- `.htmlvalidate.json`
+- `.prettierrc`, `.prettierrc.json`, `.prettierrc.js`
+- `prettier.config.js`
+
+#### CSS
+- **stylelint** - CSS linter
+- **prettier** - Code formatter (also handles CSS)
+
+**Expected config files:**
+- `.stylelintrc`, `.stylelintrc.json`, `.stylelintrc.js`
+- `stylelint.config.js`
+- `.prettierrc`, `.prettierrc.json`, `.prettierrc.js`
+- `prettier.config.js`
+
+#### SQL
+- **sqlfluff** - SQL linter and formatter
+- **sqlfmt** - SQL formatter
+
+**Expected config files:**
+- `.sqlfluff`
+- `setup.cfg` (sqlfluff can use this)
+- `pyproject.toml` (sqlfluff can use this)
+
+#### Rust
+- **clippy** - Rust linter
+- **rustfmt** - Rust code formatter
+
+**Expected config files:**
+- `rustfmt.toml`, `.rustfmt.toml`
+- `clippy.toml`
+
+### How It Works
+
+The rule checks for linter configuration in two ways:
+
+1. **Configuration Files**: Looks for standard linter config files in the project root
+2. **GitHub Workflows**: Checks if any workflow runs the linters (e.g., `run: black --check .`)
+
+If either condition is met, the rule passes. This allows flexibility:
+- Projects can have local config files for developer use
+- Projects can enforce linting only in CI/CD
+- Projects can have both (recommended)
+
+### Example Violations
+
+**Missing Python linter configuration:**
+```
+.: No Python linter configuration found. Expected one of: pyproject.toml, .flake8, setup.cfg, .pylintrc, mypy.ini, or a GitHub workflow running: mypy, black, ruff, pylint, flake8
+```
+
+**Missing TypeScript linter configuration:**
+```
+.: No TypeScript linter configuration found. Expected one of: .eslintrc, .eslintrc.json, .eslintrc.js, .eslintrc.yml, eslint.config.js, or a GitHub workflow running: eslint, prettier, tsc
+```
+
+**Missing Go linter configuration:**
+```
+.: No Go linter configuration found. Expected one of: .golangci.yml, .golangci.yaml, golangci.yml, golangci.yaml, or a GitHub workflow running: golangci-lint, gofmt, go vet, go fmt
+```
+
+**Missing HTML linter configuration:**
+```
+.: No HTML linter configuration found. Expected one of: .htmlhintrc, .htmlvalidate.json, .prettierrc, .prettierrc.json, or a GitHub workflow running: htmlhint, html-validate, prettier
+```
+
+**Missing CSS linter configuration:**
+```
+.: No CSS linter configuration found. Expected one of: .stylelintrc, .stylelintrc.json, .stylelintrc.js, stylelint.config.js, or a GitHub workflow running: stylelint, prettier
+```
+
+**Missing SQL linter configuration:**
+```
+.: No SQL linter configuration found. Expected one of: .sqlfluff, setup.cfg, pyproject.toml, or a GitHub workflow running: sqlfluff, sqlfmt, sql-lint
+```
+
+**Missing Rust linter configuration:**
+```
+.: No Rust linter configuration found. Expected one of: rustfmt.toml, .rustfmt.toml, clippy.toml, or a GitHub workflow running: clippy, rustfmt, cargo clippy, cargo fmt
+```
+
+### Complete Example
+
+```yaml
+root: true
+
+rules:
+  # Enforce linter configuration for all languages
+  linter-config:
+    require-python: true
+    require-typescript: true
+    require-go: true
+    require-html: true
+    require-css: true
+    require-sql: true
+    require-rust: true
+
+  # Also enforce GitHub workflows
+  github-workflows:
+    require-quality: true
+```
+
+This configuration ensures:
+1. Linter configs exist for all supported languages
+2. A GitHub workflow runs code quality checks
+
+### Example Configurations
+
+#### Python Project with pyproject.toml
+
+```toml
+# pyproject.toml
+[tool.black]
+line-length = 100
+target-version = ['py39']
+
+[tool.mypy]
+python_version = "3.9"
+strict = true
+
+[tool.ruff]
+line-length = 100
+select = ["E", "F", "I"]
+
+[tool.pylint.messages_control]
+max-line-length = 100
+```
+
+#### TypeScript Project with ESLint and Prettier
+
+```json
+// .eslintrc.json
+{
+  "extends": ["eslint:recommended", "plugin:@typescript-eslint/recommended"],
+  "parser": "@typescript-eslint/parser",
+  "plugins": ["@typescript-eslint"],
+  "rules": {
+    "no-console": "error"
+  }
+}
+```
+
+```json
+// .prettierrc.json
+{
+  "semi": true,
+  "singleQuote": true,
+  "tabWidth": 2
+}
+```
+
+#### Go Project with golangci-lint
+
+```yaml
+# .golangci.yml
+linters:
+  enable:
+    - gofmt
+    - golint
+    - govet
+    - errcheck
+    - staticcheck
+
+linters-settings:
+  gofmt:
+    simplify: true
+```
+
+#### HTML Project with HTMLHint
+
+```json
+// .htmlhintrc
+{
+  "tagname-lowercase": true,
+  "attr-lowercase": true,
+  "attr-value-double-quotes": true,
+  "doctype-first": true,
+  "tag-pair": true,
+  "spec-char-escape": true,
+  "id-unique": true,
+  "src-not-empty": true,
+  "attr-no-duplication": true
+}
+```
+
+#### CSS Project with stylelint
+
+```json
+// .stylelintrc.json
+{
+  "extends": "stylelint-config-standard",
+  "rules": {
+    "indentation": 2,
+    "color-hex-case": "lower",
+    "selector-max-id": 0
+  }
+}
+```
+
+#### SQL Project with SQLFluff
+
+```ini
+# .sqlfluff
+[sqlfluff]
+dialect = postgres
+templater = jinja
+
+[sqlfluff:rules]
+max_line_length = 120
+indent_unit = space
+```
+
+#### Rust Project with rustfmt and clippy
+
+```toml
+# rustfmt.toml
+max_width = 100
+hard_tabs = false
+tab_spaces = 4
+edition = "2021"
+```
+
+```toml
+# clippy.toml
+cognitive-complexity-threshold = 30
+```
+
 ### Metric Comparison Table
 
 | Metric | Evidence Level | Use Case | Correlation | Status |
@@ -842,6 +1162,18 @@ See complete working examples:
 - ✅ Required trigger validation (pull_request, push, etc.)
 - ✅ Required job validation
 - ✅ Comprehensive documentation and examples
+
+### Linter Configuration Enforcement ✅ COMPLETE
+- ✅ Python linter detection (mypy, black, ruff, pylint, flake8)
+- ✅ TypeScript linter detection (ESLint, Prettier, TSC)
+- ✅ Go linter detection (golangci-lint, gofmt, go vet)
+- ✅ HTML linter detection (HTMLHint, html-validate, prettier)
+- ✅ CSS linter detection (stylelint, prettier)
+- ✅ SQL linter detection (sqlfluff, sqlfmt)
+- ✅ Rust linter detection (clippy, rustfmt)
+- ✅ Configuration file validation
+- ✅ GitHub workflow linter step detection
+- ✅ Multi-language support
 
 ### Future Enhancements
 - 🔮 CK Suite metrics (CBO, RFC, LCOM5) for OO languages
