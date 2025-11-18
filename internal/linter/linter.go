@@ -172,6 +172,9 @@ func (l *Linter) addComplexRules(rulesList *[]rules.Rule, importGraph *graph.Imp
 
 	// GitHub workflows rule
 	l.addGitHubWorkflowsRule(rulesList)
+
+	// Linter configuration rule
+	l.addLinterConfigRule(rulesList)
 }
 
 // addTestValidationRules adds Phase 3 test validation rules
@@ -242,6 +245,26 @@ func (l *Linter) addGitHubWorkflowsRule(rulesList *[]rules.Rule) {
 				RequiredJobs:          requiredJobs,
 				RequiredTriggers:      requiredTriggers,
 				AllowMissing:          allowMissing,
+			})
+			*rulesList = append(*rulesList, rule)
+		}
+	}
+}
+
+// addLinterConfigRule adds the linter configuration rule
+func (l *Linter) addLinterConfigRule(rulesList *[]rules.Rule) {
+	if linterConfig, ok := l.getRuleConfig("linter-config"); ok {
+		if configMap, ok := linterConfig.(map[string]interface{}); ok {
+			requirePython := l.getBoolFromMap(configMap, "require-python")
+			requireTypeScript := l.getBoolFromMap(configMap, "require-typescript")
+			requireGo := l.getBoolFromMap(configMap, "require-go")
+			customLinters := l.getStringSliceFromMap(configMap, "custom-linters")
+
+			rule := rules.NewLinterConfigRule(rules.LinterConfigRule{
+				RequirePython:     requirePython,
+				RequireTypeScript: requireTypeScript,
+				RequireGo:         requireGo,
+				CustomLinters:     customLinters,
 			})
 			*rulesList = append(*rulesList, rule)
 		}

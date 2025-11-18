@@ -743,6 +743,193 @@ See complete working examples:
 - ✅ Run static analysis
 - ✅ Fail builds on quality violations
 
+## Linter Configuration Enforcement
+
+### Overview
+
+The `linter-config` rule ensures your project has proper linter configurations set up for Python, TypeScript, and Go. This helps maintain code quality by enforcing the use of industry-standard linting tools.
+
+### Why Enforce Linter Configuration?
+
+Many projects lack proper linter setup, leading to:
+- ❌ Inconsistent code style across the team
+- ❌ Type errors and bugs that could be caught early
+- ❌ Code quality degradation over time
+- ❌ Difficult code reviews due to style inconsistencies
+
+structurelint ensures:
+- ✅ Linter configuration files exist (e.g., `pyproject.toml`, `.eslintrc`, `.golangci.yml`)
+- ✅ GitHub workflows run linters automatically
+- ✅ Multi-language projects have appropriate linters for each language
+
+### Configuration
+
+```yaml
+root: true
+
+rules:
+  # Enforce linter configuration
+  linter-config:
+    # Require Python linters (mypy, black, ruff, pylint, flake8)
+    require-python: true
+
+    # Require TypeScript linters (ESLint, Prettier, TSC)
+    require-typescript: true
+
+    # Require Go linters (golangci-lint, gofmt, go vet)
+    require-go: true
+```
+
+### Supported Linters
+
+#### Python
+- **mypy** - Static type checker
+- **black** - Code formatter
+- **ruff** - Fast Python linter (Rust-based)
+- **pylint** - Comprehensive code analyzer
+- **flake8** - Style guide enforcement
+
+**Expected config files:**
+- `pyproject.toml` (modern, recommended)
+- `.flake8`
+- `setup.cfg`
+- `.pylintrc`
+- `mypy.ini`
+- `ruff.toml`
+
+#### TypeScript/JavaScript
+- **ESLint** - Linting utility
+- **Prettier** - Code formatter
+- **TSC** - TypeScript compiler
+
+**Expected config files:**
+- `.eslintrc`, `.eslintrc.json`, `.eslintrc.js`, `.eslintrc.yml`
+- `eslint.config.js` (flat config)
+- `.prettierrc`, `.prettierrc.json`, `.prettierrc.js`
+- `prettier.config.js`
+- `tsconfig.json`
+
+#### Go
+- **golangci-lint** - Fast Go linters runner
+- **gofmt** - Go code formatter
+- **go vet** - Go static analysis tool
+
+**Expected config files:**
+- `.golangci.yml`, `.golangci.yaml`
+- `golangci.yml`, `golangci.yaml`
+
+### How It Works
+
+The rule checks for linter configuration in two ways:
+
+1. **Configuration Files**: Looks for standard linter config files in the project root
+2. **GitHub Workflows**: Checks if any workflow runs the linters (e.g., `run: black --check .`)
+
+If either condition is met, the rule passes. This allows flexibility:
+- Projects can have local config files for developer use
+- Projects can enforce linting only in CI/CD
+- Projects can have both (recommended)
+
+### Example Violations
+
+**Missing Python linter configuration:**
+```
+.: No Python linter configuration found. Expected one of: pyproject.toml, .flake8, setup.cfg, .pylintrc, mypy.ini, or a GitHub workflow running: mypy, black, ruff, pylint, flake8
+```
+
+**Missing TypeScript linter configuration:**
+```
+.: No TypeScript linter configuration found. Expected one of: .eslintrc, .eslintrc.json, .eslintrc.js, .eslintrc.yml, eslint.config.js, or a GitHub workflow running: eslint, prettier, tsc
+```
+
+**Missing Go linter configuration:**
+```
+.: No Go linter configuration found. Expected one of: .golangci.yml, .golangci.yaml, golangci.yml, golangci.yaml, or a GitHub workflow running: golangci-lint, gofmt, go vet, go fmt
+```
+
+### Complete Example
+
+```yaml
+root: true
+
+rules:
+  # Enforce linter configuration for all languages
+  linter-config:
+    require-python: true
+    require-typescript: true
+    require-go: true
+
+  # Also enforce GitHub workflows
+  github-workflows:
+    require-quality: true
+```
+
+This configuration ensures:
+1. Linter configs exist for Python, TypeScript, and Go
+2. A GitHub workflow runs code quality checks
+
+### Example Configurations
+
+#### Python Project with pyproject.toml
+
+```toml
+# pyproject.toml
+[tool.black]
+line-length = 100
+target-version = ['py39']
+
+[tool.mypy]
+python_version = "3.9"
+strict = true
+
+[tool.ruff]
+line-length = 100
+select = ["E", "F", "I"]
+
+[tool.pylint.messages_control]
+max-line-length = 100
+```
+
+#### TypeScript Project with ESLint and Prettier
+
+```json
+// .eslintrc.json
+{
+  "extends": ["eslint:recommended", "plugin:@typescript-eslint/recommended"],
+  "parser": "@typescript-eslint/parser",
+  "plugins": ["@typescript-eslint"],
+  "rules": {
+    "no-console": "error"
+  }
+}
+```
+
+```json
+// .prettierrc.json
+{
+  "semi": true,
+  "singleQuote": true,
+  "tabWidth": 2
+}
+```
+
+#### Go Project with golangci-lint
+
+```yaml
+# .golangci.yml
+linters:
+  enable:
+    - gofmt
+    - golint
+    - govet
+    - errcheck
+    - staticcheck
+
+linters-settings:
+  gofmt:
+    simplify: true
+```
+
 ### Metric Comparison Table
 
 | Metric | Evidence Level | Use Case | Correlation | Status |
@@ -842,6 +1029,14 @@ See complete working examples:
 - ✅ Required trigger validation (pull_request, push, etc.)
 - ✅ Required job validation
 - ✅ Comprehensive documentation and examples
+
+### Linter Configuration Enforcement ✅ COMPLETE
+- ✅ Python linter detection (mypy, black, ruff, pylint, flake8)
+- ✅ TypeScript linter detection (ESLint, Prettier, TSC)
+- ✅ Go linter detection (golangci-lint, gofmt, go vet)
+- ✅ Configuration file validation
+- ✅ GitHub workflow linter step detection
+- ✅ Multi-language support
 
 ### Future Enhancements
 - 🔮 CK Suite metrics (CBO, RFC, LCOM5) for OO languages
