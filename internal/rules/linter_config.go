@@ -153,7 +153,7 @@ func (r *LinterConfigRule) detectLanguages(files []walker.FileInfo) map[string]b
 			languages["markdown"] = true
 		case ".java":
 			languages["java"] = true
-		case ".cpp", ".cc", ".cxx", ".c++", ".hpp", ".hh", ".hxx", ".h++", ".h":
+		case ".cpp", ".cc", ".cxx", ".c++", ".hpp", ".hh", ".hxx", ".h++":
 			languages["cpp"] = true
 		case ".cs":
 			languages["csharp"] = true
@@ -498,7 +498,7 @@ func min(a, b int) int {
 
 // generateAutoFixSuggestions generates best practice configuration suggestions for a language
 func (r *LinterConfigRule) generateAutoFixSuggestions(config LinterConfig) []string {
-	suggestions := []string{}
+	var suggestions []string
 
 	switch config.Language {
 	case "Python":
@@ -575,7 +575,7 @@ func (r *LinterConfigRule) generateAutoFixSuggestions(config LinterConfig) []str
 		suggestions = []string{
 			"Create .editorconfig with dotnet_diagnostic rules",
 			"Create stylecop.json for StyleCop.Analyzers",
-			"Add to .csproj: <PackageReference Include='StyleCop.Analyzers' Version='1.2.0-beta.507' />",
+			"Add to .csproj: <PackageReference Include='StyleCop.Analyzers' />",
 			"Example: https://docs.microsoft.com/en-us/dotnet/fundamentals/code-analysis/",
 		}
 	default:
