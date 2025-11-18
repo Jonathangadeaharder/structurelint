@@ -51,8 +51,8 @@ rules:
     # Optionally require workflows to commit logs to the branch
     require-log-commits: false
 
-    # Optionally require workflows to upload log artifacts
-    require-log-artifacts: false
+    # Optionally require workflows to package codebase with repomix and upload as artifact
+    require-repomix-artifact: false
 
     # Optionally require specific jobs
     required-jobs:
@@ -243,21 +243,25 @@ jobs:
           git push
 ```
 
-### 9. Log Artifact Uploads
+### 9. Repomix Codebase Artifact
 
-Optionally require workflows to upload execution logs as artifacts (alternative or complement to log commits):
+Optionally require workflows to package the codebase with repomix and upload as an artifact for agent context:
 
 ```yaml
 rules:
   github-workflows:
-    require-log-artifacts: true  # Require workflows to upload log artifacts
+    require-repomix-artifact: true  # Require workflows to upload repomix codebase summary
 ```
+
+This ensures workflows:
+- Run repomix to create a comprehensive codebase summary
+- Upload the repomix output as an artifact for agent analysis
 
 **Violation**:
 ```
-.github/workflows/test.yml: Job 'test' missing log artifact upload steps.
-Add 'actions/upload-artifact' steps to preserve execution logs.
-Example: use 'actions/upload-artifact@v4' with log file paths.
+.github/workflows/test.yml: Job 'test' missing repomix artifact steps.
+Add steps to run repomix and upload the codebase summary as an artifact for agent context.
+Example: run 'npx repomix' and use 'actions/upload-artifact@v4' to upload the output.
 ```
 
 **Valid Example**:
@@ -270,19 +274,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Run tests
-        run: go test ./... 2>&1 | tee test.log
-      - name: Upload logs on failure
-        if: failure()
+        run: go test ./...
+      - name: Generate repomix summary
+        run: npx repomix
+      - name: Upload repomix artifact
         uses: actions/upload-artifact@v4
         with:
-          name: test-logs-${{ runner.os }}
-          path: test.log
+          name: repomix-output-${{ github.sha }}
+          path: repomix-output.txt
           retention-days: 7
 ```
 
-**Note**: You can enable both `require-log-commits` and `require-log-artifacts` for comprehensive logging:
-- Log commits allow automated agents to pull and review results
-- Log artifacts provide GitHub UI access and retention management
+**Note**: Repomix creates a comprehensive codebase summary that agents can use to understand the full context of your project, making it easier for automated tools to analyze failures and suggest fixes.
 
 ## Example Workflows
 

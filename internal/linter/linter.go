@@ -228,20 +228,20 @@ func (l *Linter) addGitHubWorkflowsRule(rulesList *[]rules.Rule) {
 			requireSecurity := l.getBoolFromMap(configMap, "require-security")
 			requireQuality := l.getBoolFromMap(configMap, "require-quality")
 			requireLogCommits := l.getBoolFromMap(configMap, "require-log-commits")
-			requireLogArtifacts := l.getBoolFromMap(configMap, "require-log-artifacts")
+			requireRepomixArtifact := l.getBoolFromMap(configMap, "require-repomix-artifact")
 			requiredJobs := l.getStringSliceFromMap(configMap, "required-jobs")
 			requiredTriggers := l.getStringSliceFromMap(configMap, "required-triggers")
 			allowMissing := l.getStringSliceFromMap(configMap, "allow-missing")
 
 			rule := rules.NewGitHubWorkflowsRule(rules.GitHubWorkflowsRule{
-				RequireTests:        requireTests,
-				RequireSecurity:     requireSecurity,
-				RequireQuality:      requireQuality,
-				RequireLogCommits:   requireLogCommits,
-				RequireLogArtifacts: requireLogArtifacts,
-				RequiredJobs:        requiredJobs,
-				RequiredTriggers:    requiredTriggers,
-				AllowMissing:        allowMissing,
+				RequireTests:          requireTests,
+				RequireSecurity:       requireSecurity,
+				RequireQuality:        requireQuality,
+				RequireLogCommits:     requireLogCommits,
+				RequireRepomixArtifact: requireRepomixArtifact,
+				RequiredJobs:          requiredJobs,
+				RequiredTriggers:      requiredTriggers,
+				AllowMissing:          allowMissing,
 			})
 			*rulesList = append(*rulesList, rule)
 		}

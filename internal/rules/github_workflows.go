@@ -14,14 +14,14 @@ import (
 // GitHubWorkflowsRule enforces the presence and configuration of GitHub Actions workflows
 // for test execution, security scanning, and code quality checks.
 type GitHubWorkflowsRule struct {
-	RequireTests       bool     `yaml:"require-tests"`
-	RequireSecurity    bool     `yaml:"require-security"`
-	RequireQuality     bool     `yaml:"require-quality"`
-	RequiredJobs       []string `yaml:"required-jobs"`
-	RequiredTriggers   []string `yaml:"required-triggers"`
-	AllowMissing       []string `yaml:"allow-missing"`
-	RequireLogCommits  bool     `yaml:"require-log-commits"`
-	RequireLogArtifacts bool    `yaml:"require-log-artifacts"`
+	RequireTests          bool     `yaml:"require-tests"`
+	RequireSecurity       bool     `yaml:"require-security"`
+	RequireQuality        bool     `yaml:"require-quality"`
+	RequiredJobs          []string `yaml:"required-jobs"`
+	RequiredTriggers      []string `yaml:"required-triggers"`
+	AllowMissing          []string `yaml:"allow-missing"`
+	RequireLogCommits     bool     `yaml:"require-log-commits"`
+	RequireRepomixArtifact bool    `yaml:"require-repomix-artifact"`
 }
 
 // WorkflowFile represents a parsed GitHub Actions workflow file
@@ -356,11 +356,11 @@ func (r *GitHubWorkflowsRule) validateJob(path, jobName string, job WorkflowJob)
 		})
 	}
 
-	if r.RequireLogArtifacts && !r.hasLogArtifactSteps(job) {
+	if r.RequireRepomixArtifact && !r.hasRepomixArtifactSteps(job) {
 		violations = append(violations, Violation{
 			Rule:    r.Name(),
 			Path:    path,
-			Message: fmt.Sprintf("Job '%s' missing log artifact upload steps. Add 'actions/upload-artifact' steps to preserve execution logs. Example: use 'actions/upload-artifact@v4' with log file paths.", jobName),
+			Message: fmt.Sprintf("Job '%s' missing repomix artifact steps. Add steps to run repomix and upload the codebase summary as an artifact for agent context. Example: run 'npx repomix' and use 'actions/upload-artifact@v4' to upload the output.", jobName),
 		})
 	}
 
@@ -399,35 +399,49 @@ func (r *GitHubWorkflowsRule) hasLogCommitSteps(job WorkflowJob) bool {
 	return hasLogCreation && hasGitCommit && hasGitPush
 }
 
-// hasLogArtifactSteps checks if a job has steps that upload log artifacts
-func (r *GitHubWorkflowsRule) hasLogArtifactSteps(job WorkflowJob) bool {
+// hasRepomixArtifactSteps checks if a job has steps that run repomix and upload the artifact
+func (r *GitHubWorkflowsRule) hasRepomixArtifactSteps(job WorkflowJob) bool {
+	hasRepomixRun := false
+	hasArtifactUpload := false
+
 	for _, step := range job.Steps {
+		runLower := strings.ToLower(step.Run)
+
+		// Check for repomix execution (npx repomix, npm repomix, etc.)
+		if strings.Contains(runLower, "repomix") {
+			hasRepomixRun = true
+		}
+
 		// Check if step uses upload-artifact action
 		if strings.Contains(step.Uses, "upload-artifact") {
-			// Check if it has path configuration pointing to log files
+			// Check if it uploads repomix output (typically .xml, .txt, or repomix-output)
 			if step.With != nil {
 				if path, ok := step.With["path"]; ok {
-					pathStr := fmt.Sprintf("%v", path)
-					if strings.Contains(pathStr, ".log") {
-						return true
+					pathStr := strings.ToLower(fmt.Sprintf("%v", path))
+					if strings.Contains(pathStr, "repomix") ||
+						strings.Contains(pathStr, "output.xml") ||
+						strings.Contains(pathStr, "output.txt") {
+						hasArtifactUpload = true
 					}
 				}
 			}
 		}
 	}
-	return false
+
+	// Both repomix execution and artifact upload are required
+	return hasRepomixRun && hasArtifactUpload
 }
 
 // NewGitHubWorkflowsRule creates a new GitHubWorkflowsRule
 func NewGitHubWorkflowsRule(config GitHubWorkflowsRule) *GitHubWorkflowsRule {
 	return &GitHubWorkflowsRule{
-		RequireTests:        config.RequireTests,
-		RequireSecurity:     config.RequireSecurity,
-		RequireQuality:      config.RequireQuality,
-		RequiredJobs:        config.RequiredJobs,
-		RequiredTriggers:    config.RequiredTriggers,
-		AllowMissing:        config.AllowMissing,
-		RequireLogCommits:   config.RequireLogCommits,
-		RequireLogArtifacts: config.RequireLogArtifacts,
+		RequireTests:          config.RequireTests,
+		RequireSecurity:       config.RequireSecurity,
+		RequireQuality:        config.RequireQuality,
+		RequiredJobs:          config.RequiredJobs,
+		RequiredTriggers:      config.RequiredTriggers,
+		AllowMissing:          config.AllowMissing,
+		RequireLogCommits:     config.RequireLogCommits,
+		RequireRepomixArtifact: config.RequireRepomixArtifact,
 	}
 }

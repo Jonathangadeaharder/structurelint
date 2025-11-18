@@ -24,9 +24,9 @@ rules:
     # Allows agents to pull and review execution results
     # require-log-commits: true
 
-    # Optionally require workflows to upload log artifacts
-    # Provides GitHub UI access to execution logs
-    # require-log-artifacts: true
+    # Optionally require workflows to package codebase with repomix and upload as artifact
+    # Provides comprehensive codebase context for agents
+    # require-repomix-artifact: true
 
     # Optionally require specific jobs to be present
     # required-jobs:

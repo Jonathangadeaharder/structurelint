@@ -604,7 +604,7 @@ jobs:
 	}
 }
 
-func TestGitHubWorkflowsRule_MissingLogArtifacts(t *testing.T) {
+func TestGitHubWorkflowsRule_MissingRepomixArtifact(t *testing.T) {
 	// Arrange
 	tmpDir := t.TempDir()
 	workflowsDir := filepath.Join(tmpDir, ".github", "workflows")
@@ -627,7 +627,7 @@ jobs:
 		t.Fatal(err)
 	}
 	rule := &GitHubWorkflowsRule{
-		RequireLogArtifacts: true,
+		RequireRepomixArtifact: true,
 	}
 	files := []walker.FileInfo{
 		{Path: workflowPath, ParentPath: workflowsDir, IsDir: false},
@@ -638,12 +638,12 @@ jobs:
 	violations := rule.Check(files, make(map[string]*walker.DirInfo))
 
 	// Assert
-	if !containsMessage(violations, "Job 'test' missing log artifact upload steps") {
-		t.Error("Expected violation for missing log artifact upload steps")
+	if !containsMessage(violations, "Job 'test' missing repomix artifact steps") {
+		t.Error("Expected violation for missing repomix artifact steps")
 	}
 }
 
-func TestGitHubWorkflowsRule_ValidLogArtifacts(t *testing.T) {
+func TestGitHubWorkflowsRule_ValidRepomixArtifact(t *testing.T) {
 	// Arrange
 	tmpDir := t.TempDir()
 	workflowsDir := filepath.Join(tmpDir, ".github", "workflows")
@@ -659,13 +659,14 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Run tests
-        run: go test ./... 2>&1 | tee test.log
-      - name: Upload logs
-        if: failure()
+        run: go test ./...
+      - name: Generate repomix summary
+        run: npx repomix
+      - name: Upload repomix artifact
         uses: actions/upload-artifact@v4
         with:
-          name: test-logs
-          path: test.log
+          name: repomix-output
+          path: repomix-output.txt
           retention-days: 7
 `
 	workflowPath := filepath.Join(workflowsDir, "test.yml")
@@ -673,7 +674,7 @@ jobs:
 		t.Fatal(err)
 	}
 	rule := &GitHubWorkflowsRule{
-		RequireLogArtifacts: true,
+		RequireRepomixArtifact: true,
 	}
 	files := []walker.FileInfo{
 		{Path: workflowPath, ParentPath: workflowsDir, IsDir: false},
@@ -684,8 +685,8 @@ jobs:
 	violations := rule.Check(files, make(map[string]*walker.DirInfo))
 
 	// Assert
-	if containsMessage(violations, "Job 'test' missing log artifact upload steps") {
-		t.Error("Should not have violation for missing log artifact upload steps when they exist")
+	if containsMessage(violations, "Job 'test' missing repomix artifact steps") {
+		t.Error("Should not have violation for missing repomix artifact steps when they exist")
 	}
 }
 
