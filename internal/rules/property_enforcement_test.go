@@ -355,6 +355,54 @@ func TestPropertyEnforcementRule_ComplexCycle(t *testing.T) {
 	}
 }
 
+func TestPropertyEnforcementRule_MalformedPatterns(t *testing.T) {
+	// Arrange
+	importGraph := &graph.ImportGraph{
+		Dependencies: map[string][]string{
+			"a.go": {"b.go"},
+		},
+	}
+	config := PropertyEnforcementConfig{
+		ForbiddenPatterns: []string{
+			"invalid pattern without arrow",    // Missing ->
+			"internal/**",                       // Missing target
+			" -> external/**",                   // Empty source
+			"internal/** ->",                    // Empty target
+			"internal/** -> -> external/**",     // Multiple arrows
+		},
+	}
+	rule := NewPropertyEnforcementRule(importGraph, config)
+
+	// Act
+	violations := rule.Check([]walker.FileInfo{}, nil)
+
+	// Assert
+	if len(violations) < 4 {
+		t.Errorf("expected at least 4 violations for malformed patterns, got %d", len(violations))
+	}
+
+	// Check that violations mention invalid syntax
+	foundInvalidSyntax := false
+	foundEmptyPattern := false
+	for _, v := range violations {
+		if v.Path == "configuration" {
+			if strings.Contains(v.Message, "invalid") {
+				foundInvalidSyntax = true
+			}
+			if strings.Contains(v.Message, "empty") {
+				foundEmptyPattern = true
+			}
+		}
+	}
+
+	if !foundInvalidSyntax {
+		t.Error("expected violation about invalid pattern syntax")
+	}
+	if !foundEmptyPattern {
+		t.Error("expected violation about empty source or target")
+	}
+}
+
 func TestMatchPattern(t *testing.T) {
 	// Arrange
 	tests := []struct {

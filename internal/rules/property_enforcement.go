@@ -237,11 +237,38 @@ func (r *PropertyEnforcementRule) checkForbiddenPatterns() []Violation {
 		// Parse pattern: "source_pattern -> target_pattern"
 		parts := strings.Split(pattern, "->")
 		if len(parts) != 2 {
+			// Report malformed pattern as a violation
+			violations = append(violations, Violation{
+				Rule:    r.Name(),
+				Path:    "configuration",
+				Message: fmt.Sprintf("invalid forbidden pattern syntax: '%s'", pattern),
+				Context: "Forbidden pattern must be in the form 'source_pattern -> target_pattern'",
+				Suggestions: []string{
+					"Ensure the pattern contains exactly one '->' separating source and target patterns",
+					"Example: 'internal/** -> external/**'",
+					"Check your .structurelint.yml configuration",
+				},
+			})
 			continue
 		}
 
 		sourcePattern := strings.TrimSpace(parts[0])
 		targetPattern := strings.TrimSpace(parts[1])
+
+		// Validate that patterns are not empty
+		if sourcePattern == "" || targetPattern == "" {
+			violations = append(violations, Violation{
+				Rule:    r.Name(),
+				Path:    "configuration",
+				Message: fmt.Sprintf("forbidden pattern has empty source or target: '%s'", pattern),
+				Context: "Both source and target patterns must be non-empty",
+				Suggestions: []string{
+					"Ensure both patterns before and after '->' are non-empty",
+					"Example: 'internal/** -> external/**'",
+				},
+			})
+			continue
+		}
 
 		// Check all dependencies
 		for file, deps := range r.Graph.Dependencies {
@@ -280,20 +307,31 @@ func (r *PropertyEnforcementRule) checkForbiddenPatterns() []Violation {
 
 // resolveImportToFile attempts to resolve an import path to an actual file path
 func (r *PropertyEnforcementRule) resolveImportToFile(importPath string, sourceFile string) string {
-	// First, check if the import path is already a valid file path that exists in our graph
-	// This handles cases where dependencies are already resolved file paths
-	if _, exists := r.Graph.Dependencies[importPath]; exists {
-		return importPath
+	// Get list of files to search - prefer AllFiles if available, otherwise use Dependencies keys
+	var filesToSearch []string
+	if len(r.Graph.AllFiles) > 0 {
+		filesToSearch = r.Graph.AllFiles
+	} else {
+		// Fallback: collect all files from Dependencies map (keys + values)
+		fileSet := make(map[string]bool)
+		for file := range r.Graph.Dependencies {
+			fileSet[file] = true
+		}
+		for _, deps := range r.Graph.Dependencies {
+			for _, dep := range deps {
+				fileSet[dep] = true
+			}
+		}
+		for file := range fileSet {
+			filesToSearch = append(filesToSearch, file)
+		}
 	}
 
-	// Also check if any file in the graph has this as a dependency value
-	// This handles the case where importPath is a dependency but not in the keys
-	for _, deps := range r.Graph.Dependencies {
-		for _, dep := range deps {
-			if dep == importPath {
-				// The import path itself is the file path
-				return importPath
-			}
+	// First, check if the import path is already a valid file path
+	// This handles cases where dependencies are already resolved file paths
+	for _, file := range filesToSearch {
+		if file == importPath {
+			return importPath
 		}
 	}
 
@@ -301,22 +339,29 @@ func (r *PropertyEnforcementRule) resolveImportToFile(importPath string, sourceF
 	if strings.HasPrefix(importPath, ".") {
 		sourceDir := filepath.Dir(sourceFile)
 		resolved := filepath.Join(sourceDir, importPath)
+
 		// Check if this file exists in our graph
-		if _, exists := r.Graph.Dependencies[resolved]; exists {
-			return resolved
+		for _, file := range filesToSearch {
+			if file == resolved {
+				return resolved
+			}
 		}
+
 		// Try with common extensions
 		for _, ext := range []string{".go", ".py", ".ts", ".js", ".java", ".cs", ".cpp", ".hpp"} {
 			candidate := resolved + ext
-			if _, exists := r.Graph.Dependencies[candidate]; exists {
-				return candidate
+			for _, file := range filesToSearch {
+				if file == candidate {
+					return candidate
+				}
 			}
 		}
 	}
 
-	// For absolute imports, search in the dependency graph
-	for file := range r.Graph.Dependencies {
-		if strings.Contains(file, importPath) || strings.HasSuffix(file, importPath) {
+	// For absolute imports, search in all files using suffix matching
+	// Only use HasSuffix to avoid false matches (e.g., api/client matching api/client_test.go)
+	for _, file := range filesToSearch {
+		if strings.HasSuffix(file, importPath) {
 			return file
 		}
 	}
@@ -325,24 +370,24 @@ func (r *PropertyEnforcementRule) resolveImportToFile(importPath string, sourceF
 }
 
 // matchPattern checks if a path matches a glob-like pattern
+// Note: This is a simplified implementation that supports:
+// - Patterns ending with '/**' (e.g., 'internal/**')
+// - Patterns starting with '**/' (e.g., '**/test.go')
+// - Simple glob patterns with '*' and '?' wildcards
+// More complex patterns like 'foo/**/bar' are not currently supported.
 func matchPattern(path, pattern string) bool {
 	// Normalize paths
 	path = filepath.ToSlash(path)
 	pattern = filepath.ToSlash(pattern)
 
-	// Handle ** glob pattern
+	// Handle ** glob patterns (simplified implementation)
 	if strings.Contains(pattern, "**") {
-		// Convert ** to a regex-friendly pattern
-		regexPattern := strings.ReplaceAll(pattern, "**", ".*")
-		regexPattern = strings.ReplaceAll(regexPattern, "*", "[^/]*")
-		regexPattern = "^" + regexPattern + "$"
-
-		// Simple pattern matching without regex package
-		// For now, use filepath.Match for simpler patterns
+		// Pattern ending with /** matches any file under the prefix
 		if strings.HasSuffix(pattern, "/**") {
 			prefix := strings.TrimSuffix(pattern, "/**")
 			return strings.HasPrefix(path, prefix)
 		}
+		// Pattern starting with **/ matches any file with the suffix
 		if strings.HasPrefix(pattern, "**/") {
 			suffix := strings.TrimPrefix(pattern, "**/")
 			return strings.HasSuffix(path, suffix) || strings.Contains(path, "/"+suffix)
