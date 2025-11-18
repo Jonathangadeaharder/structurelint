@@ -29,10 +29,10 @@ As projects grow, their directory structures often degrade into chaos:
 - **Orphaned file detection** - Find files never imported by other files
 - **Unused export identification** - Locate dead exports that can be removed
 
-**Phase 3 - Test Validation:** ✨ NEW
+**Phase 3 - Test Validation:**
 - **Test adjacency enforcement** - Ensure every source file has corresponding tests
 - **Test location validation** - Prevent orphaned tests and enforce test directory structure
-- **Multi-language support** - Python, Go, TypeScript, JavaScript, Java, Rust, Ruby, C/C++
+- **Multi-language support** - Go, Python, TypeScript, JavaScript, Java, C++, C#, Rust, Ruby
 
 **Phase 4 - File Content Templates:** ✨ NEW
 - **Template system** - Define required file structures (READMEs, design docs, etc.)
@@ -51,8 +51,9 @@ As projects grow, their directory structures often degrade into chaos:
 - **Cascading Configuration**: ESLint-style `.structurelint.yml` files with inheritance
 - **Flexible Rules**: From simple metrics to complex pattern matching
 - **Architectural Enforcement**: Layer boundaries and import graph validation
-- **Multi-Language Support**: TypeScript, JavaScript, Go, Python
-- **Zero Dependencies**: Single binary, easy to install and distribute
+- **Multi-Language Support**: Go, Python, TypeScript, JavaScript, Java, C++, C#, Rust, Ruby
+- **Code Quality Metrics**: Cognitive complexity and Halstead metrics for all supported languages
+- **Zero Dependencies**: Single binary (metrics require Python 3.7+ with tree-sitter)
 
 ## Installation
 
@@ -521,11 +522,19 @@ rules:
       - "**/*.go"
       - "**/*.ts"
       - "**/*.py"
+      - "**/*.java"
+      - "**/*.cpp"
+      - "**/*.cs"
 
   max-halstead-effort:
     max: 100000
     file-patterns:
       - "**/*.go"
+      - "**/*.ts"
+      - "**/*.py"
+      - "**/*.java"
+      - "**/*.cpp"
+      - "**/*.cs"
 ```
 
 ### Thresholds and Interpretation
@@ -811,7 +820,7 @@ See complete working examples:
 ### Phase 3 - Test Validation ✅ COMPLETE
 - ✅ Test adjacency enforcement (adjacent and separate patterns)
 - ✅ Test location validation
-- ✅ Multi-language support (Python, Go, TypeScript, Java, Rust, Ruby, C/C++)
+- ✅ Multi-language support (Go, Python, TypeScript, JavaScript, Java, C++, C#, Rust, Ruby)
 - ✅ Language-specific test naming conventions
 
 ### Phase 4 - File Content Templates ✅ COMPLETE
@@ -828,7 +837,7 @@ See complete working examples:
 
 ### Phase 6 - Automatic Configuration ✅ COMPLETE
 - ✅ `--init` command for automatic configuration generation
-- ✅ Language detection (8+ languages)
+- ✅ Language detection (9 languages: Go, Python, TypeScript, JavaScript, Java, C++, C#, Rust, Ruby)
 - ✅ Test pattern recognition
 - ✅ Smart defaults based on project structure
 - ✅ Project metrics analysis
@@ -1026,9 +1035,18 @@ layers:
 
 ### Supported Languages
 
-- **TypeScript/JavaScript**: `.ts`, `.tsx`, `.js`, `.jsx`, `.mjs`
+**Full Support (Import/Export Parsing + Metrics):**
 - **Go**: `.go`
 - **Python**: `.py`
+- **TypeScript**: `.ts`, `.tsx`
+- **JavaScript**: `.js`, `.jsx`, `.mjs`
+- **Java**: `.java`
+- **C++**: `.cpp`, `.cc`, `.cxx`, `.h`, `.hpp`
+- **C#**: `.cs`
+
+**Test Validation Support:**
+- **Rust**: `.rs`
+- **Ruby**: `.rb`
 
 ### Complete Example
 
@@ -1274,9 +1292,10 @@ src/utils/helper.test.ts: test file should be in 'tests/' directory (separate pa
 | Python | ✅ Supported | ✅ Default | `test_*.py`, `*_test.py` |
 | TypeScript/JS | ✅ Default | ✅ Supported | `*.test.ts`, `*.spec.js` |
 | Java | ❌ | ✅ Default | `*Test.java`, `*IT.java` |
+| C++ | ✅ Supported | ✅ Supported | `test_*.cpp`, `*_test.cpp` |
+| C# | ✅ Supported | ✅ Default | `*Test.cs`, `*Tests.cs`, `*.test.cs` |
 | Rust | ✅ Default | ✅ Supported | `*_test.rs` |
 | Ruby | ❌ | ✅ Default | `*_spec.rb` |
-| C/C++ | ✅ Supported | ✅ Supported | `test_*.cpp`, `*_test.cpp` |
 
 ### Complete Examples
 

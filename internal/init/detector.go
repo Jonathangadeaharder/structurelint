@@ -165,6 +165,7 @@ func extensionToLanguage(ext string) string {
 		".c":    "c",
 		".h":    "c",
 		".hpp":  "cpp",
+		".cs":   "csharp",
 	}
 	return mapping[ext]
 }
@@ -196,6 +197,7 @@ func getTestFilePatterns(lang string) []string {
 		"ruby":       {"_spec"},
 		"cpp":        {"test_", "_test"},
 		"c":          {"test_", "_test"},
+		"csharp":     {"Test", "Tests", ".test"},
 	}
 	return patterns[lang]
 }
@@ -212,6 +214,7 @@ func getSourcePatterns(lang string) []string {
 		"ruby":       {"**/*.rb"},
 		"cpp":        {"**/*.cpp", "**/*.cc", "**/*.cxx"},
 		"c":          {"**/*.c"},
+		"csharp":     {"**/*.cs"},
 	}
 	return patterns[lang]
 }

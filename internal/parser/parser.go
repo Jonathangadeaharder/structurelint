@@ -46,6 +46,12 @@ func (p *Parser) ParseFile(filePath string) ([]Import, error) {
 		return p.parseGo(filePath)
 	case ".py":
 		return p.parsePython(filePath)
+	case ".java":
+		return p.parseJava(filePath)
+	case ".cpp", ".cc", ".cxx", ".c", ".h", ".hpp":
+		return p.parseCpp(filePath)
+	case ".cs":
+		return p.parseCSharp(filePath)
 	default:
 		// Unsupported file type, return empty
 		return []Import{}, nil
@@ -63,6 +69,12 @@ func (p *Parser) ParseExports(filePath string) ([]Export, error) {
 		return p.parseGoExports(filePath)
 	case ".py":
 		return p.parsePythonExports(filePath)
+	case ".java":
+		return p.parseJavaExports(filePath)
+	case ".cpp", ".cc", ".cxx", ".c", ".h", ".hpp":
+		return p.parseCppExports(filePath)
+	case ".cs":
+		return p.parseCSharpExports(filePath)
 	default:
 		// Unsupported file type, return empty
 		return []Export{}, nil
@@ -215,6 +227,320 @@ func (p *Parser) parsePython(filePath string) ([]Import, error) {
 	}
 
 	return imports, scanner.Err()
+}
+
+// parseJava extracts imports from Java files
+func (p *Parser) parseJava(filePath string) ([]Import, error) {
+	file, err := os.Open(filePath)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = file.Close() }()
+
+	var imports []Import
+	scanner := bufio.NewScanner(file)
+
+	// Extract package name from current file to determine relative imports
+	var currentPackage string
+
+	// Regex patterns for Java imports
+	// import com.example.MyClass;
+	// import com.example.*;
+	// import static com.example.MyClass.staticMethod;
+	packageRegex := regexp.MustCompile(`^\s*package\s+([\w.]+);`)
+	importRegex := regexp.MustCompile(`^\s*import\s+(?:static\s+)?([\w.]+)(?:\.\*)?\s*;`)
+
+	for scanner.Scan() {
+		line := scanner.Text()
+
+		// Extract package declaration
+		if match := packageRegex.FindStringSubmatch(line); match != nil {
+			currentPackage = match[1]
+			continue
+		}
+
+		// Extract import statements
+		if match := importRegex.FindStringSubmatch(line); match != nil {
+			importPath := match[1]
+
+			// Determine if relative (same package prefix)
+			isRelative := false
+			if currentPackage != "" && strings.HasPrefix(importPath, currentPackage+".") {
+				isRelative = true
+			}
+
+			imports = append(imports, Import{
+				SourceFile: filePath,
+				ImportPath: importPath,
+				IsRelative: isRelative,
+			})
+		}
+	}
+
+	return imports, scanner.Err()
+}
+
+// parseJavaExports extracts public classes/interfaces/methods from Java
+func (p *Parser) parseJavaExports(filePath string) ([]Export, error) {
+	file, err := os.Open(filePath)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = file.Close() }()
+
+	var exports []Export
+	scanner := bufio.NewScanner(file)
+
+	// Regex patterns for public declarations
+	// public class ClassName
+	// public interface InterfaceName
+	// public enum EnumName
+	// public abstract class AbstractClass
+	// public final class FinalClass
+	classRegex := regexp.MustCompile(`^\s*public\s+(?:abstract\s+|final\s+)?(?:class|interface|enum)\s+(\w+)`)
+
+	var exportNames []string
+
+	for scanner.Scan() {
+		line := scanner.Text()
+
+		// Extract public class/interface/enum declarations
+		if match := classRegex.FindStringSubmatch(line); match != nil {
+			exportNames = append(exportNames, match[1])
+		}
+	}
+
+	if len(exportNames) > 0 {
+		exports = append(exports, Export{
+			SourceFile: filePath,
+			Names:      exportNames,
+			IsDefault:  false,
+		})
+	}
+
+	return exports, scanner.Err()
+}
+
+// parseCpp extracts includes from C++ files
+func (p *Parser) parseCpp(filePath string) ([]Import, error) {
+	file, err := os.Open(filePath)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = file.Close() }()
+
+	var imports []Import
+	scanner := bufio.NewScanner(file)
+
+	// Regex pattern for C++ includes
+	// #include "myheader.h"       (relative, local)
+	// #include <iostream>         (system/library)
+	// #include <boost/algorithm.hpp>  (external library)
+	includeRegex := regexp.MustCompile(`^\s*#include\s+([<"])([^>"]+)[>"]`)
+
+	for scanner.Scan() {
+		line := scanner.Text()
+
+		// Skip lines that are commented out
+		trimmed := strings.TrimSpace(line)
+		if strings.HasPrefix(trimmed, "//") {
+			continue
+		}
+
+		if match := includeRegex.FindStringSubmatch(line); match != nil {
+			delimiter := match[1]
+			includePath := match[2]
+
+			// Quote includes ("") = relative/local
+			// Angle bracket includes (<>) = system/external
+			isRelative := delimiter == "\""
+
+			imports = append(imports, Import{
+				SourceFile: filePath,
+				ImportPath: includePath,
+				IsRelative: isRelative,
+			})
+		}
+	}
+
+	return imports, scanner.Err()
+}
+
+// parseCppExports extracts public symbols from C++ headers
+func (p *Parser) parseCppExports(filePath string) ([]Export, error) {
+	ext := filepath.Ext(filePath)
+
+	// Only parse header files (.h, .hpp)
+	if ext != ".h" && ext != ".hpp" {
+		return []Export{}, nil
+	}
+
+	file, err := os.Open(filePath)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = file.Close() }()
+
+	var exports []Export
+	scanner := bufio.NewScanner(file)
+
+	// Regex patterns for C++ declarations
+	// class ClassName
+	// struct StructName
+	// namespace NamespaceName
+	classRegex := regexp.MustCompile(`^\s*(?:class|struct)\s+(\w+)`)
+	namespaceRegex := regexp.MustCompile(`^\s*namespace\s+(\w+)`)
+
+	var exportNames []string
+	inComment := false
+
+	for scanner.Scan() {
+		line := scanner.Text()
+		trimmed := strings.TrimSpace(line)
+
+		// Skip single-line comments
+		if strings.HasPrefix(trimmed, "//") {
+			continue
+		}
+
+		// Track multi-line comments
+		if strings.Contains(trimmed, "/*") {
+			inComment = true
+		}
+		if strings.Contains(trimmed, "*/") {
+			inComment = false
+			continue
+		}
+		if inComment {
+			continue
+		}
+
+		// Extract class/struct declarations
+		if match := classRegex.FindStringSubmatch(line); match != nil {
+			exportNames = append(exportNames, match[1])
+		}
+
+		// Extract namespace declarations
+		if match := namespaceRegex.FindStringSubmatch(line); match != nil {
+			exportNames = append(exportNames, match[1])
+		}
+	}
+
+	if len(exportNames) > 0 {
+		exports = append(exports, Export{
+			SourceFile: filePath,
+			Names:      exportNames,
+			IsDefault:  false,
+		})
+	}
+
+	return exports, scanner.Err()
+}
+
+// parseCSharp extracts using statements from C# files
+func (p *Parser) parseCSharp(filePath string) ([]Import, error) {
+	file, err := os.Open(filePath)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = file.Close() }()
+
+	var imports []Import
+	scanner := bufio.NewScanner(file)
+
+	// Extract namespace from current file to determine relative imports
+	var currentNamespace string
+
+	// Regex patterns for C# using statements
+	// using System;
+	// using System.Collections.Generic;
+	// using MyNamespace.SubNamespace;
+	// using static System.Math;
+	// using Alias = System.Text.StringBuilder;
+	namespaceRegex := regexp.MustCompile(`^\s*namespace\s+([\w.]+)`)
+	usingRegex := regexp.MustCompile(`^\s*using\s+(?:static\s+)?(?:\w+\s*=\s*)?([\w.]+)\s*;`)
+
+	for scanner.Scan() {
+		line := scanner.Text()
+
+		// Extract namespace declaration
+		if match := namespaceRegex.FindStringSubmatch(line); match != nil {
+			currentNamespace = match[1]
+			continue
+		}
+
+		// Extract using statements
+		if match := usingRegex.FindStringSubmatch(line); match != nil {
+			importPath := match[1]
+
+			// Determine if relative (same namespace prefix)
+			isRelative := false
+			if currentNamespace != "" && strings.HasPrefix(importPath, currentNamespace+".") {
+				isRelative = true
+			}
+
+			// Also consider imports within the same root namespace as relative
+			if currentNamespace != "" && !isRelative {
+				// Extract root namespace (first part before first dot)
+				currentRoot := strings.Split(currentNamespace, ".")[0]
+				importRoot := strings.Split(importPath, ".")[0]
+				if currentRoot == importRoot && currentRoot != "System" {
+					isRelative = true
+				}
+			}
+
+			imports = append(imports, Import{
+				SourceFile: filePath,
+				ImportPath: importPath,
+				IsRelative: isRelative,
+			})
+		}
+	}
+
+	return imports, scanner.Err()
+}
+
+// parseCSharpExports extracts public types from C# files
+func (p *Parser) parseCSharpExports(filePath string) ([]Export, error) {
+	file, err := os.Open(filePath)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = file.Close() }()
+
+	var exports []Export
+	scanner := bufio.NewScanner(file)
+
+	// Regex patterns for public declarations
+	// public class ClassName
+	// public interface IInterfaceName
+	// public struct StructName
+	// public enum EnumName
+	// public delegate ...
+	// public sealed class SealedClass
+	// public abstract class AbstractClass
+	typeRegex := regexp.MustCompile(`^\s*public\s+(?:sealed\s+|abstract\s+|static\s+|partial\s+)?(?:class|interface|struct|enum|delegate)\s+(\w+)`)
+
+	var exportNames []string
+
+	for scanner.Scan() {
+		line := scanner.Text()
+
+		// Extract public type declarations
+		if match := typeRegex.FindStringSubmatch(line); match != nil {
+			exportNames = append(exportNames, match[1])
+		}
+	}
+
+	if len(exportNames) > 0 {
+		exports = append(exports, Export{
+			SourceFile: filePath,
+			Names:      exportNames,
+			IsDefault:  false,
+		})
+	}
+
+	return exports, scanner.Err()
 }
 
 // ResolveImportPath resolves a relative import path to a path within the project
