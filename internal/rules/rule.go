@@ -10,9 +10,46 @@ import (
 
 // Violation represents a rule violation
 type Violation struct {
+<<<<<<< HEAD
 	Rule    string
 	Path    string
 	Message string
+=======
+	Rule        string
+	Path        string
+	Message     string
+	Expected    string   // Optional: What was expected (e.g., "PascalCase")
+	Actual      string   // Optional: What was found (e.g., "camelCase")
+	Suggestions []string // Optional: Fix suggestions
+	Context     string   // Optional: Rule context (e.g., "React components rule: src/components/**")
+}
+
+// FormatDetailed returns a detailed, human-friendly violation message
+// with expected/actual values, context, and suggestions
+func (v *Violation) FormatDetailed() string {
+	msg := v.Path + ": " + v.Message
+
+	// Add expected/actual if available
+	if v.Expected != "" && v.Actual != "" {
+		msg += "\n  Expected: " + v.Expected
+		msg += "\n  Actual: " + v.Actual
+	}
+
+	// Add context if available
+	if v.Context != "" {
+		msg += "\n  Context: " + v.Context
+	}
+
+	// Add suggestions if available
+	if len(v.Suggestions) > 0 {
+		msg += "\n  Suggestions:"
+		for _, suggestion := range v.Suggestions {
+			msg += "\n    - " + suggestion
+		}
+	}
+
+	return msg
+>>>>>>> 4df6d8be38af74f838a2430d9f19dd2abe06193d
 }
 
 // Rule defines the interface for all linter rules
