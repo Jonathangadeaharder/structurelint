@@ -46,6 +46,8 @@ rules:
     exemptions:
       - "cmd/**/*.go"                       # Entry points don't need tests
       - "**/*_gen.go"                       # Generated files
+      - "**/*.py"                           # Exclude Python files (no source to test)
+      - "internal/clones/**/*.go"           # POC clone detection (tests coming in Phase 3)
 
   test-location:
     integration-test-dir: "tests"    # Allow integration tests in tests/ folder
@@ -53,6 +55,7 @@ rules:
     exemptions:
       - "testdata/**"
       - "internal/rules/rules_test.go"  # Integration test for all rules
+      - "tests/**/*.py"                  # Python test files in tests directory
 
   # Phase 4: File Content Templates
   file-content:
