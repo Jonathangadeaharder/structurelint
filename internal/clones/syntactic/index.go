@@ -42,7 +42,15 @@ func (idx *Index) GetCandidates(hash uint64) []types.Shingle {
 	idx.mu.RLock()
 	defer idx.mu.RUnlock()
 
-	return idx.index[hash]
+	shingles := idx.index[hash]
+	if shingles == nil {
+		return nil
+	}
+	
+	// Return a copy to prevent concurrent modification
+	result := make([]types.Shingle, len(shingles))
+	copy(result, shingles)
+	return result
 }
 
 // FindCollisions returns all hash values that have multiple locations (potential clones)
@@ -54,7 +62,10 @@ func (idx *Index) FindCollisions() map[uint64][]types.Shingle {
 
 	for hash, shingles := range idx.index {
 		if len(shingles) > 1 {
-			collisions[hash] = shingles
+			// Copy the slice to prevent concurrent modification
+			shinglesCopy := make([]types.Shingle, len(shingles))
+			copy(shinglesCopy, shingles)
+			collisions[hash] = shinglesCopy
 		}
 	}
 
@@ -81,7 +92,10 @@ func (idx *Index) FindCrossFileCollisions() map[uint64][]types.Shingle {
 
 		// Only include if multiple files are involved
 		if len(fileSet) > 1 {
-			crossFileCollisions[hash] = shingles
+			// Copy the slice to prevent concurrent modification
+			shinglesCopy := make([]types.Shingle, len(shingles))
+			copy(shinglesCopy, shingles)
+			crossFileCollisions[hash] = shinglesCopy
 		}
 	}
 
