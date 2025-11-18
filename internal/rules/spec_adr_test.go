@@ -51,6 +51,7 @@ func TestSpecADRRule_SpecFolderRequirement(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			// Arrange
 			tmpDir := t.TempDir()
 			files, dirs, err := tt.setupFiles(tmpDir)
 			if err != nil {
@@ -61,8 +62,10 @@ func TestSpecADRRule_SpecFolderRequirement(t *testing.T) {
 				RequireSpecFolder: tt.requireFolder,
 			})
 
+			// Act
 			violations := rule.Check(files, dirs)
 
+			// Assert
 			hasViolations := len(violations) > 0
 			if hasViolations != tt.wantViolations {
 				t.Errorf("%s: got violations=%v, want violations=%v\nViolations: %v",
@@ -114,6 +117,7 @@ func TestSpecADRRule_ADRFolderRequirement(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			// Arrange
 			tmpDir := t.TempDir()
 			files, dirs, err := tt.setupFiles(tmpDir)
 			if err != nil {
@@ -124,8 +128,10 @@ func TestSpecADRRule_ADRFolderRequirement(t *testing.T) {
 				RequireADRFolder: tt.requireFolder,
 			})
 
+			// Act
 			violations := rule.Check(files, dirs)
 
+			// Assert
 			hasViolations := len(violations) > 0
 			if hasViolations != tt.wantViolations {
 				t.Errorf("%s: got violations=%v, want violations=%v\nViolations: %v",
@@ -291,6 +297,7 @@ Users can do something
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			// Arrange
 			tmpDir := t.TempDir()
 			files, err := tt.setupFiles(tmpDir)
 			if err != nil {
@@ -301,8 +308,10 @@ Users can do something
 				EnforceSpecTemplate: tt.enforceTemplate,
 			})
 
+			// Act
 			violations := rule.Check(files, make(map[string]*walker.DirInfo))
 
+			// Assert
 			// Check for expected violation messages
 			for _, expectedMsg := range tt.wantViolationMsgs {
 				found := false
@@ -456,6 +465,7 @@ Chosen option: "Option 1"
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			// Arrange
 			tmpDir := t.TempDir()
 			files, err := tt.setupFiles(tmpDir)
 			if err != nil {
@@ -466,8 +476,10 @@ Chosen option: "Option 1"
 				EnforceADRTemplate: tt.enforceTemplate,
 			})
 
+			// Act
 			violations := rule.Check(files, make(map[string]*walker.DirInfo))
 
+			// Assert
 			// Check for expected violation messages
 			for _, expectedMsg := range tt.wantViolationMsgs {
 				found := false
@@ -494,9 +506,13 @@ Chosen option: "Option 1"
 
 // TestSpecADRRule_Name tests the rule name
 func TestSpecADRRule_Name(t *testing.T) {
+	// Arrange
 	rule := NewSpecADRRule(SpecADRRule{})
+
+	// Act
 	name := rule.Name()
 
+	// Assert
 	if name != "spec-adr-enforcement" {
 		t.Errorf("Expected rule name to be 'spec-adr-enforcement', got '%s'", name)
 	}

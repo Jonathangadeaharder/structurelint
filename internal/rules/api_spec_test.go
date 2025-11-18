@@ -148,21 +148,21 @@ def calculate(a, b):
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Given: a temporary directory with test files
+			// Arrange
 			tmpDir := t.TempDir()
 			files, err := tt.setupFiles(tmpDir)
 			if err != nil {
 				t.Fatalf("Failed to setup test files: %v", err)
 			}
 
-			// When: we check the rule
 			rule := NewAPISpecRule(APISpecRule{
 				RequireOpenAPI: tt.requireOpenAPI,
 			})
 
+			// Act
 			violations := rule.Check(files, make(map[string]*walker.DirInfo))
 
-			// Then: violations should match expectations
+			// Assert
 			hasViolations := len(violations) > 0
 			if hasViolations != tt.wantViolations {
 				t.Errorf("%s: got violations=%v, want violations=%v\nViolations: %v",
@@ -279,21 +279,21 @@ func Add(a, b int) int {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Given: a temporary directory with test files
+			// Arrange
 			tmpDir := t.TempDir()
 			files, err := tt.setupFiles(tmpDir)
 			if err != nil {
 				t.Fatalf("Failed to setup test files: %v", err)
 			}
 
-			// When: we check the rule
 			rule := NewAPISpecRule(APISpecRule{
 				RequireAsyncAPI: tt.requireAsyncAPI,
 			})
 
+			// Act
 			violations := rule.Check(files, make(map[string]*walker.DirInfo))
 
-			// Then: violations should match expectations
+			// Assert
 			hasViolations := len(violations) > 0
 			if hasViolations != tt.wantViolations {
 				t.Errorf("%s: got violations=%v, want violations=%v\nViolations: %v",
@@ -305,13 +305,13 @@ func Add(a, b int) int {
 
 // TestAPISpecRule_Name tests the rule name
 func TestAPISpecRule_Name(t *testing.T) {
-	// Given: an API spec rule
+	// Arrange
 	rule := NewAPISpecRule(APISpecRule{})
 
-	// When: we get the name
+	// Act
 	name := rule.Name()
 
-	// Then: it should be "api-spec"
+	// Assert
 	if name != "api-spec" {
 		t.Errorf("Expected rule name to be 'api-spec', got '%s'", name)
 	}

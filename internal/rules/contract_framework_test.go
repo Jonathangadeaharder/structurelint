@@ -109,21 +109,21 @@ def calculate(a, b):
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Given: a temporary directory with test files
+			// Arrange
 			tmpDir := t.TempDir()
 			files, err := tt.setupFiles(tmpDir)
 			if err != nil {
 				t.Fatalf("Failed to setup test files: %v", err)
 			}
 
-			// When: we check the rule
 			rule := NewContractFrameworkRule(ContractFrameworkRule{
 				RequirePython: tt.requirePython,
 			})
 
+			// Act
 			violations := rule.Check(files, make(map[string]*walker.DirInfo))
 
-			// Then: violations should match expectations
+			// Assert
 			hasViolations := len(violations) > 0
 			if hasViolations != tt.wantViolations {
 				t.Errorf("%s: got violations=%v, want violations=%v\nViolations: %v",
@@ -137,7 +137,7 @@ def calculate(a, b):
 func TestContractFrameworkRule_TypeScript(t *testing.T) {
 	tests := []struct {
 		name              string
-		setupFiles        func(dir string) error
+		setupFiles        func(dir string) ([]walker.FileInfo, error)
 		requireTypeScript bool
 		wantViolations    bool
 		description       string
@@ -145,9 +145,10 @@ func TestContractFrameworkRule_TypeScript(t *testing.T) {
 		{
 			name:              "TypeScript with Zod",
 			requireTypeScript: true,
-			setupFiles: func(dir string) error {
+			setupFiles: func(dir string) ([]walker.FileInfo, error) {
 				// Create TypeScript file with Zod
-				if err := os.WriteFile(filepath.Join(dir, "user.ts"), []byte(`
+				userTsPath := filepath.Join(dir, "user.ts")
+				if err := os.WriteFile(userTsPath, []byte(`
 import { z } from "zod";
 
 const UserSchema = z.object({
@@ -161,17 +162,25 @@ export function createUser(data: unknown) {
   return user;
 }
 `), 0644); err != nil {
-					return err
+					return nil, err
 				}
 
 				// Create package.json with Zod
-				return os.WriteFile(filepath.Join(dir, "package.json"), []byte(`
+				pkgJsonPath := filepath.Join(dir, "package.json")
+				if err := os.WriteFile(pkgJsonPath, []byte(`
 {
   "dependencies": {
     "zod": "^3.22.0"
   }
 }
-`), 0644)
+`), 0644); err != nil {
+					return nil, err
+				}
+
+				return []walker.FileInfo{
+					{Path: userTsPath, ParentPath: dir, IsDir: false},
+					{Path: pkgJsonPath, ParentPath: dir, IsDir: false},
+				}, nil
 			},
 			wantViolations: false,
 			description:    "Should pass when TypeScript project uses Zod",
@@ -179,13 +188,20 @@ export function createUser(data: unknown) {
 		{
 			name:              "TypeScript without contract framework",
 			requireTypeScript: true,
-			setupFiles: func(dir string) error {
+			setupFiles: func(dir string) ([]walker.FileInfo, error) {
 				// Create TypeScript file without contracts
-				return os.WriteFile(filepath.Join(dir, "utils.ts"), []byte(`
+				utilsTsPath := filepath.Join(dir, "utils.ts")
+				if err := os.WriteFile(utilsTsPath, []byte(`
 export function add(a: number, b: number): number {
   return a + b;
 }
-`), 0644)
+`), 0644); err != nil {
+					return nil, err
+				}
+
+				return []walker.FileInfo{
+					{Path: utilsTsPath, ParentPath: dir, IsDir: false},
+				}, nil
 			},
 			wantViolations: true,
 			description:    "Should fail when TypeScript project lacks contract framework",
@@ -194,25 +210,21 @@ export function add(a: number, b: number): number {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Given: a temporary directory with test files
+			// Arrange
 			tmpDir := t.TempDir()
-			if err := tt.setupFiles(tmpDir); err != nil {
+			files, err := tt.setupFiles(tmpDir)
+			if err != nil {
 				t.Fatalf("Failed to setup test files: %v", err)
-			}
-
-			// When: we walk the directory and check the rule
-			w := walker.New(tmpDir)
-			if err := w.Walk(); err != nil {
-				t.Fatalf("Failed to walk directory: %v", err)
 			}
 
 			rule := NewContractFrameworkRule(ContractFrameworkRule{
 				RequireTypeScript: tt.requireTypeScript,
 			})
 
-			violations := rule.Check(w.GetFiles(), w.GetDirs())
+			// Act
+			violations := rule.Check(files, make(map[string]*walker.DirInfo))
 
-			// Then: violations should match expectations
+			// Assert
 			hasViolations := len(violations) > 0
 			if hasViolations != tt.wantViolations {
 				t.Errorf("%s: got violations=%v, want violations=%v\nViolations: %v",
@@ -226,7 +238,7 @@ export function add(a: number, b: number): number {
 func TestContractFrameworkRule_Go(t *testing.T) {
 	tests := []struct {
 		name           string
-		setupFiles     func(dir string) error
+		setupFiles     func(dir string) ([]walker.FileInfo, error)
 		requireGo      bool
 		wantViolations bool
 		description    string
@@ -234,9 +246,10 @@ func TestContractFrameworkRule_Go(t *testing.T) {
 		{
 			name:      "Go with gocontracts",
 			requireGo: true,
-			setupFiles: func(dir string) error {
+			setupFiles: func(dir string) ([]walker.FileInfo, error) {
 				// Create Go file with gocontracts
-				if err := os.WriteFile(filepath.Join(dir, "calculator.go"), []byte(`
+				calcGoPath := filepath.Join(dir, "calculator.go")
+				if err := os.WriteFile(calcGoPath, []byte(`
 package calculator
 
 //go:generate gocontracts
@@ -248,17 +261,25 @@ func Add(a, b int) int {
 	return a + b
 }
 `), 0644); err != nil {
-					return err
+					return nil, err
 				}
 
 				// Create go.mod with gocontracts
-				return os.WriteFile(filepath.Join(dir, "go.mod"), []byte(`
+				goModPath := filepath.Join(dir, "go.mod")
+				if err := os.WriteFile(goModPath, []byte(`
 module example.com/calculator
 
 go 1.21
 
 require github.com/s-kostyaev/gocontracts v0.1.0
-`), 0644)
+`), 0644); err != nil {
+					return nil, err
+				}
+
+				return []walker.FileInfo{
+					{Path: calcGoPath, ParentPath: dir, IsDir: false},
+					{Path: goModPath, ParentPath: dir, IsDir: false},
+				}, nil
 			},
 			wantViolations: false,
 			description:    "Should pass when Go project uses gocontracts",
@@ -266,9 +287,10 @@ require github.com/s-kostyaev/gocontracts v0.1.0
 		{
 			name:      "Go with standard assertions",
 			requireGo: true,
-			setupFiles: func(dir string) error {
+			setupFiles: func(dir string) ([]walker.FileInfo, error) {
 				// Create Go file with standard assertions
-				if err := os.WriteFile(filepath.Join(dir, "validator.go"), []byte(`
+				validatorGoPath := filepath.Join(dir, "validator.go")
+				if err := os.WriteFile(validatorGoPath, []byte(`
 package validator
 
 func Validate(input string) error {
@@ -278,15 +300,23 @@ func Validate(input string) error {
 	return nil
 }
 `), 0644); err != nil {
-					return err
+					return nil, err
 				}
 
 				// Create go.mod
-				return os.WriteFile(filepath.Join(dir, "go.mod"), []byte(`
+				goModPath := filepath.Join(dir, "go.mod")
+				if err := os.WriteFile(goModPath, []byte(`
 module example.com/validator
 
 go 1.21
-`), 0644)
+`), 0644); err != nil {
+					return nil, err
+				}
+
+				return []walker.FileInfo{
+					{Path: validatorGoPath, ParentPath: dir, IsDir: false},
+					{Path: goModPath, ParentPath: dir, IsDir: false},
+				}, nil
 			},
 			wantViolations: false,
 			description:    "Should pass when Go project uses standard assertions",
@@ -294,15 +324,22 @@ go 1.21
 		{
 			name:      "Go without contract framework",
 			requireGo: true,
-			setupFiles: func(dir string) error {
+			setupFiles: func(dir string) ([]walker.FileInfo, error) {
 				// Create Go file without contracts
-				return os.WriteFile(filepath.Join(dir, "utils.go"), []byte(`
+				utilsGoPath := filepath.Join(dir, "utils.go")
+				if err := os.WriteFile(utilsGoPath, []byte(`
 package utils
 
 func Add(a, b int) int {
 	return a + b
 }
-`), 0644)
+`), 0644); err != nil {
+					return nil, err
+				}
+
+				return []walker.FileInfo{
+					{Path: utilsGoPath, ParentPath: dir, IsDir: false},
+				}, nil
 			},
 			wantViolations: true,
 			description:    "Should fail when Go project lacks contract framework",
@@ -311,25 +348,21 @@ func Add(a, b int) int {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Given: a temporary directory with test files
+			// Arrange
 			tmpDir := t.TempDir()
-			if err := tt.setupFiles(tmpDir); err != nil {
+			files, err := tt.setupFiles(tmpDir)
+			if err != nil {
 				t.Fatalf("Failed to setup test files: %v", err)
-			}
-
-			// When: we walk the directory and check the rule
-			w := walker.New(tmpDir)
-			if err := w.Walk(); err != nil {
-				t.Fatalf("Failed to walk directory: %v", err)
 			}
 
 			rule := NewContractFrameworkRule(ContractFrameworkRule{
 				RequireGo: tt.requireGo,
 			})
 
-			violations := rule.Check(w.GetFiles(), w.GetDirs())
+			// Act
+			violations := rule.Check(files, make(map[string]*walker.DirInfo))
 
-			// Then: violations should match expectations
+			// Assert
 			hasViolations := len(violations) > 0
 			if hasViolations != tt.wantViolations {
 				t.Errorf("%s: got violations=%v, want violations=%v\nViolations: %v",
@@ -343,7 +376,7 @@ func Add(a, b int) int {
 func TestContractFrameworkRule_Java(t *testing.T) {
 	tests := []struct {
 		name           string
-		setupFiles     func(dir string) error
+		setupFiles     func(dir string) ([]walker.FileInfo, error)
 		requireJava    bool
 		wantViolations bool
 		description    string
@@ -351,9 +384,10 @@ func TestContractFrameworkRule_Java(t *testing.T) {
 		{
 			name:        "Java with Jakarta Bean Validation",
 			requireJava: true,
-			setupFiles: func(dir string) error {
+			setupFiles: func(dir string) ([]walker.FileInfo, error) {
 				// Create Java file with Jakarta validation
-				if err := os.WriteFile(filepath.Join(dir, "User.java"), []byte(`
+				userJavaPath := filepath.Join(dir, "User.java")
+				if err := os.WriteFile(userJavaPath, []byte(`
 import jakarta.validation.constraints.*;
 
 public class User {
@@ -368,11 +402,12 @@ public class User {
     private int age;
 }
 `), 0644); err != nil {
-					return err
+					return nil, err
 				}
 
 				// Create pom.xml with Jakarta validation
-				return os.WriteFile(filepath.Join(dir, "pom.xml"), []byte(`
+				pomXmlPath := filepath.Join(dir, "pom.xml")
+				if err := os.WriteFile(pomXmlPath, []byte(`
 <dependencies>
     <dependency>
         <groupId>jakarta.validation</groupId>
@@ -380,7 +415,14 @@ public class User {
         <version>3.0.2</version>
     </dependency>
 </dependencies>
-`), 0644)
+`), 0644); err != nil {
+					return nil, err
+				}
+
+				return []walker.FileInfo{
+					{Path: userJavaPath, ParentPath: dir, IsDir: false},
+					{Path: pomXmlPath, ParentPath: dir, IsDir: false},
+				}, nil
 			},
 			wantViolations: false,
 			description:    "Should pass when Java project uses Jakarta Bean Validation",
@@ -388,15 +430,22 @@ public class User {
 		{
 			name:        "Java without contract framework",
 			requireJava: true,
-			setupFiles: func(dir string) error {
+			setupFiles: func(dir string) ([]walker.FileInfo, error) {
 				// Create Java file without contracts
-				return os.WriteFile(filepath.Join(dir, "Calculator.java"), []byte(`
+				calcJavaPath := filepath.Join(dir, "Calculator.java")
+				if err := os.WriteFile(calcJavaPath, []byte(`
 public class Calculator {
     public int add(int a, int b) {
         return a + b;
     }
 }
-`), 0644)
+`), 0644); err != nil {
+					return nil, err
+				}
+
+				return []walker.FileInfo{
+					{Path: calcJavaPath, ParentPath: dir, IsDir: false},
+				}, nil
 			},
 			wantViolations: true,
 			description:    "Should fail when Java project lacks contract framework",
@@ -405,25 +454,21 @@ public class Calculator {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Given: a temporary directory with test files
+			// Arrange
 			tmpDir := t.TempDir()
-			if err := tt.setupFiles(tmpDir); err != nil {
+			files, err := tt.setupFiles(tmpDir)
+			if err != nil {
 				t.Fatalf("Failed to setup test files: %v", err)
-			}
-
-			// When: we walk the directory and check the rule
-			w := walker.New(tmpDir)
-			if err := w.Walk(); err != nil {
-				t.Fatalf("Failed to walk directory: %v", err)
 			}
 
 			rule := NewContractFrameworkRule(ContractFrameworkRule{
 				RequireJava: tt.requireJava,
 			})
 
-			violations := rule.Check(w.GetFiles(), w.GetDirs())
+			// Act
+			violations := rule.Check(files, make(map[string]*walker.DirInfo))
 
-			// Then: violations should match expectations
+			// Assert
 			hasViolations := len(violations) > 0
 			if hasViolations != tt.wantViolations {
 				t.Errorf("%s: got violations=%v, want violations=%v\nViolations: %v",
@@ -437,7 +482,7 @@ public class Calculator {
 func TestContractFrameworkRule_CSharp(t *testing.T) {
 	tests := []struct {
 		name              string
-		setupFiles        func(dir string) error
+		setupFiles        func(dir string) ([]walker.FileInfo, error)
 		requireCSharp     bool
 		wantViolations    bool
 		wantDeprecation   bool
@@ -446,9 +491,10 @@ func TestContractFrameworkRule_CSharp(t *testing.T) {
 		{
 			name:          "C# with nullable reference types",
 			requireCSharp: true,
-			setupFiles: func(dir string) error {
+			setupFiles: func(dir string) ([]walker.FileInfo, error) {
 				// Create C# file with nullable reference types
-				if err := os.WriteFile(filepath.Join(dir, "User.cs"), []byte(`
+				userCsPath := filepath.Join(dir, "User.cs")
+				if err := os.WriteFile(userCsPath, []byte(`
 #nullable enable
 
 public class User
@@ -462,18 +508,26 @@ public class User
     }
 }
 `), 0644); err != nil {
-					return err
+					return nil, err
 				}
 
 				// Create .csproj file
-				return os.WriteFile(filepath.Join(dir, "MyProject.csproj"), []byte(`
+				csprojPath := filepath.Join(dir, "MyProject.csproj")
+				if err := os.WriteFile(csprojPath, []byte(`
 <Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
         <TargetFramework>net8.0</TargetFramework>
         <Nullable>enable</Nullable>
     </PropertyGroup>
 </Project>
-`), 0644)
+`), 0644); err != nil {
+					return nil, err
+				}
+
+				return []walker.FileInfo{
+					{Path: userCsPath, ParentPath: dir, IsDir: false},
+					{Path: csprojPath, ParentPath: dir, IsDir: false},
+				}, nil
 			},
 			wantViolations:  false,
 			wantDeprecation: false,
@@ -482,9 +536,10 @@ public class User
 		{
 			name:          "C# with deprecated Code Contracts",
 			requireCSharp: true,
-			setupFiles: func(dir string) error {
+			setupFiles: func(dir string) ([]walker.FileInfo, error) {
 				// Create C# file with deprecated Code Contracts
-				return os.WriteFile(filepath.Join(dir, "Calculator.cs"), []byte(`
+				calcCsPath := filepath.Join(dir, "Calculator.cs")
+				if err := os.WriteFile(calcCsPath, []byte(`
 using System.Diagnostics.Contracts;
 
 public class Calculator
@@ -495,7 +550,13 @@ public class Calculator
         return a / b;
     }
 }
-`), 0644)
+`), 0644); err != nil {
+					return nil, err
+				}
+
+				return []walker.FileInfo{
+					{Path: calcCsPath, ParentPath: dir, IsDir: false},
+				}, nil
 			},
 			wantViolations:  true,
 			wantDeprecation: true,
@@ -505,25 +566,21 @@ public class Calculator
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Given: a temporary directory with test files
+			// Arrange
 			tmpDir := t.TempDir()
-			if err := tt.setupFiles(tmpDir); err != nil {
+			files, err := tt.setupFiles(tmpDir)
+			if err != nil {
 				t.Fatalf("Failed to setup test files: %v", err)
-			}
-
-			// When: we walk the directory and check the rule
-			w := walker.New(tmpDir)
-			if err := w.Walk(); err != nil {
-				t.Fatalf("Failed to walk directory: %v", err)
 			}
 
 			rule := NewContractFrameworkRule(ContractFrameworkRule{
 				RequireCSharp: tt.requireCSharp,
 			})
 
-			violations := rule.Check(w.GetFiles(), w.GetDirs())
+			// Act
+			violations := rule.Check(files, make(map[string]*walker.DirInfo))
 
-			// Then: violations should match expectations
+			// Assert
 			hasViolations := len(violations) > 0
 			if hasViolations != tt.wantViolations {
 				t.Errorf("%s: got violations=%v, want violations=%v\nViolations: %v",
@@ -549,13 +606,13 @@ public class Calculator
 
 // TestContractFrameworkRule_Name tests the rule name
 func TestContractFrameworkRule_Name(t *testing.T) {
-	// Given: a contract framework rule
+	// Arrange
 	rule := NewContractFrameworkRule(ContractFrameworkRule{})
 
-	// When: we get the name
+	// Act
 	name := rule.Name()
 
-	// Then: it should be "contract-framework"
+	// Assert
 	if name != "contract-framework" {
 		t.Errorf("Expected rule name to be 'contract-framework', got '%s'", name)
 	}
