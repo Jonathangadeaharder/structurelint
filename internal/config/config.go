@@ -11,6 +11,7 @@ import (
 
 // Config represents a .structurelint.yml configuration file
 type Config struct {
+<<<<<<< HEAD
 	Root        bool                   `yaml:"root"`
 	Extends     interface{}            `yaml:"extends"` // string or []string
 	Exclude     []string               `yaml:"exclude"` // Patterns to exclude from linting
@@ -18,6 +19,18 @@ type Config struct {
 	Overrides   []Override             `yaml:"overrides"`
 	Layers      []Layer                `yaml:"layers"`      // Phase 1: Layer definitions
 	Entrypoints []string               `yaml:"entrypoints"` // Phase 2: Entry points for orphan detection
+=======
+	Root                  bool                   `yaml:"root"`
+	Extends               interface{}            `yaml:"extends"`               // string or []string
+	Exclude               []string               `yaml:"exclude"`               // Patterns to exclude from linting
+	AutoLoadGitignore     *bool                  `yaml:"autoLoadGitignore"`     // Auto-load .gitignore patterns (default: true)
+	AutoLanguageNaming    *bool                  `yaml:"autoLanguageNaming"`    // Auto-apply language-specific naming conventions (default: true)
+	InfrastructurePatterns []string              `yaml:"infrastructurePatterns"` // Additional patterns for infrastructure code (Priority 2 feature)
+	Rules                 map[string]interface{} `yaml:"rules"`
+	Overrides             []Override             `yaml:"overrides"`
+	Layers                []Layer                `yaml:"layers"`      // Phase 1: Layer definitions
+	Entrypoints           []string               `yaml:"entrypoints"` // Phase 2: Entry points for orphan detection
+>>>>>>> 4df6d8be38af74f838a2430d9f19dd2abe06193d
 }
 
 // Override represents a configuration override for specific file patterns
@@ -33,6 +46,17 @@ type Layer struct {
 	DependsOn []string `yaml:"dependsOn"`
 }
 
+<<<<<<< HEAD
+=======
+// PathBasedLayer represents a path-based layer (Priority 3 feature)
+type PathBasedLayer struct {
+	Name           string   `yaml:"name"`
+	Patterns       []string `yaml:"patterns"`       // Regex/glob patterns for matching files
+	CanDependOn    []string `yaml:"canDependOn"`    // Names of layers this can depend on
+	ForbiddenPaths []string `yaml:"forbiddenPaths"` // Path patterns this layer cannot contain
+}
+
+>>>>>>> 4df6d8be38af74f838a2430d9f19dd2abe06193d
 // MaxDepthRule represents the max-depth rule configuration
 type MaxDepthRule struct {
 	Max int `yaml:"max"`
@@ -70,6 +94,40 @@ func Load(path string) (*Config, error) {
 	return loadWithVisited(path, visited)
 }
 
+<<<<<<< HEAD
+=======
+// LoadWithGitignore loads a configuration and auto-applies .gitignore patterns
+// rootDir is the directory to search for .gitignore (typically the project root)
+func LoadWithGitignore(path string, rootDir string) (*Config, error) {
+	config, err := Load(path)
+	if err != nil {
+		return nil, err
+	}
+
+	return ApplyGitignore(config, rootDir)
+}
+
+// ApplyGitignore applies .gitignore patterns to a config if autoLoadGitignore is true
+func ApplyGitignore(config *Config, rootDir string) (*Config, error) {
+	// Check if auto-load is disabled
+	if config.AutoLoadGitignore != nil && !*config.AutoLoadGitignore {
+		return config, nil
+	}
+
+	// Default to true if not specified
+	gitignorePatterns, err := LoadGitignorePatterns(rootDir)
+	if err != nil {
+		// Don't fail if .gitignore can't be read, just skip it
+		return config, nil
+	}
+
+	// Merge gitignore patterns with existing exclusions
+	config.Exclude = MergeWithGitignore(config.Exclude, gitignorePatterns)
+
+	return config, nil
+}
+
+>>>>>>> 4df6d8be38af74f838a2430d9f19dd2abe06193d
 // loadWithVisited loads a config and tracks visited paths to detect cycles
 func loadWithVisited(path string, visited map[string]bool) (*Config, error) {
 	// Normalize path for cycle detection
@@ -192,25 +250,70 @@ func resolveExtendPath(extendPath, baseDir string) (string, error) {
 
 // FindConfigs finds all .structurelint.yml files from the given path up to the root
 func FindConfigs(startPath string) ([]*Config, error) {
+<<<<<<< HEAD
 	var configs []*Config
+=======
+	configs, _, err := findConfigsWithRoot(startPath)
+	return configs, err
+}
+
+// FindConfigsWithGitignore finds configs and applies .gitignore patterns
+func FindConfigsWithGitignore(startPath string) ([]*Config, error) {
+	configs, rootDir, err := findConfigsWithRoot(startPath)
+	if err != nil {
+		return nil, err
+	}
+
+	// If we have configs, apply gitignore to the merged config
+	if len(configs) > 0 {
+		// Apply gitignore to each config before merging
+		for i, config := range configs {
+			configs[i], _ = ApplyGitignore(config, rootDir)
+		}
+	}
+
+	return configs, nil
+}
+
+// findConfigsWithRoot finds configs and returns the root directory
+func findConfigsWithRoot(startPath string) ([]*Config, string, error) {
+	var configs []*Config
+	var rootDir string
+>>>>>>> 4df6d8be38af74f838a2430d9f19dd2abe06193d
 
 	// Convert to absolute path
 	absPath, err := filepath.Abs(startPath)
 	if err != nil {
+<<<<<<< HEAD
 		return nil, fmt.Errorf("failed to get absolute path: %w", err)
 	}
 
 	currentPath := absPath
+=======
+		return nil, "", fmt.Errorf("failed to get absolute path: %w", err)
+	}
+
+	currentPath := absPath
+	rootDir = absPath // Default root to the start path
+>>>>>>> 4df6d8be38af74f838a2430d9f19dd2abe06193d
 
 	for {
 		configPath := filepath.Join(currentPath, ".structurelint.yml")
 		if _, err := os.Stat(configPath); err == nil {
 			config, err := Load(configPath)
 			if err != nil {
+<<<<<<< HEAD
 				return nil, err
 			}
 			configs = append([]*Config{config}, configs...) // Prepend to maintain order
 			if config.Root {
+=======
+				return nil, "", err
+			}
+			configs = append([]*Config{config}, configs...) // Prepend to maintain order
+			if config.Root {
+				rootDir = currentPath // Found the root config, use its directory
+>>>>>>> 4df6d8be38af74f838a2430d9f19dd2abe06193d
 				break
 			}
 		}
@@ -220,10 +323,18 @@ func FindConfigs(startPath string) ([]*Config, error) {
 		if _, err := os.Stat(configPath); err == nil && len(configs) == 0 {
 			config, err := Load(configPath)
 			if err != nil {
+<<<<<<< HEAD
 				return nil, err
 			}
 			configs = append([]*Config{config}, configs...)
 			if config.Root {
+=======
+				return nil, "", err
+			}
+			configs = append([]*Config{config}, configs...)
+			if config.Root {
+				rootDir = currentPath
+>>>>>>> 4df6d8be38af74f838a2430d9f19dd2abe06193d
 				break
 			}
 		}
@@ -237,10 +348,17 @@ func FindConfigs(startPath string) ([]*Config, error) {
 
 	// If no config found, return a default config
 	if len(configs) == 0 {
+<<<<<<< HEAD
 		return []*Config{{Rules: make(map[string]interface{})}}, nil
 	}
 
 	return configs, nil
+=======
+		return []*Config{{Rules: make(map[string]interface{})}}, rootDir, nil
+	}
+
+	return configs, rootDir, nil
+>>>>>>> 4df6d8be38af74f838a2430d9f19dd2abe06193d
 }
 
 // Merge merges multiple configs into a single config

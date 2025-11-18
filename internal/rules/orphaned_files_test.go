@@ -100,3 +100,77 @@ func TestOrphanedFilesRule_GivenTestFiles_WhenChecking_ThenExcludesTestFiles(t *
 		t.Errorf("Expected no violations for test files, got %d", len(violations))
 	}
 }
+<<<<<<< HEAD
+=======
+
+func TestOrphanedFilesRule_GivenEntryPointPatterns_WhenChecking_ThenRespectsPatterns(t *testing.T) {
+	// Arrange
+	importGraph := &graph.ImportGraph{
+		AllFiles: []string{
+			"scripts/deploy.py",
+			"scripts/migrate.py",
+			"cli/commands/init.ts",
+			"src/orphaned.ts",
+		},
+		IncomingRefs: map[string]int{
+			"scripts/deploy.py":   0,
+			"scripts/migrate.py":  0,
+			"cli/commands/init.ts": 0,
+			"src/orphaned.ts":     0,
+		},
+	}
+	rule := NewOrphanedFilesRule(importGraph, []string{}).
+		WithEntryPointPatterns([]string{
+			"scripts/**",
+			"cli/**/*.ts",
+		})
+
+	// Act
+	violations := rule.Check(nil, nil)
+
+	// Assert
+	if len(violations) != 1 {
+		t.Errorf("Expected 1 violation (orphaned.ts), got %d", len(violations))
+		for _, v := range violations {
+			t.Logf("Violation: %s", v.Path)
+		}
+	}
+
+	if len(violations) > 0 && violations[0].Path != "src/orphaned.ts" {
+		t.Errorf("Expected violation for src/orphaned.ts, got %s", violations[0].Path)
+	}
+}
+
+func TestOrphanedFilesRule_GivenWildcardPattern_WhenChecking_ThenMatchesCorrectly(t *testing.T) {
+	// Arrange
+	importGraph := &graph.ImportGraph{
+		AllFiles: []string{
+			"backend/main.py",
+			"frontend/main.ts",
+			"src/lib.py",
+		},
+		IncomingRefs: map[string]int{
+			"backend/main.py":  0,
+			"frontend/main.ts": 0,
+			"src/lib.py":       0,
+		},
+	}
+	rule := NewOrphanedFilesRule(importGraph, []string{}).
+		WithEntryPointPatterns([]string{"**/main.*"})
+
+	// Act
+	violations := rule.Check(nil, nil)
+
+	// Assert
+	if len(violations) != 1 {
+		t.Errorf("Expected 1 violation (lib.py), got %d", len(violations))
+		for _, v := range violations {
+			t.Logf("Violation: %s", v.Path)
+		}
+	}
+
+	if len(violations) > 0 && violations[0].Path != "src/lib.py" {
+		t.Errorf("Expected violation for src/lib.py, got %s", violations[0].Path)
+	}
+}
+>>>>>>> 4df6d8be38af74f838a2430d9f19dd2abe06193d
