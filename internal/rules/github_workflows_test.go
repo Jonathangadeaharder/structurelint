@@ -519,6 +519,176 @@ jobs:
 	}
 }
 
+func TestGitHubWorkflowsRule_MissingLogCommits(t *testing.T) {
+	// Arrange
+	tmpDir := t.TempDir()
+	workflowsDir := filepath.Join(tmpDir, ".github", "workflows")
+	if err := os.MkdirAll(workflowsDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	workflowContent := `
+name: Test
+on: [push]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Run tests
+        run: go test ./...
+`
+	workflowPath := filepath.Join(workflowsDir, "test.yml")
+	if err := os.WriteFile(workflowPath, []byte(workflowContent), 0644); err != nil {
+		t.Fatal(err)
+	}
+	rule := &GitHubWorkflowsRule{
+		RequireLogCommits: true,
+	}
+	files := []walker.FileInfo{
+		{Path: workflowPath, ParentPath: workflowsDir, IsDir: false},
+		{Path: "go.mod", ParentPath: tmpDir, IsDir: false},
+	}
+
+	// Act
+	violations := rule.Check(files, make(map[string]*walker.DirInfo))
+
+	// Assert
+	if !containsMessage(violations, "Job 'test' missing log commit steps") {
+		t.Errorf("Expected violation for missing log commit steps, got %d violations: %+v", len(violations), violations)
+	}
+}
+
+func TestGitHubWorkflowsRule_ValidLogCommits(t *testing.T) {
+	// Arrange
+	tmpDir := t.TempDir()
+	workflowsDir := filepath.Join(tmpDir, ".github", "workflows")
+	if err := os.MkdirAll(workflowsDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	workflowContent := `
+name: Test
+on: [push]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Run tests
+        run: go test ./... 2>&1 | tee test.log
+      - name: Commit logs
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add *.log
+          git commit -m "Add test execution logs"
+          git push
+`
+	workflowPath := filepath.Join(workflowsDir, "test.yml")
+	if err := os.WriteFile(workflowPath, []byte(workflowContent), 0644); err != nil {
+		t.Fatal(err)
+	}
+	rule := &GitHubWorkflowsRule{
+		RequireLogCommits: true,
+	}
+	files := []walker.FileInfo{
+		{Path: workflowPath, ParentPath: workflowsDir, IsDir: false},
+		{Path: "go.mod", ParentPath: tmpDir, IsDir: false},
+	}
+
+	// Act
+	violations := rule.Check(files, make(map[string]*walker.DirInfo))
+
+	// Assert
+	if containsMessage(violations, "Job 'test' missing log commit steps") {
+		t.Error("Should not have violation for missing log commit steps when they exist")
+	}
+}
+
+func TestGitHubWorkflowsRule_MissingLogArtifacts(t *testing.T) {
+	// Arrange
+	tmpDir := t.TempDir()
+	workflowsDir := filepath.Join(tmpDir, ".github", "workflows")
+	if err := os.MkdirAll(workflowsDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	workflowContent := `
+name: Test
+on: [push]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Run tests
+        run: go test ./...
+`
+	workflowPath := filepath.Join(workflowsDir, "test.yml")
+	if err := os.WriteFile(workflowPath, []byte(workflowContent), 0644); err != nil {
+		t.Fatal(err)
+	}
+	rule := &GitHubWorkflowsRule{
+		RequireLogArtifacts: true,
+	}
+	files := []walker.FileInfo{
+		{Path: workflowPath, ParentPath: workflowsDir, IsDir: false},
+		{Path: "go.mod", ParentPath: tmpDir, IsDir: false},
+	}
+
+	// Act
+	violations := rule.Check(files, make(map[string]*walker.DirInfo))
+
+	// Assert
+	if !containsMessage(violations, "Job 'test' missing log artifact upload steps") {
+		t.Error("Expected violation for missing log artifact upload steps")
+	}
+}
+
+func TestGitHubWorkflowsRule_ValidLogArtifacts(t *testing.T) {
+	// Arrange
+	tmpDir := t.TempDir()
+	workflowsDir := filepath.Join(tmpDir, ".github", "workflows")
+	if err := os.MkdirAll(workflowsDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	workflowContent := `
+name: Test
+on: [push]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Run tests
+        run: go test ./... 2>&1 | tee test.log
+      - name: Upload logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-logs
+          path: test.log
+          retention-days: 7
+`
+	workflowPath := filepath.Join(workflowsDir, "test.yml")
+	if err := os.WriteFile(workflowPath, []byte(workflowContent), 0644); err != nil {
+		t.Fatal(err)
+	}
+	rule := &GitHubWorkflowsRule{
+		RequireLogArtifacts: true,
+	}
+	files := []walker.FileInfo{
+		{Path: workflowPath, ParentPath: workflowsDir, IsDir: false},
+		{Path: "go.mod", ParentPath: tmpDir, IsDir: false},
+	}
+
+	// Act
+	violations := rule.Check(files, make(map[string]*walker.DirInfo))
+
+	// Assert
+	if containsMessage(violations, "Job 'test' missing log artifact upload steps") {
+		t.Error("Should not have violation for missing log artifact upload steps when they exist")
+	}
+}
+
 // Helper function to check if violations contain a specific message
 func containsMessage(violations []Violation, message string) bool {
 	for _, v := range violations {

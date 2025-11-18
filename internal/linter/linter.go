@@ -169,6 +169,9 @@ func (l *Linter) addComplexRules(rulesList *[]rules.Rule, importGraph *graph.Imp
 
 	// Content rules (Phase 4)
 	l.addContentRules(rulesList)
+
+	// GitHub workflows rule
+	l.addGitHubWorkflowsRule(rulesList)
 }
 
 // addTestValidationRules adds Phase 3 test validation rules
@@ -213,6 +216,34 @@ func (l *Linter) addContentRules(rulesList *[]rules.Rule) {
 				rootPath := "." // Default to current directory
 				*rulesList = append(*rulesList, rules.NewFileContentRule(templates, templateDir, rootPath))
 			}
+		}
+	}
+}
+
+// addGitHubWorkflowsRule adds the GitHub workflows rule
+func (l *Linter) addGitHubWorkflowsRule(rulesList *[]rules.Rule) {
+	if workflowConfig, ok := l.getRuleConfig("github-workflows"); ok {
+		if configMap, ok := workflowConfig.(map[string]interface{}); ok {
+			requireTests := l.getBoolFromMap(configMap, "require-tests")
+			requireSecurity := l.getBoolFromMap(configMap, "require-security")
+			requireQuality := l.getBoolFromMap(configMap, "require-quality")
+			requireLogCommits := l.getBoolFromMap(configMap, "require-log-commits")
+			requireLogArtifacts := l.getBoolFromMap(configMap, "require-log-artifacts")
+			requiredJobs := l.getStringSliceFromMap(configMap, "required-jobs")
+			requiredTriggers := l.getStringSliceFromMap(configMap, "required-triggers")
+			allowMissing := l.getStringSliceFromMap(configMap, "allow-missing")
+
+			rule := rules.NewGitHubWorkflowsRule(rules.GitHubWorkflowsRule{
+				RequireTests:        requireTests,
+				RequireSecurity:     requireSecurity,
+				RequireQuality:      requireQuality,
+				RequireLogCommits:   requireLogCommits,
+				RequireLogArtifacts: requireLogArtifacts,
+				RequiredJobs:        requiredJobs,
+				RequiredTriggers:    requiredTriggers,
+				AllowMissing:        allowMissing,
+			})
+			*rulesList = append(*rulesList, rule)
 		}
 	}
 }

@@ -20,6 +20,14 @@ rules:
     # (e.g., linting, formatting, static analysis)
     require-quality: true
 
+    # Optionally require workflows to commit logs to the branch
+    # Allows agents to pull and review execution results
+    # require-log-commits: true
+
+    # Optionally require workflows to upload log artifacts
+    # Provides GitHub UI access to execution logs
+    # require-log-artifacts: true
+
     # Optionally require specific jobs to be present
     # required-jobs:
     #   - test

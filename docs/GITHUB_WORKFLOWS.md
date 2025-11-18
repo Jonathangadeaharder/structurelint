@@ -48,6 +48,12 @@ rules:
     # Require a workflow that checks code quality
     require-quality: true
 
+    # Optionally require workflows to commit logs to the branch
+    require-log-commits: false
+
+    # Optionally require workflows to upload log artifacts
+    require-log-artifacts: false
+
     # Optionally require specific jobs
     required-jobs:
       - test
@@ -193,6 +199,90 @@ rules:
 ```
 .github/workflows/test.yml: Required job 'integration' not found in workflow.
 ```
+
+### 8. Execution Log Commits
+
+Optionally enforce that workflows commit execution logs back to the triggering branch, allowing agents and developers to review results:
+
+```yaml
+rules:
+  github-workflows:
+    require-log-commits: true  # Require workflows to commit logs to the branch
+```
+
+This ensures workflows:
+- Create log files (using `tee` or redirection to `.log` files)
+- Commit logs using `git add` and `git commit`
+- Push logs back to the triggering branch using `git push`
+
+**Violation**:
+```
+.github/workflows/test.yml: Job 'test' missing log commit steps.
+Add steps to commit and push execution logs to the triggering branch
+so agents can pull and review results.
+Example: use 'git add *.log && git commit -m "Add logs" && git push'.
+```
+
+**Valid Example**:
+```yaml
+name: Tests
+on: [push]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run tests
+        run: go test ./... 2>&1 | tee test.log
+      - name: Commit logs
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add *.log
+          git commit -m "Add test execution logs [skip ci]"
+          git push
+```
+
+### 9. Log Artifact Uploads
+
+Optionally require workflows to upload execution logs as artifacts (alternative or complement to log commits):
+
+```yaml
+rules:
+  github-workflows:
+    require-log-artifacts: true  # Require workflows to upload log artifacts
+```
+
+**Violation**:
+```
+.github/workflows/test.yml: Job 'test' missing log artifact upload steps.
+Add 'actions/upload-artifact' steps to preserve execution logs.
+Example: use 'actions/upload-artifact@v4' with log file paths.
+```
+
+**Valid Example**:
+```yaml
+name: Tests
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run tests
+        run: go test ./... 2>&1 | tee test.log
+      - name: Upload logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-logs-${{ runner.os }}
+          path: test.log
+          retention-days: 7
+```
+
+**Note**: You can enable both `require-log-commits` and `require-log-artifacts` for comprehensive logging:
+- Log commits allow automated agents to pull and review results
+- Log artifacts provide GitHub UI access and retention management
 
 ## Example Workflows
 
