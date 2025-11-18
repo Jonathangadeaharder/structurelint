@@ -11,7 +11,8 @@ import (
 
 // Linter is the main linter orchestrator
 type Linter struct {
-	config *config.Config
+	config  *config.Config
+	rootDir string // Root directory being linted
 }
 
 // Violation is an alias for rules.Violation
@@ -24,6 +25,9 @@ func New() *Linter {
 
 // Lint runs the linter on the given path
 func (l *Linter) Lint(path string) ([]Violation, error) {
+	// Store root directory for later use
+	l.rootDir = path
+
 	// Load configuration with auto-loaded .gitignore patterns
 	configs, err := config.FindConfigsWithGitignore(path)
 	if err != nil {
@@ -88,9 +92,8 @@ func (l *Linter) createRules(files []walker.FileInfo, importGraph *graph.ImportG
 		}
 	}
 
-	// String map rules (naming-convention, file-existence, regex-match)
+	// String map rules (file-existence, regex-match)
 	stringMapRules := map[string]func(map[string]string) rules.Rule{
-		"naming-convention": func(patterns map[string]string) rules.Rule { return rules.NewNamingConventionRule(patterns) },
 		"file-existence":    func(requirements map[string]string) rules.Rule { return rules.NewFileExistenceRule(requirements) },
 		"regex-match":       func(patterns map[string]string) rules.Rule { return rules.NewRegexMatchRule(patterns) },
 	}
@@ -101,9 +104,37 @@ func (l *Linter) createRules(files []walker.FileInfo, importGraph *graph.ImportG
 		}
 	}
 
+	// Naming convention rule - with language-aware defaults (Priority 2 feature)
+	if _, ok := l.getRuleConfig("naming-convention"); ok {
+		userPatterns, _ := l.getStringMapConfig("naming-convention")
+
+		// Check if auto-language-naming is enabled (default: true)
+		autoLanguageNaming := true
+		if l.config.AutoLanguageNaming != nil {
+			autoLanguageNaming = *l.config.AutoLanguageNaming
+		}
+
+		if autoLanguageNaming {
+			// Use language-aware naming with user overrides
+			if rule, err := rules.NewLanguageAwareNamingConventionRule(l.rootDir, userPatterns); err == nil {
+				rulesList = append(rulesList, rule)
+			}
+		} else {
+			// Traditional behavior - only use user patterns
+			if len(userPatterns) > 0 {
+				rulesList = append(rulesList, rules.NewNamingConventionRule(userPatterns))
+			}
+		}
+	}
+
 	// String slice rules
 	if patterns, ok := l.getStringSliceConfig("disallowed-patterns"); ok {
 		rulesList = append(rulesList, rules.NewDisallowedPatternsRule(patterns))
+	}
+
+	// Uniqueness constraints rule (Priority 2 feature)
+	if constraints, ok := l.getStringMapConfig("uniqueness-constraints"); ok {
+		rulesList = append(rulesList, rules.NewUniquenessConstraintsRule(constraints))
 	}
 
 	// Complex rules that need custom handling

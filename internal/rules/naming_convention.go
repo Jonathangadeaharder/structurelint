@@ -171,3 +171,65 @@ func NewNamingConventionRule(patterns map[string]string) *NamingConventionRule {
 		Patterns: patterns,
 	}
 }
+
+// NewLanguageAwareNamingConventionRule creates a NamingConventionRule with language-specific defaults
+// If userPatterns is provided, they override the language defaults
+func NewLanguageAwareNamingConventionRule(rootDir string, userPatterns map[string]string) (*NamingConventionRule, error) {
+	// Import is at package level
+	detector := &struct{
+		RootDir string
+	}{RootDir: rootDir}
+
+	// For now, create default patterns based on common language file extensions
+	// This will be enhanced when we integrate with the language detector
+	defaultPatterns := generateDefaultNamingPatterns()
+
+	// Merge user patterns (they take precedence)
+	finalPatterns := make(map[string]string)
+	for k, v := range defaultPatterns {
+		finalPatterns[k] = v
+	}
+	for k, v := range userPatterns {
+		finalPatterns[k] = v
+	}
+
+	_ = detector // Suppress unused warning for now
+
+	return &NamingConventionRule{
+		Patterns: finalPatterns,
+	}, nil
+}
+
+// generateDefaultNamingPatterns returns language-specific naming conventions
+func generateDefaultNamingPatterns() map[string]string {
+	return map[string]string{
+		// Python: snake_case
+		"*.py": "snake_case",
+
+		// JavaScript/TypeScript: camelCase (except React components)
+		"*.js":  "camelCase",
+		"*.ts":  "camelCase",
+		"*.mjs": "camelCase",
+
+		// React components: PascalCase
+		"**/components/**/*.jsx": "PascalCase",
+		"**/components/**/*.tsx": "PascalCase",
+		"*.jsx": "PascalCase",
+		"*.tsx": "PascalCase",
+
+		// Go: PascalCase (matches Go's exported identifier convention)
+		"*.go": "PascalCase",
+
+		// Java: PascalCase for class files
+		"*.java": "PascalCase",
+
+		// C#: PascalCase
+		"*.cs": "PascalCase",
+
+		// Ruby: snake_case
+		"*.rb": "snake_case",
+
+		// Rust: snake_case
+		"*.rs": "snake_case",
+	}
+}

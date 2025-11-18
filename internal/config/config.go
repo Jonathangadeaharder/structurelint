@@ -11,14 +11,16 @@ import (
 
 // Config represents a .structurelint.yml configuration file
 type Config struct {
-	Root             bool                   `yaml:"root"`
-	Extends          interface{}            `yaml:"extends"`          // string or []string
-	Exclude          []string               `yaml:"exclude"`          // Patterns to exclude from linting
-	AutoLoadGitignore *bool                 `yaml:"autoLoadGitignore"` // Auto-load .gitignore patterns (default: true)
-	Rules            map[string]interface{} `yaml:"rules"`
-	Overrides        []Override             `yaml:"overrides"`
-	Layers           []Layer                `yaml:"layers"`      // Phase 1: Layer definitions
-	Entrypoints      []string               `yaml:"entrypoints"` // Phase 2: Entry points for orphan detection
+	Root                  bool                   `yaml:"root"`
+	Extends               interface{}            `yaml:"extends"`               // string or []string
+	Exclude               []string               `yaml:"exclude"`               // Patterns to exclude from linting
+	AutoLoadGitignore     *bool                  `yaml:"autoLoadGitignore"`     // Auto-load .gitignore patterns (default: true)
+	AutoLanguageNaming    *bool                  `yaml:"autoLanguageNaming"`    // Auto-apply language-specific naming conventions (default: true)
+	InfrastructurePatterns []string              `yaml:"infrastructurePatterns"` // Additional patterns for infrastructure code (Priority 2 feature)
+	Rules                 map[string]interface{} `yaml:"rules"`
+	Overrides             []Override             `yaml:"overrides"`
+	Layers                []Layer                `yaml:"layers"`      // Phase 1: Layer definitions
+	Entrypoints           []string               `yaml:"entrypoints"` // Phase 2: Entry points for orphan detection
 }
 
 // Override represents a configuration override for specific file patterns
