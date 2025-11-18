@@ -19,10 +19,7 @@ import (
 // MaxCognitiveComplexityRule checks that functions don't exceed maximum cognitive complexity
 type MaxCognitiveComplexityRule struct {
 	Max          int
-<<<<<<< HEAD
-=======
 	TestMax      int      // Optional separate max for test files (0 = skip tests)
->>>>>>> 4df6d8be38af74f838a2430d9f19dd2abe06193d
 	FilePatterns []string
 }
 
@@ -61,22 +58,6 @@ func (r *MaxCognitiveComplexityRule) checkFile(
 ) []Violation {
 	fileType := detectFileType(file.Path)
 
-<<<<<<< HEAD
-	// Check if file should be analyzed
-	if !shouldAnalyzeFile(file.Path, fileType, r.FilePatterns) {
-		return nil
-	}
-
-	// Use appropriate analyzer based on file type
-	if fileType == FileTypeGo {
-		return r.analyzeFile(file, goAnalyzer)
-	}
-	return r.analyzeMultiLangFile(file, multiLangAnalyzer)
-}
-
-// analyzeFile analyzes a single Go file for cognitive complexity
-func (r *MaxCognitiveComplexityRule) analyzeFile(file walker.FileInfo, analyzer *metrics.CognitiveComplexityAnalyzer) []Violation {
-=======
 	// Check if file type is supported
 	if fileType == FileTypeUnknown {
 		return nil
@@ -108,7 +89,6 @@ func (r *MaxCognitiveComplexityRule) analyzeFile(file walker.FileInfo, analyzer 
 
 // analyzeFileWithMax analyzes a single Go file for cognitive complexity with a specific max
 func (r *MaxCognitiveComplexityRule) analyzeFileWithMax(file walker.FileInfo, analyzer *metrics.CognitiveComplexityAnalyzer, maxComplexity int) []Violation {
->>>>>>> 4df6d8be38af74f838a2430d9f19dd2abe06193d
 	var violations []Violation
 
 	// Parse the file
@@ -123,20 +103,12 @@ func (r *MaxCognitiveComplexityRule) analyzeFileWithMax(file walker.FileInfo, an
 	fileMetrics := analyzer.AnalyzeFile(node)
 
 	for _, funcMetric := range fileMetrics.Functions {
-<<<<<<< HEAD
-		if funcMetric.Complexity > r.Max {
-=======
 		if funcMetric.Complexity > maxComplexity {
->>>>>>> 4df6d8be38af74f838a2430d9f19dd2abe06193d
 			violations = append(violations, Violation{
 				Rule:    r.Name(),
 				Path:    file.Path,
 				Message: fmt.Sprintf("function '%s' has cognitive complexity %d, exceeds max %d (evidence: CoC correlates with comprehension time, r=0.54)",
-<<<<<<< HEAD
-					funcMetric.Name, funcMetric.Complexity, r.Max),
-=======
 					funcMetric.Name, funcMetric.Complexity, maxComplexity),
->>>>>>> 4df6d8be38af74f838a2430d9f19dd2abe06193d
 			})
 		}
 	}
@@ -144,13 +116,8 @@ func (r *MaxCognitiveComplexityRule) analyzeFileWithMax(file walker.FileInfo, an
 	return violations
 }
 
-<<<<<<< HEAD
-// analyzeMultiLangFile analyzes a Python/JavaScript/TypeScript file for cognitive complexity
-func (r *MaxCognitiveComplexityRule) analyzeMultiLangFile(file walker.FileInfo, analyzer *metrics.MultiLanguageAnalyzer) []Violation {
-=======
 // analyzeMultiLangFileWithMax analyzes a Python/JavaScript/TypeScript file for cognitive complexity with a specific max
 func (r *MaxCognitiveComplexityRule) analyzeMultiLangFileWithMax(file walker.FileInfo, analyzer *metrics.MultiLanguageAnalyzer, maxComplexity int) []Violation {
->>>>>>> 4df6d8be38af74f838a2430d9f19dd2abe06193d
 	var violations []Violation
 
 	// Analyze the file using the multi-language analyzer
@@ -161,20 +128,12 @@ func (r *MaxCognitiveComplexityRule) analyzeMultiLangFileWithMax(file walker.Fil
 	}
 
 	for _, funcMetric := range fileMetrics.Functions {
-<<<<<<< HEAD
-		if funcMetric.Complexity > r.Max {
-=======
 		if funcMetric.Complexity > maxComplexity {
->>>>>>> 4df6d8be38af74f838a2430d9f19dd2abe06193d
 			violations = append(violations, Violation{
 				Rule:    r.Name(),
 				Path:    file.Path,
 				Message: fmt.Sprintf("function '%s' has cognitive complexity %d, exceeds max %d (evidence: CoC correlates with comprehension time, r=0.54)",
-<<<<<<< HEAD
-					funcMetric.Name, funcMetric.Complexity, r.Max),
-=======
 					funcMetric.Name, funcMetric.Complexity, maxComplexity),
->>>>>>> 4df6d8be38af74f838a2430d9f19dd2abe06193d
 			})
 		}
 	}
@@ -186,11 +145,6 @@ func (r *MaxCognitiveComplexityRule) analyzeMultiLangFileWithMax(file walker.Fil
 func NewMaxCognitiveComplexityRule(max int, filePatterns []string) *MaxCognitiveComplexityRule {
 	return &MaxCognitiveComplexityRule{
 		Max:          max,
-<<<<<<< HEAD
-		FilePatterns: filePatterns,
-	}
-}
-=======
 		TestMax:      0, // Default: skip test files (backward compatible)
 		FilePatterns: filePatterns,
 	}
@@ -201,4 +155,3 @@ func (r *MaxCognitiveComplexityRule) WithTestMax(testMax int) *MaxCognitiveCompl
 	r.TestMax = testMax
 	return r
 }
->>>>>>> 4df6d8be38af74f838a2430d9f19dd2abe06193d

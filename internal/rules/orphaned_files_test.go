@@ -100,8 +100,6 @@ func TestOrphanedFilesRule_GivenTestFiles_WhenChecking_ThenExcludesTestFiles(t *
 		t.Errorf("Expected no violations for test files, got %d", len(violations))
 	}
 }
-<<<<<<< HEAD
-=======
 
 func TestOrphanedFilesRule_GivenEntryPointPatterns_WhenChecking_ThenRespectsPatterns(t *testing.T) {
 	// Arrange
@@ -173,4 +171,3 @@ func TestOrphanedFilesRule_GivenWildcardPattern_WhenChecking_ThenMatchesCorrectl
 		t.Errorf("Expected violation for src/lib.py, got %s", violations[0].Path)
 	}
 }
->>>>>>> 4df6d8be38af74f838a2430d9f19dd2abe06193d

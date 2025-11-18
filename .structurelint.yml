@@ -109,6 +109,15 @@ rules:
   #     - "adr-*.md"
   #     - "*-decision.md"
 
+  # Dependency Property Enforcement
+  # Comprehensive dependency management and analysis
+  property-enforcement:
+    detect_cycles: true                      # Detect circular dependencies
+    max_dependencies_per_file: 15            # Limit direct dependencies per file
+    max_dependency_depth: 5                  # Limit dependency chain depth
+    forbidden_patterns:
+      - "internal/rules/** -> cmd/**"        # Rules should not depend on cmd
+      - "internal/walker/** -> internal/rules/**"  # Walker should not depend on rules
 
 # Phase 1: Architectural layers for Go project
 layers:

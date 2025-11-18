@@ -28,12 +28,6 @@ func (r *NamingConventionRule) Check(files []walker.FileInfo, dirs map[string]*w
 		for pattern, convention := range r.Patterns {
 			if matchesPattern(file.Path, pattern) {
 				if !r.matchesConvention(file.Path, pattern, convention) {
-<<<<<<< HEAD
-					violations = append(violations, Violation{
-						Rule:    r.Name(),
-						Path:    file.Path,
-						Message: fmt.Sprintf("does not match naming convention '%s'", convention),
-=======
 					// Extract filename for better error messages
 					base := filepath.Base(file.Path)
 					ext := filepath.Ext(base)
@@ -53,7 +47,6 @@ func (r *NamingConventionRule) Check(files []walker.FileInfo, dirs map[string]*w
 						Actual:      actualConvention,
 						Suggestions: suggestions,
 						Context:     fmt.Sprintf("Pattern: %s", pattern),
->>>>>>> 4df6d8be38af74f838a2430d9f19dd2abe06193d
 					})
 				}
 			}
@@ -193,8 +186,6 @@ func NewNamingConventionRule(patterns map[string]string) *NamingConventionRule {
 		Patterns: patterns,
 	}
 }
-<<<<<<< HEAD
-=======
 
 // NewLanguageAwareNamingConventionRule creates a NamingConventionRule with language-specific defaults
 // If userPatterns is provided, they override the language defaults
@@ -392,4 +383,3 @@ func toSnakeCase(words []string) string {
 	}
 	return strings.Join(lower, "_")
 }
->>>>>>> 4df6d8be38af74f838a2430d9f19dd2abe06193d
