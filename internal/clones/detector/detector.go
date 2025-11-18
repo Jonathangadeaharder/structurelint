@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 
 	"github.com/structurelint/structurelint/internal/clones/parser"
@@ -44,6 +45,18 @@ func DefaultConfig() Config {
 
 // NewDetector creates a new clone detector
 func NewDetector(config Config) *Detector {
+	// Validate and set defaults for config parameters
+	if config.NumWorkers <= 0 {
+		config.NumWorkers = 4
+	}
+	if config.MinTokens < 0 {
+		config.MinTokens = 20
+	}
+	if config.MinLines < 0 {
+		config.MinLines = 3
+	}
+	// KGramSize is already validated in NewHasher
+	
 	return &Detector{
 		normalizer: parser.NewNormalizer(),
 		hasher:     syntactic.NewHasher(config.KGramSize),
@@ -126,7 +139,14 @@ func (d *Detector) findGoFiles(rootPath string) ([]string, error) {
 
 		// Check exclude patterns
 		for _, pattern := range d.config.ExcludePattern {
-			matched, _ := filepath.Match(pattern, filepath.Base(path))
+			var matched bool
+			if strings.Contains(pattern, "/") || strings.Contains(pattern, "**") {
+				// Match against full path for directory patterns
+				matched = matchesPattern(path, pattern)
+			} else {
+				// Match against basename for simple patterns
+				matched, _ = filepath.Match(pattern, filepath.Base(path))
+			}
 			if matched {
 				return nil
 			}
@@ -137,6 +157,49 @@ func (d *Detector) findGoFiles(rootPath string) ([]string, error) {
 	})
 
 	return files, err
+}
+
+// matchesPattern checks if a path matches a pattern with ** wildcards
+func matchesPattern(path, pattern string) bool {
+	// Handle ** wildcard patterns
+	if strings.Contains(pattern, "**") {
+		// Convert ** pattern to regular path matching
+		parts := strings.Split(pattern, "**")
+		if len(parts) == 1 {
+			matched, _ := filepath.Match(pattern, path)
+			return matched
+		}
+		
+		// Check if path contains the pattern parts in order
+		for i, part := range parts {
+			part = strings.Trim(part, "/")
+			if part == "" {
+				continue
+			}
+			
+			if i == 0 {
+				// First part: check if path starts with it
+				if !strings.HasPrefix(path, part) && !strings.Contains(path, "/"+part+"/") && !strings.Contains(path, "/"+part) {
+					return false
+				}
+			} else if i == len(parts)-1 {
+				// Last part: check if path ends with it or contains it
+				if !strings.HasSuffix(path, part) && !strings.Contains(path, "/"+part+"/") && !strings.Contains(path, "/"+part) {
+					return false
+				}
+			} else {
+				// Middle parts: check if path contains it
+				if !strings.Contains(path, "/"+part+"/") && !strings.Contains(path, "/"+part) {
+					return false
+				}
+			}
+		}
+		return true
+	}
+	
+	// Simple pattern matching against full path
+	matched, _ := filepath.Match(pattern, path)
+	return matched
 }
 
 // normalizeFiles processes all files in parallel

@@ -6,6 +6,7 @@ import (
 	"go/parser"
 	"go/token"
 	"os"
+	"strings"
 
 	"github.com/structurelint/structurelint/internal/clones/types"
 )
@@ -61,28 +62,26 @@ func (n *Normalizer) extractTokens(file *ast.File, src []byte) []types.Token {
 		switch n := node.(type) {
 		case *ast.Ident:
 			// Normalize identifiers to _ID_ (except keywords)
-			if n.IsExported() || !token.Lookup(n.Name).IsKeyword() {
-				if token.Lookup(n.Name).IsKeyword() {
-					// It's a keyword, keep as-is
-					tokens = append(tokens, types.Token{
-						Type:     types.TokenKeyword,
-						Value:    n.Name,
-						Line:     pos.Line,
-						Column:   pos.Column,
-						Position: position,
-					})
-				} else {
-					// It's an identifier, normalize
-					tokens = append(tokens, types.Token{
-						Type:     types.TokenIdentifier,
-						Value:    "_ID_",
-						Line:     pos.Line,
-						Column:   pos.Column,
-						Position: position,
-					})
-				}
-				position++
+			if token.Lookup(n.Name).IsKeyword() {
+				// It's a keyword, keep as-is
+				tokens = append(tokens, types.Token{
+					Type:     types.TokenKeyword,
+					Value:    n.Name,
+					Line:     pos.Line,
+					Column:   pos.Column,
+					Position: position,
+				})
+			} else {
+				// It's an identifier, normalize
+				tokens = append(tokens, types.Token{
+					Type:     types.TokenIdentifier,
+					Value:    "_ID_",
+					Line:     pos.Line,
+					Column:   pos.Column,
+					Position: position,
+				})
 			}
+			position++
 
 		case *ast.BasicLit:
 			// Normalize literals (strings, numbers, etc.) to _LIT_
@@ -181,9 +180,10 @@ func (n *Normalizer) extractTokens(file *ast.File, src []byte) []types.Token {
 
 // TokenStreamToString converts a token stream to a string for debugging
 func TokenStreamToString(tokens []types.Token) string {
-	result := ""
+	var builder strings.Builder
 	for _, tok := range tokens {
-		result += tok.Value + " "
+		builder.WriteString(tok.Value)
+		builder.WriteString(" ")
 	}
-	return result
+	return builder.String()
 }

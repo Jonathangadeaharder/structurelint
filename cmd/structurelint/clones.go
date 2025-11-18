@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"os"
 
 	"github.com/structurelint/structurelint/internal/clones/detector"
 )
@@ -60,9 +59,9 @@ func runClones(args []string) error {
 		fmt.Println("\n" + reporter.Summary(clones))
 	}
 
-	// Exit with error if clones found
+	// Return error if clones found
 	if len(clones) > 0 {
-		os.Exit(1)
+		return fmt.Errorf("found %d code clones", len(clones))
 	}
 
 	return nil

@@ -1,6 +1,8 @@
 package syntactic
 
 import (
+	"strconv"
+
 	"github.com/structurelint/structurelint/internal/clones/types"
 )
 
@@ -172,7 +174,7 @@ func (e *Expander) ExpandAllCollisions(collisions map[uint64][]types.Shingle) []
 func (e *Expander) clonePairKey(s1, s2 types.Shingle) string {
 	// Ensure consistent ordering (smaller file path first)
 	if s1.FilePath < s2.FilePath {
-		return s1.FilePath + ":" + string(rune(s1.StartToken)) + "-" + s2.FilePath + ":" + string(rune(s2.StartToken))
+		return s1.FilePath + ":" + strconv.Itoa(s1.StartToken) + "-" + s2.FilePath + ":" + strconv.Itoa(s2.StartToken)
 	}
-	return s2.FilePath + ":" + string(rune(s2.StartToken)) + "-" + s1.FilePath + ":" + string(rune(s1.StartToken))
+	return s2.FilePath + ":" + strconv.Itoa(s2.StartToken) + "-" + s1.FilePath + ":" + strconv.Itoa(s1.StartToken)
 }
