@@ -178,6 +178,9 @@ func (l *Linter) addComplexRules(rulesList *[]rules.Rule, importGraph *graph.Imp
 
 	// Contract framework rule
 	l.addContractFrameworkRule(rulesList)
+
+	// Specification and ADR enforcement rule
+	l.addSpecADRRule(rulesList)
 }
 
 // addTestValidationRules adds Phase 3 test validation rules
@@ -490,6 +493,34 @@ func (l *Linter) addContractFrameworkRule(rulesList *[]rules.Rule) {
 				RequireCSharp:     requireCSharp,
 				RequireCPlusPlus:  requireCPlusPlus,
 				CustomFrameworks:  customFrameworks,
+			})
+			*rulesList = append(*rulesList, rule)
+		}
+	}
+}
+
+// addSpecADRRule adds the specification and ADR enforcement rule
+func (l *Linter) addSpecADRRule(rulesList *[]rules.Rule) {
+	if specADRConfig, ok := l.getRuleConfig("spec-adr-enforcement"); ok {
+		if configMap, ok := specADRConfig.(map[string]interface{}); ok {
+			requireSpecFolder := l.getBoolFromMap(configMap, "require-spec-folder")
+			requireADRFolder := l.getBoolFromMap(configMap, "require-adr-folder")
+			enforceSpecTemplate := l.getBoolFromMap(configMap, "enforce-spec-template")
+			enforceADRTemplate := l.getBoolFromMap(configMap, "enforce-adr-template")
+			specFolderPaths := l.getStringSliceFromMap(configMap, "spec-folder-paths")
+			adrFolderPaths := l.getStringSliceFromMap(configMap, "adr-folder-paths")
+			specFilePatterns := l.getStringSliceFromMap(configMap, "spec-file-patterns")
+			adrFilePatterns := l.getStringSliceFromMap(configMap, "adr-file-patterns")
+
+			rule := rules.NewSpecADRRule(rules.SpecADRRule{
+				RequireSpecFolder:    requireSpecFolder,
+				RequireADRFolder:     requireADRFolder,
+				EnforceSpecTemplate:  enforceSpecTemplate,
+				EnforceADRTemplate:   enforceADRTemplate,
+				SpecFolderPaths:      specFolderPaths,
+				ADRFolderPaths:       adrFolderPaths,
+				SpecFilePatterns:     specFilePatterns,
+				ADRFilePatterns:      adrFilePatterns,
 			})
 			*rulesList = append(*rulesList, rule)
 		}

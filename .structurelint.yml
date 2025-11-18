@@ -86,6 +86,27 @@ rules:
   #   require-cplusplus: true   # C++: Native assertions (C++26 contracts in development)
   #   custom-frameworks: []     # Additional custom frameworks to recognize
 
+  # Specification and ADR (Architecture Decision Record) Enforcement
+  # Enforce documentation structure and templates for specs and ADRs
+  # spec-adr-enforcement:
+  #   require-spec-folder: true          # Require dedicated folder for specifications
+  #   require-adr-folder: true           # Require dedicated folder for ADRs
+  #   enforce-spec-template: true        # Validate specs follow feature specification template
+  #   enforce-adr-template: true         # Validate ADRs follow ADR template
+  #   spec-folder-paths:                 # Accepted locations for specs
+  #     - "docs/specs"
+  #     - "specifications"
+  #   adr-folder-paths:                  # Accepted locations for ADRs
+  #     - "docs/adr"
+  #     - "docs/decisions"
+  #   spec-file-patterns:                # Patterns for spec files
+  #     - "*-spec.md"
+  #     - "feature-*.md"
+  #   adr-file-patterns:                 # Patterns for ADR files
+  #     - "ADR-*.md"
+  #     - "adr-*.md"
+  #     - "*-decision.md"
+
 # Phase 1: Architectural layers for Go project
 layers:
   - name: cmd
