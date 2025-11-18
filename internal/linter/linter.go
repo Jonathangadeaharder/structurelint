@@ -368,6 +368,15 @@ func (l *Linter) addLinterConfigRule(rulesList *[]rules.Rule) {
 			*rulesList = append(*rulesList, rule)
 		}
 	}
+
+	// API specification rule
+	l.addOpenAPIAsyncAPIRule(rulesList)
+
+	// Contract framework rule
+	l.addContractFrameworkRule(rulesList)
+
+	// Specification and ADR enforcement rule
+	l.addSpecADRRule(rulesList)
 }
 
 // getIntConfig extracts an integer value from a rule's configuration map
@@ -536,4 +545,78 @@ func (l *Linter) getStringMapFromMap(m map[string]interface{}, key string) map[s
 		return result
 	}
 	return nil
+}
+
+// addOpenAPIAsyncAPIRule adds the API specification rule
+func (l *Linter) addOpenAPIAsyncAPIRule(rulesList *[]rules.Rule) {
+	if apiSpecConfig, ok := l.getRuleConfig("api-spec"); ok {
+		if configMap, ok := apiSpecConfig.(map[string]interface{}); ok {
+			requireOpenAPI := l.getBoolFromMap(configMap, "require-openapi")
+			requireAsyncAPI := l.getBoolFromMap(configMap, "require-asyncapi")
+			customSpecs := l.getStringSliceFromMap(configMap, "custom-specs")
+
+			rule := rules.NewOpenAPIAsyncAPIRule(rules.OpenAPIAsyncAPIRule{
+				RequireOpenAPI:  requireOpenAPI,
+				RequireAsyncAPI: requireAsyncAPI,
+				CustomSpecs:     customSpecs,
+			})
+			*rulesList = append(*rulesList, rule)
+		}
+	}
+}
+
+// addContractFrameworkRule adds the contract framework rule
+func (l *Linter) addContractFrameworkRule(rulesList *[]rules.Rule) {
+	if contractConfig, ok := l.getRuleConfig("contract-framework"); ok {
+		if configMap, ok := contractConfig.(map[string]interface{}); ok {
+			requirePython := l.getBoolFromMap(configMap, "require-python")
+			requireRust := l.getBoolFromMap(configMap, "require-rust")
+			requireTypeScript := l.getBoolFromMap(configMap, "require-typescript")
+			requireGo := l.getBoolFromMap(configMap, "require-go")
+			requireJava := l.getBoolFromMap(configMap, "require-java")
+			requireCSharp := l.getBoolFromMap(configMap, "require-csharp")
+			requireCPlusPlus := l.getBoolFromMap(configMap, "require-cplusplus")
+			customFrameworks := l.getStringSliceFromMap(configMap, "custom-frameworks")
+
+			rule := rules.NewContractFrameworkRule(rules.ContractFrameworkRule{
+				RequirePython:     requirePython,
+				RequireRust:       requireRust,
+				RequireTypeScript: requireTypeScript,
+				RequireGo:         requireGo,
+				RequireJava:       requireJava,
+				RequireCSharp:     requireCSharp,
+				RequireCPlusPlus:  requireCPlusPlus,
+				CustomFrameworks:  customFrameworks,
+			})
+			*rulesList = append(*rulesList, rule)
+		}
+	}
+}
+
+// addSpecADRRule adds the specification and ADR enforcement rule
+func (l *Linter) addSpecADRRule(rulesList *[]rules.Rule) {
+	if specADRConfig, ok := l.getRuleConfig("spec-adr-enforcement"); ok {
+		if configMap, ok := specADRConfig.(map[string]interface{}); ok {
+			requireSpecFolder := l.getBoolFromMap(configMap, "require-spec-folder")
+			requireADRFolder := l.getBoolFromMap(configMap, "require-adr-folder")
+			enforceSpecTemplate := l.getBoolFromMap(configMap, "enforce-spec-template")
+			enforceADRTemplate := l.getBoolFromMap(configMap, "enforce-adr-template")
+			specFolderPaths := l.getStringSliceFromMap(configMap, "spec-folder-paths")
+			adrFolderPaths := l.getStringSliceFromMap(configMap, "adr-folder-paths")
+			specFilePatterns := l.getStringSliceFromMap(configMap, "spec-file-patterns")
+			adrFilePatterns := l.getStringSliceFromMap(configMap, "adr-file-patterns")
+
+			rule := rules.NewSpecADRRule(rules.SpecADRRule{
+				RequireSpecFolder:   requireSpecFolder,
+				RequireADRFolder:    requireADRFolder,
+				EnforceSpecTemplate: enforceSpecTemplate,
+				EnforceADRTemplate:  enforceADRTemplate,
+				SpecFolderPaths:     specFolderPaths,
+				ADRFolderPaths:      adrFolderPaths,
+				SpecFilePatterns:    specFilePatterns,
+				ADRFilePatterns:     adrFilePatterns,
+			})
+			*rulesList = append(*rulesList, rule)
+		}
+	}
 }
