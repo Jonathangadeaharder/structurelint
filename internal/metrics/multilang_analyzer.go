@@ -50,6 +50,12 @@ func (a *MultiLanguageAnalyzer) AnalyzeFileByPath(filePath string) (FileMetrics,
 		return a.analyzePythonFile(filePath)
 	case "javascript", "typescript":
 		return a.analyzeJavaScriptFile(filePath)
+	case "java":
+		return a.analyzeJavaFile(filePath)
+	case "cpp", "c":
+		return a.analyzeCppFile(filePath)
+	case "csharp":
+		return a.analyzeCSharpFile(filePath)
 	default:
 		return FileMetrics{}, fmt.Errorf("unsupported language: %s", language)
 	}
@@ -58,11 +64,19 @@ func (a *MultiLanguageAnalyzer) AnalyzeFileByPath(filePath string) (FileMetrics,
 // detectLanguage returns the programming language based on file extension
 func detectLanguage(filePath string) string {
 	extensionToLanguage := map[string]string{
-		".py":  "python",
-		".js":  "javascript",
-		".jsx": "javascript",
-		".ts":  "typescript",
-		".tsx": "typescript",
+		".py":   "python",
+		".js":   "javascript",
+		".jsx":  "javascript",
+		".ts":   "typescript",
+		".tsx":  "typescript",
+		".java": "java",
+		".cpp":  "cpp",
+		".cc":   "cpp",
+		".cxx":  "cpp",
+		".c":    "c",
+		".h":    "cpp",
+		".hpp":  "cpp",
+		".cs":   "csharp",
 	}
 
 	ext := strings.ToLower(filepath.Ext(filePath))
@@ -80,16 +94,15 @@ func (a *MultiLanguageAnalyzer) analyzePythonFile(filePath string) (FileMetrics,
 		return FileMetrics{}, err
 	}
 
-	// Execute Python script
+	// BREAKING CHANGE: Requires python3 (no fallback)
+	// Install: pip3 install tree-sitter
 	cmd := exec.Command("python3", scriptPath, a.metricType, filePath)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		// Try 'python' if 'python3' fails
-		cmd = exec.Command("python", scriptPath, a.metricType, filePath)
-		output, err = cmd.CombinedOutput()
-		if err != nil {
-			return FileMetrics{}, fmt.Errorf("failed to execute Python metrics script: %w\nOutput: %s", err, string(output))
-		}
+		return FileMetrics{}, fmt.Errorf("failed to execute Python metrics script (requires python3 with tree-sitter):\n"+
+			"  Install: pip3 install tree-sitter\n"+
+			"  Error: %w\n"+
+			"  Output: %s", err, string(output))
 	}
 
 	// Parse JSON output
@@ -121,6 +134,90 @@ func (a *MultiLanguageAnalyzer) analyzeJavaScriptFile(filePath string) (FileMetr
 	var result FileMetrics
 	if err := json.Unmarshal(output, &result); err != nil {
 		return FileMetrics{}, fmt.Errorf("failed to parse JavaScript metrics output: %w\nOutput: %s", err, string(output))
+	}
+
+	result.FilePath = filePath
+	return result, nil
+}
+
+// analyzeJavaFile analyzes a Java file using the Java script
+func (a *MultiLanguageAnalyzer) analyzeJavaFile(filePath string) (FileMetrics, error) {
+	// Get the script path
+	scriptPath, err := getScriptPath("java_metrics.py")
+	if err != nil {
+		return FileMetrics{}, err
+	}
+
+	// BREAKING CHANGE: Requires python3 with tree-sitter-java (no fallback)
+	cmd := exec.Command("python3", scriptPath, a.metricType, filePath)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return FileMetrics{}, fmt.Errorf("failed to execute Java metrics script (requires python3 with tree-sitter-java):\n"+
+			"  Install: pip3 install tree-sitter tree-sitter-java\n"+
+			"  Error: %w\n"+
+			"  Output: %s", err, string(output))
+	}
+
+	// Parse JSON output
+	var result FileMetrics
+	if err := json.Unmarshal(output, &result); err != nil {
+		return FileMetrics{}, fmt.Errorf("failed to parse Java metrics output: %w\nOutput: %s", err, string(output))
+	}
+
+	result.FilePath = filePath
+	return result, nil
+}
+
+// analyzeCppFile analyzes a C++ file using the C++ script
+func (a *MultiLanguageAnalyzer) analyzeCppFile(filePath string) (FileMetrics, error) {
+	// Get the script path
+	scriptPath, err := getScriptPath("cpp_metrics.py")
+	if err != nil {
+		return FileMetrics{}, err
+	}
+
+	// BREAKING CHANGE: Requires python3 with tree-sitter-cpp (no fallback)
+	cmd := exec.Command("python3", scriptPath, a.metricType, filePath)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return FileMetrics{}, fmt.Errorf("failed to execute C++ metrics script (requires python3 with tree-sitter-cpp):\n"+
+			"  Install: pip3 install tree-sitter tree-sitter-cpp\n"+
+			"  Error: %w\n"+
+			"  Output: %s", err, string(output))
+	}
+
+	// Parse JSON output
+	var result FileMetrics
+	if err := json.Unmarshal(output, &result); err != nil {
+		return FileMetrics{}, fmt.Errorf("failed to parse C++ metrics output: %w\nOutput: %s", err, string(output))
+	}
+
+	result.FilePath = filePath
+	return result, nil
+}
+
+// analyzeCSharpFile analyzes a C# file using the C# script
+func (a *MultiLanguageAnalyzer) analyzeCSharpFile(filePath string) (FileMetrics, error) {
+	// Get the script path
+	scriptPath, err := getScriptPath("csharp_metrics.py")
+	if err != nil {
+		return FileMetrics{}, err
+	}
+
+	// BREAKING CHANGE: Requires python3 with tree-sitter-c-sharp (no fallback)
+	cmd := exec.Command("python3", scriptPath, a.metricType, filePath)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return FileMetrics{}, fmt.Errorf("failed to execute C# metrics script (requires python3 with tree-sitter-c-sharp):\n"+
+			"  Install: pip3 install tree-sitter tree-sitter-c-sharp\n"+
+			"  Error: %w\n"+
+			"  Output: %s", err, string(output))
+	}
+
+	// Parse JSON output
+	var result FileMetrics
+	if err := json.Unmarshal(output, &result); err != nil {
+		return FileMetrics{}, fmt.Errorf("failed to parse C# metrics output: %w\nOutput: %s", err, string(output))
 	}
 
 	result.FilePath = filePath

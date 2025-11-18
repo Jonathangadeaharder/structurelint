@@ -114,15 +114,12 @@ func (l *Linter) createRules(files []walker.FileInfo, importGraph *graph.ImportG
 
 // addComplexRules adds rules that require more complex configuration
 func (l *Linter) addComplexRules(rulesList *[]rules.Rule, importGraph *graph.ImportGraph) {
-	// Max cyclomatic complexity rule (deprecated - use max-cognitive-complexity instead)
-	if complexity, ok := l.getRuleConfig("max-cyclomatic-complexity"); ok {
-		if complexityMap, ok := complexity.(map[string]interface{}); ok {
-			max := l.getIntFromMap(complexityMap, "max")
-			filePatterns := l.getStringSliceFromMap(complexityMap, "file-patterns")
-			if max > 0 {
-				*rulesList = append(*rulesList, rules.NewMaxCyclomaticComplexityRule(max, filePatterns))
-			}
-		}
+	// BREAKING CHANGE: max-cyclomatic-complexity has been removed
+	// Use max-cognitive-complexity instead (scientifically superior metric)
+	if _, ok := l.getRuleConfig("max-cyclomatic-complexity"); ok {
+		panic("BREAKING CHANGE: 'max-cyclomatic-complexity' rule has been removed.\n" +
+			"Use 'max-cognitive-complexity' instead - it's scientifically superior (r=0.54 vs cyclomatic's weak correlation).\n" +
+			"See: https://github.com/structurelint/structurelint#phase-5-evidence-based-metrics")
 	}
 
 	// Max cognitive complexity rule (evidence-based replacement for cyclomatic complexity)

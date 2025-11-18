@@ -29,10 +29,10 @@ As projects grow, their directory structures often degrade into chaos:
 - **Orphaned file detection** - Find files never imported by other files
 - **Unused export identification** - Locate dead exports that can be removed
 
-**Phase 3 - Test Validation:** ✨ NEW
+**Phase 3 - Test Validation:**
 - **Test adjacency enforcement** - Ensure every source file has corresponding tests
 - **Test location validation** - Prevent orphaned tests and enforce test directory structure
-- **Multi-language support** - Python, Go, TypeScript, JavaScript, Java, Rust, Ruby, C/C++
+- **Multi-language support** - Go, Python, TypeScript, JavaScript, Java, C++, C#, Rust, Ruby
 
 **Phase 4 - File Content Templates:** ✨ NEW
 - **Template system** - Define required file structures (READMEs, design docs, etc.)
@@ -51,8 +51,59 @@ As projects grow, their directory structures often degrade into chaos:
 - **Cascading Configuration**: ESLint-style `.structurelint.yml` files with inheritance
 - **Flexible Rules**: From simple metrics to complex pattern matching
 - **Architectural Enforcement**: Layer boundaries and import graph validation
-- **Multi-Language Support**: TypeScript, JavaScript, Go, Python
-- **Zero Dependencies**: Single binary, easy to install and distribute
+- **Multi-Language Support**: Go, Python, TypeScript, JavaScript, Java, C++, C#, Rust, Ruby
+- **Code Quality Metrics**: Cognitive complexity and Halstead metrics for all supported languages
+- **Modern & Clean**: Breaking changes for cleaner code, explicit failures, mandatory dependencies
+
+## ⚠️ Breaking Changes (v2.0+)
+
+This version includes breaking changes for cleaner, more maintainable code:
+
+### 1. **Removed: `max-cyclomatic-complexity` Rule** ❌
+
+**Why**: Cyclomatic Complexity is scientifically inferior to Cognitive Complexity (weak correlation with maintainability).
+
+**Migration**: Replace with `max-cognitive-complexity`:
+
+```yaml
+# OLD (will now fail with clear error)
+rules:
+  max-cyclomatic-complexity: { max: 10 }
+
+# NEW (scientifically superior)
+rules:
+  max-cognitive-complexity: { max: 15 }
+```
+
+**Evidence**: Cognitive Complexity has r=0.54 correlation with comprehension time vs Cyclomatic's weak/unsatisfactory correlation.
+
+### 2. **Mandatory: Python 3 with tree-sitter** 🐍
+
+**Why**: No more silent fallbacks - fail fast with clear error messages.
+
+**Requirements**:
+```bash
+# Required for metrics (Python, JS/TS, Java, C++, C#)
+pip3 install tree-sitter tree-sitter-java tree-sitter-cpp tree-sitter-c-sharp
+```
+
+**Changed behavior**:
+- ❌ **OLD**: Falls back to `python` if `python3` not found (silent degradation)
+- ✅ **NEW**: Requires `python3` explicitly (fails with installation instructions)
+
+### 3. **Explicit Error Messages** 📣
+
+All errors now include:
+- Clear explanation of what's missing
+- Exact installation commands
+- No silent failures or degradation
+
+**Example**:
+```
+Error: failed to execute Java metrics script (requires python3 with tree-sitter-java):
+  Install: pip3 install tree-sitter tree-sitter-java
+  Error: exec: "python3": executable file not found in $PATH
+```
 
 ## Installation
 
@@ -505,27 +556,36 @@ Effort (E) = D × V                     // Mental effort required ⭐ PRIMARY ME
 
 ### Configuration
 
-#### Replace Cyclomatic Complexity with Evidence-Based Metrics
+#### Evidence-Based Metrics Configuration
 
 ```yaml
 root: true
 
 rules:
-  # DEPRECATED: Traditional Cyclomatic Complexity
-  max-cyclomatic-complexity: 0  # Disable (deprecated)
+  # BREAKING CHANGE: max-cyclomatic-complexity has been REMOVED
+  # Using it will cause an error with migration instructions
+  # Replace with max-cognitive-complexity (scientifically superior)
 
-  # RECOMMENDED: Evidence-Based Metrics
+  # Evidence-Based Metrics (REQUIRED for quality analysis)
   max-cognitive-complexity:
     max: 15
     file-patterns:
       - "**/*.go"
       - "**/*.ts"
       - "**/*.py"
+      - "**/*.java"
+      - "**/*.cpp"
+      - "**/*.cs"
 
   max-halstead-effort:
     max: 100000
     file-patterns:
       - "**/*.go"
+      - "**/*.ts"
+      - "**/*.py"
+      - "**/*.java"
+      - "**/*.cpp"
+      - "**/*.cs"
 ```
 
 ### Thresholds and Interpretation
@@ -550,13 +610,13 @@ rules:
 root: true
 
 rules:
-  # Replace CC with Cognitive Complexity
-  max-cyclomatic-complexity: 0  # Disabled
+  # BREAKING CHANGE: max-cyclomatic-complexity REMOVED
+  # Use Cognitive Complexity instead (scientifically superior)
   max-cognitive-complexity:
     max: 15
     file-patterns: ["**/*.go"]
 
-  # Add Halstead for data complexity
+  # Halstead Effort for data complexity
   max-halstead-effort:
     max: 100000
     file-patterns: ["**/*.go"]
@@ -1069,7 +1129,7 @@ cognitive-complexity-threshold = 30
 |--------|---------------|----------|-------------|--------|
 | **Cognitive Complexity** | Meta-analysis | Understandability | r=0.54 with time | ✅ Recommended |
 | **Halstead Effort** | EEG Study | Cognitive Load | rs=0.901 with brain | ✅ Recommended |
-| Cyclomatic Complexity | Outdated | Testing Paths | Often < LOC | ⚠️ Deprecated |
+| Cyclomatic Complexity | Outdated | Testing Paths | Often < LOC | ❌ **REMOVED** |
 | Lines of Code | Strong | Size Baseline | Strong predictor | ✅ Use as control |
 
 ### Scientific Evidence
@@ -1131,7 +1191,7 @@ cognitive-complexity-threshold = 30
 ### Phase 3 - Test Validation ✅ COMPLETE
 - ✅ Test adjacency enforcement (adjacent and separate patterns)
 - ✅ Test location validation
-- ✅ Multi-language support (Python, Go, TypeScript, Java, Rust, Ruby, C/C++)
+- ✅ Multi-language support (Go, Python, TypeScript, JavaScript, Java, C++, C#, Rust, Ruby)
 - ✅ Language-specific test naming conventions
 
 ### Phase 4 - File Content Templates ✅ COMPLETE
@@ -1148,7 +1208,7 @@ cognitive-complexity-threshold = 30
 
 ### Phase 6 - Automatic Configuration ✅ COMPLETE
 - ✅ `--init` command for automatic configuration generation
-- ✅ Language detection (8+ languages)
+- ✅ Language detection (9 languages: Go, Python, TypeScript, JavaScript, Java, C++, C#, Rust, Ruby)
 - ✅ Test pattern recognition
 - ✅ Smart defaults based on project structure
 - ✅ Project metrics analysis
@@ -1358,9 +1418,18 @@ layers:
 
 ### Supported Languages
 
-- **TypeScript/JavaScript**: `.ts`, `.tsx`, `.js`, `.jsx`, `.mjs`
+**Full Support (Import/Export Parsing + Metrics):**
 - **Go**: `.go`
 - **Python**: `.py`
+- **TypeScript**: `.ts`, `.tsx`
+- **JavaScript**: `.js`, `.jsx`, `.mjs`
+- **Java**: `.java`
+- **C++**: `.cpp`, `.cc`, `.cxx`, `.h`, `.hpp`
+- **C#**: `.cs`
+
+**Test Validation Support:**
+- **Rust**: `.rs`
+- **Ruby**: `.rb`
 
 ### Complete Example
 
@@ -1606,9 +1675,10 @@ src/utils/helper.test.ts: test file should be in 'tests/' directory (separate pa
 | Python | ✅ Supported | ✅ Default | `test_*.py`, `*_test.py` |
 | TypeScript/JS | ✅ Default | ✅ Supported | `*.test.ts`, `*.spec.js` |
 | Java | ❌ | ✅ Default | `*Test.java`, `*IT.java` |
+| C++ | ✅ Supported | ✅ Supported | `test_*.cpp`, `*_test.cpp` |
+| C# | ✅ Supported | ✅ Default | `*Test.cs`, `*Tests.cs`, `*.test.cs` |
 | Rust | ✅ Default | ✅ Supported | `*_test.rs` |
 | Ruby | ❌ | ✅ Default | `*_spec.rb` |
-| C/C++ | ✅ Supported | ✅ Supported | `test_*.cpp`, `*_test.cpp` |
 
 ### Complete Examples
 
