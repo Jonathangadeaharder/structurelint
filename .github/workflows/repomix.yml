@@ -48,15 +48,15 @@ jobs:
 
       - name: Run repomix
         run: |
-          repomix --output repomix-output.txt
+          repomix --output structurelint.txt --style plain
           echo "Repomix completed successfully"
-          ls -lh repomix-output.txt
+          ls -lh structurelint.txt
 
       - name: Upload repomix artifact
         uses: actions/upload-artifact@v4
         with:
           name: repomixed-codebase-${{ github.event_name }}-${{ github.sha }}
-          path: repomix-output.txt
+          path: structurelint.txt
           retention-days: 30
           if-no-files-found: error
 
@@ -64,7 +64,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: repomixed-codebase-latest
-          path: repomix-output.txt
+          path: structurelint.txt
           retention-days: 90
           if-no-files-found: error
         if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'

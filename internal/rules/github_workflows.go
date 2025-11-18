@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/structurelint/structurelint/internal/lang"
 	"github.com/structurelint/structurelint/internal/walker"
 	"gopkg.in/yaml.v3"
 )
@@ -87,30 +88,48 @@ func (r *GitHubWorkflowsRule) Check(files []walker.FileInfo, dirs map[string]*wa
 	// Check for required workflow types
 	if r.RequireTests {
 		if !r.hasWorkflowType(workflows, "test", []string{"test", "ci", "build"}) {
+			autoFix := r.generateWorkflowAutoFix(rootDir, "test")
 			violations = append(violations, Violation{
 				Rule:    r.Name(),
 				Path:    ".github/workflows",
 				Message: "No test/CI workflow found. Add a workflow that runs tests on pull requests and pushes.",
+				Suggestions: []string{
+					"Create a CI workflow file in .github/workflows/",
+					"Use the auto-generated workflow based on your project's language",
+				},
+				AutoFix: autoFix,
 			})
 		}
 	}
 
 	if r.RequireSecurity {
 		if !r.hasWorkflowType(workflows, "security", []string{"security", "scan", "codeql", "dependabot"}) {
+			autoFix := r.generateWorkflowAutoFix(rootDir, "security")
 			violations = append(violations, Violation{
 				Rule:    r.Name(),
 				Path:    ".github/workflows",
 				Message: "No security scanning workflow found. Add CodeQL, dependency scanning, or other security checks.",
+				Suggestions: []string{
+					"Create a security workflow file in .github/workflows/",
+					"Use the auto-generated workflow with CodeQL and Trivy scanning",
+				},
+				AutoFix: autoFix,
 			})
 		}
 	}
 
 	if r.RequireQuality {
 		if !r.hasWorkflowType(workflows, "quality", []string{"quality", "lint", "format", "coverage"}) {
+			autoFix := r.generateWorkflowAutoFix(rootDir, "quality")
 			violations = append(violations, Violation{
 				Rule:    r.Name(),
 				Path:    ".github/workflows",
 				Message: "No code quality workflow found. Add linting, formatting, or coverage checks.",
+				Suggestions: []string{
+					"Create a quality workflow file in .github/workflows/",
+					"Use the auto-generated workflow based on your project's language",
+				},
+				AutoFix: autoFix,
 			})
 		}
 	}
@@ -444,4 +463,639 @@ func NewGitHubWorkflowsRule(config GitHubWorkflowsRule) *GitHubWorkflowsRule {
 		RequireLogCommits:     config.RequireLogCommits,
 		RequireRepomixArtifact: config.RequireRepomixArtifact,
 	}
+}
+
+// generateWorkflowAutoFix generates auto-fix workflows based on detected languages
+func (r *GitHubWorkflowsRule) generateWorkflowAutoFix(rootDir string, workflowType string) *AutoFix {
+	// Detect languages in the project
+	languages, err := lang.DetectInDirectory(rootDir)
+	if err != nil || len(languages) == 0 {
+		// If detection fails, return nil (no auto-fix)
+		return nil
+	}
+
+	// Get the primary language
+	primaryLang := languages[0].Language
+
+	var content string
+	var fileName string
+
+	switch workflowType {
+	case "test":
+		content = r.generateTestWorkflow(primaryLang, rootDir)
+		fileName = "ci.yml"
+	case "security":
+		content = r.generateSecurityWorkflow(primaryLang)
+		fileName = "security.yml"
+	case "quality":
+		content = r.generateQualityWorkflow(primaryLang)
+		fileName = "quality.yml"
+	default:
+		return nil
+	}
+
+	if content == "" {
+		return nil
+	}
+
+	return &AutoFix{
+		FilePath: filepath.Join(rootDir, ".github", "workflows", fileName),
+		Content:  content,
+	}
+}
+
+// generateTestWorkflow generates a test/CI workflow based on language
+func (r *GitHubWorkflowsRule) generateTestWorkflow(language lang.Language, rootDir string) string {
+	switch language {
+	case lang.Go:
+		return `name: CI - Tests
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: stable
+
+      - name: Cache Go modules
+        uses: actions/cache@v4
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
+      - name: Download dependencies
+        run: go mod download
+
+      - name: Run tests
+        run: go test -v -race -coverprofile=coverage.out ./...
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v4
+        with:
+          file: ./coverage.out
+          flags: unittests
+          name: codecov-umbrella
+          fail_ci_if_error: false
+`
+
+	case lang.Python:
+		return `name: CI - Tests
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.9', '3.10', '3.11']
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Cache pip packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt', '**/pyproject.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest pytest-cov
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          if [ -f pyproject.toml ]; then pip install -e .[dev]; fi
+
+      - name: Run tests
+        run: pytest --cov=. --cov-report=xml
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v4
+        with:
+          file: ./coverage.xml
+          flags: unittests
+          name: codecov-umbrella
+          fail_ci_if_error: false
+`
+
+	case lang.TypeScript, lang.JavaScript, lang.React:
+		return `name: CI - Tests
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: |
+          if [ -f "yarn.lock" ]; then
+            npm install -g yarn
+            yarn install --frozen-lockfile
+          elif [ -f "pnpm-lock.yaml" ]; then
+            npm install -g pnpm
+            pnpm install --frozen-lockfile
+          else
+            npm ci
+          fi
+
+      - name: Run tests
+        run: npm test -- --coverage
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v4
+        with:
+          file: ./coverage/coverage-final.json
+          flags: unittests
+          name: codecov-umbrella
+          fail_ci_if_error: false
+`
+
+	case lang.Rust:
+		return `name: CI - Tests
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo registry
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/registry
+          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Cache cargo index
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/git
+          key: ${{ runner.os }}-cargo-index-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Cache cargo build
+        uses: actions/cache@v4
+        with:
+          path: target
+          key: ${{ runner.os }}-cargo-build-target-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Run tests
+        run: cargo test --verbose
+
+      - name: Run tests with coverage
+        run: |
+          cargo install cargo-tarpaulin
+          cargo tarpaulin --out Xml
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v4
+        with:
+          file: ./cobertura.xml
+          flags: unittests
+          name: codecov-umbrella
+          fail_ci_if_error: false
+`
+
+	case lang.Java:
+		return `name: CI - Tests
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Setup Gradle
+        if: hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') != ''
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Cache Maven packages
+        if: hashFiles('**/pom.xml') != ''
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-m2
+
+      - name: Build and test with Gradle
+        if: hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') != ''
+        run: ./gradlew build test
+
+      - name: Build and test with Maven
+        if: hashFiles('**/pom.xml') != ''
+        run: |
+          mvn -B package --file pom.xml
+          mvn test
+
+      - name: Generate coverage report (Maven)
+        if: hashFiles('**/pom.xml') != ''
+        run: mvn jacoco:report || echo "JaCoCo not configured, skipping coverage"
+        continue-on-error: true
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./target/site/jacoco/jacoco.xml,./build/reports/jacoco/test/jacocoTestReport.xml
+          flags: unittests
+          name: codecov-umbrella
+          fail_ci_if_error: false
+`
+
+	default:
+		return ""
+	}
+}
+
+// generateSecurityWorkflow generates a security scanning workflow
+func (r *GitHubWorkflowsRule) generateSecurityWorkflow(language lang.Language) string {
+	// Map language to CodeQL language identifier
+	codeqlLang := mapLanguageToCodeQL(language)
+
+	return fmt.Sprintf(`name: Security Scanning
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  schedule:
+    - cron: '0 0 * * 1'  # Weekly on Monday
+
+jobs:
+  codeql:
+    name: CodeQL Analysis
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: %s
+
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v3
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+
+  dependency-scan:
+    name: Dependency Scanning
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+
+      - name: Upload Trivy results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: 'trivy-results.sarif'
+`, codeqlLang)
+}
+
+// mapLanguageToCodeQL maps internal language to CodeQL language identifier
+func mapLanguageToCodeQL(language lang.Language) string {
+	switch language {
+	case lang.Go:
+		return "go"
+	case lang.Python:
+		return "python"
+	case lang.TypeScript, lang.JavaScript, lang.React:
+		return "javascript"
+	case lang.Java:
+		return "java"
+	case lang.CSharp:
+		return "csharp"
+	case lang.Ruby:
+		return "ruby"
+	default:
+		return "go" // Default fallback
+	}
+}
+
+// generateQualityWorkflow generates a code quality workflow based on language
+func (r *GitHubWorkflowsRule) generateQualityWorkflow(language lang.Language) string {
+	switch language {
+	case lang.Go:
+		return `name: Code Quality
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  lint:
+    name: Lint Code
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: stable
+
+      - name: Run golangci-lint
+        uses: golangci/golangci-lint-action@v4
+        with:
+          version: latest
+          args: --timeout=5m
+
+      - name: Run go vet
+        run: go vet ./...
+
+      - name: Run go fmt
+        run: |
+          if [ -n "$(gofmt -s -l .)" ]; then
+            echo "Go code is not formatted:"
+            gofmt -s -d .
+            exit 1
+          fi
+`
+
+	case lang.Python:
+		return `name: Code Quality
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  lint:
+    name: Lint Code
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install flake8 black pylint mypy
+
+      - name: Run flake8
+        run: flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+
+      - name: Run black
+        run: black --check .
+
+      - name: Run pylint
+        run: pylint **/*.py
+        continue-on-error: true
+
+      - name: Run mypy
+        run: mypy .
+        continue-on-error: true
+`
+
+	case lang.TypeScript, lang.JavaScript, lang.React:
+		return `name: Code Quality
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  lint:
+    name: Lint Code
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: |
+          if [ -f "yarn.lock" ]; then
+            npm install -g yarn
+            yarn install --frozen-lockfile
+          elif [ -f "pnpm-lock.yaml" ]; then
+            npm install -g pnpm
+            pnpm install --frozen-lockfile
+          else
+            npm ci
+          fi
+
+      - name: Run ESLint
+        run: npm run lint || npx eslint .
+
+      - name: Run Prettier
+        run: npx prettier --check .
+
+      - name: Type check
+        run: npm run type-check || npx tsc --noEmit
+        continue-on-error: true
+`
+
+	case lang.Rust:
+		return `name: Code Quality
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  lint:
+    name: Lint Code
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Run rustfmt
+        run: cargo fmt -- --check
+
+      - name: Run clippy
+        run: cargo clippy -- -D warnings
+`
+
+	default:
+		return `name: Code Quality
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  lint:
+    name: Lint Code
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run basic checks
+        run: echo "Configure linting for your language"
+`
+	}
+}
+
+// generateRepomixWorkflow generates a repomix workflow with project name
+func (r *GitHubWorkflowsRule) generateRepomixWorkflow(rootDir string) string {
+	projectName := filepath.Base(rootDir)
+
+	return fmt.Sprintf(`name: Repomix Codebase Archive
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:  # Allow manual trigger
+
+jobs:
+  repomix:
+    name: Generate Repomixed Codebase
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install repomix
+        run: npm install -g repomix
+
+      - name: Run repomix
+        run: |
+          repomix --output %s.txt --style plain
+          echo "Repomix completed successfully"
+          ls -lh %s.txt
+
+      - name: Upload repomix artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: repomixed-codebase-${{ github.event_name }}-${{ github.sha }}
+          path: %s.txt
+          retention-days: 30
+          if-no-files-found: error
+
+      - name: Upload repomix artifact (latest)
+        uses: actions/upload-artifact@v4
+        with:
+          name: repomixed-codebase-latest
+          path: %s.txt
+          retention-days: 90
+          if-no-files-found: error
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+`, projectName, projectName, projectName, projectName)
 }

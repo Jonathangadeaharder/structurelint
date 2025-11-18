@@ -8,6 +8,12 @@ import (
 	"github.com/structurelint/structurelint/internal/walker"
 )
 
+// AutoFix contains information about an automatic fix for a violation
+type AutoFix struct {
+	FilePath string // Path where the fix should be applied (relative to project root)
+	Content  string // Content to write to the file
+}
+
 // Violation represents a rule violation
 type Violation struct {
 	Rule        string
@@ -17,6 +23,7 @@ type Violation struct {
 	Actual      string   // Optional: What was found (e.g., "camelCase")
 	Suggestions []string // Optional: Fix suggestions
 	Context     string   // Optional: Rule context (e.g., "React components rule: src/components/**")
+	AutoFix     *AutoFix // Optional: Automatic fix content
 }
 
 // FormatDetailed returns a detailed, human-friendly violation message

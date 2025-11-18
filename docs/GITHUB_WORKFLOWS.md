@@ -8,6 +8,24 @@ Phase 8 adds comprehensive GitHub Actions workflow enforcement to ensure your pr
 2. **Security Scanning** - CodeQL, dependency scanning, secret detection
 3. **Code Quality** - Linting, formatting, static analysis, coverage checks
 
+### Auto-Fix Support 🎯
+
+The GitHub workflows rule now includes **automatic fix generation** that creates best-practice workflow files based on your project's detected language(s). When a required workflow is missing, structurelint will:
+
+- ✅ Detect your project's primary language (Go, Python, TypeScript, Rust, Java, etc.)
+- ✅ Generate a language-specific best-practice workflow
+- ✅ Include the auto-fix in the violation's `AutoFix` field
+- ✅ Provide ready-to-use workflow content that can be written to `.github/workflows/`
+
+**Language-Specific Templates**: Each language gets optimized workflows with:
+- Proper setup actions (setup-go, setup-python, setup-node, etc.)
+- Dependency caching for faster builds
+- Language-specific testing commands
+- Linting and formatting tools
+- Code coverage reporting
+
+**Repomix Workflow**: Generated repomix workflows automatically use your project name as the output filename in plain text format.
+
 ## Why Enforce GitHub Workflows?
 
 ### The Problem
