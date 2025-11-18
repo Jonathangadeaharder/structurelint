@@ -555,7 +555,7 @@ func (l *Linter) addOpenAPIAsyncAPIRule(rulesList *[]rules.Rule) {
 			requireAsyncAPI := l.getBoolFromMap(configMap, "require-asyncapi")
 			customSpecs := l.getStringSliceFromMap(configMap, "custom-specs")
 
-			rule := rules.NewAPISpecRule(rules.APISpecRule{
+			rule := rules.NewOpenAPIAsyncAPIRule(rules.OpenAPIAsyncAPIRule{
 				RequireOpenAPI:  requireOpenAPI,
 				RequireAsyncAPI: requireAsyncAPI,
 				CustomSpecs:     customSpecs,
