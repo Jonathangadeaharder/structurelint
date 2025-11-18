@@ -10,11 +10,6 @@ import (
 
 // Violation represents a rule violation
 type Violation struct {
-<<<<<<< HEAD
-	Rule    string
-	Path    string
-	Message string
-=======
 	Rule        string
 	Path        string
 	Message     string
@@ -49,7 +44,6 @@ func (v *Violation) FormatDetailed() string {
 	}
 
 	return msg
->>>>>>> 4df6d8be38af74f838a2430d9f19dd2abe06193d
 }
 
 // Rule defines the interface for all linter rules

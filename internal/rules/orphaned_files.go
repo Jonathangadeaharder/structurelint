@@ -10,14 +10,9 @@ import (
 
 // OrphanedFilesRule detects files that are not imported by any other file
 type OrphanedFilesRule struct {
-<<<<<<< HEAD
-	Graph       *graph.ImportGraph
-	Entrypoints []string
-=======
 	Graph              *graph.ImportGraph
 	Entrypoints        []string // Top-level entrypoints (backward compatibility)
 	EntryPointPatterns []string // Additional entry point patterns from rule config
->>>>>>> 4df6d8be38af74f838a2430d9f19dd2abe06193d
 }
 
 // Name returns the rule name
@@ -60,19 +55,13 @@ func (r *OrphanedFilesRule) Check(files []walker.FileInfo, dirs map[string]*walk
 
 // isEntrypoint checks if a file is an entrypoint
 func (r *OrphanedFilesRule) isEntrypoint(filePath string) bool {
-<<<<<<< HEAD
-	// Check against configured entrypoints
-=======
 	// Check against configured entrypoints (top-level config, backward compatibility)
->>>>>>> 4df6d8be38af74f838a2430d9f19dd2abe06193d
 	for _, pattern := range r.Entrypoints {
 		if matchesEntrypointPattern(filePath, pattern) {
 			return true
 		}
 	}
 
-<<<<<<< HEAD
-=======
 	// Check against entry point patterns from rule config
 	for _, pattern := range r.EntryPointPatterns {
 		if matchesEntrypointPattern(filePath, pattern) {
@@ -80,28 +69,20 @@ func (r *OrphanedFilesRule) isEntrypoint(filePath string) bool {
 		}
 	}
 
->>>>>>> 4df6d8be38af74f838a2430d9f19dd2abe06193d
 	// Common entrypoint patterns
 	base := filepath.Base(filePath)
 	commonEntrypoints := []string{
 		"main.go",
 		"main.ts",
 		"main.js",
-<<<<<<< HEAD
-=======
 		"main.py",
->>>>>>> 4df6d8be38af74f838a2430d9f19dd2abe06193d
 		"index.ts",
 		"index.js",
 		"app.ts",
 		"app.js",
-<<<<<<< HEAD
-		"__init__.py",
-=======
 		"app.py",
 		"__init__.py",
 		"manage.py", // Django management script
->>>>>>> 4df6d8be38af74f838a2430d9f19dd2abe06193d
 	}
 
 	for _, entry := range commonEntrypoints {
@@ -158,13 +139,6 @@ func matchesEntrypointPattern(filePath, pattern string) bool {
 // NewOrphanedFilesRule creates a new OrphanedFilesRule
 func NewOrphanedFilesRule(importGraph *graph.ImportGraph, entrypoints []string) *OrphanedFilesRule {
 	return &OrphanedFilesRule{
-<<<<<<< HEAD
-		Graph:       importGraph,
-		Entrypoints: entrypoints,
-	}
-}
-
-=======
 		Graph:              importGraph,
 		Entrypoints:        entrypoints,
 		EntryPointPatterns: []string{},
@@ -177,7 +151,6 @@ func (r *OrphanedFilesRule) WithEntryPointPatterns(patterns []string) *OrphanedF
 	return r
 }
 
->>>>>>> 4df6d8be38af74f838a2430d9f19dd2abe06193d
 // isConfigOrDocFile checks if a file is a configuration or documentation file
 func (r *OrphanedFilesRule) isConfigOrDocFile(filePath string) bool {
 	base := filepath.Base(filePath)
