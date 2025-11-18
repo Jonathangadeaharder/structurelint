@@ -67,6 +67,25 @@ rules:
       "CONTRIBUTING.md": "contributing"    # Enforce contributing guidelines
       "**/*_test.go": "test-gwt-table"    # Enforce GWT naming + AAA for Go tests (supports table-driven)
 
+  # API Specification Enforcement
+  # Enforce OpenAPI for REST endpoints and AsyncAPI for event-driven systems
+  # api-spec:
+  #   require-openapi: true    # Require OpenAPI/Swagger spec when REST endpoints detected
+  #   require-asyncapi: true   # Require AsyncAPI spec when event-driven patterns detected
+  #   custom-specs: []         # Additional custom spec files to recognize
+
+  # Design by Contract Framework Enforcement
+  # Enforce established contract frameworks for better component contracts
+  # contract-framework:
+  #   require-python: true      # Python: icontract or deal
+  #   require-rust: true        # Rust: Native assertions and type system
+  #   require-typescript: true  # TypeScript: Zod for runtime validation
+  #   require-go: true          # Go: gocontracts or standard assertions
+  #   require-java: true        # Java: Jakarta Bean Validation 3.0 (JSR-380)
+  #   require-csharp: true      # C#: Nullable reference types (Code Contracts deprecated)
+  #   require-cplusplus: true   # C++: Native assertions (C++26 contracts in development)
+  #   custom-frameworks: []     # Additional custom frameworks to recognize
+
 # Phase 1: Architectural layers for Go project
 layers:
   - name: cmd

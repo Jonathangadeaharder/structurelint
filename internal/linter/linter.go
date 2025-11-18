@@ -172,6 +172,12 @@ func (l *Linter) addComplexRules(rulesList *[]rules.Rule, importGraph *graph.Imp
 
 	// Linter configuration rule
 	l.addLinterConfigRule(rulesList)
+
+	// API specification rule
+	l.addAPISpecRule(rulesList)
+
+	// Contract framework rule
+	l.addContractFrameworkRule(rulesList)
 }
 
 // addTestValidationRules adds Phase 3 test validation rules
@@ -442,4 +448,50 @@ func (l *Linter) getStringMapFromMap(m map[string]interface{}, key string) map[s
 		return result
 	}
 	return nil
+}
+
+// addAPISpecRule adds the API specification rule
+func (l *Linter) addAPISpecRule(rulesList *[]rules.Rule) {
+	if apiSpecConfig, ok := l.getRuleConfig("api-spec"); ok {
+		if configMap, ok := apiSpecConfig.(map[string]interface{}); ok {
+			requireOpenAPI := l.getBoolFromMap(configMap, "require-openapi")
+			requireAsyncAPI := l.getBoolFromMap(configMap, "require-asyncapi")
+			customSpecs := l.getStringSliceFromMap(configMap, "custom-specs")
+
+			rule := rules.NewAPISpecRule(rules.APISpecRule{
+				RequireOpenAPI:  requireOpenAPI,
+				RequireAsyncAPI: requireAsyncAPI,
+				CustomSpecs:     customSpecs,
+			})
+			*rulesList = append(*rulesList, rule)
+		}
+	}
+}
+
+// addContractFrameworkRule adds the contract framework rule
+func (l *Linter) addContractFrameworkRule(rulesList *[]rules.Rule) {
+	if contractConfig, ok := l.getRuleConfig("contract-framework"); ok {
+		if configMap, ok := contractConfig.(map[string]interface{}); ok {
+			requirePython := l.getBoolFromMap(configMap, "require-python")
+			requireRust := l.getBoolFromMap(configMap, "require-rust")
+			requireTypeScript := l.getBoolFromMap(configMap, "require-typescript")
+			requireGo := l.getBoolFromMap(configMap, "require-go")
+			requireJava := l.getBoolFromMap(configMap, "require-java")
+			requireCSharp := l.getBoolFromMap(configMap, "require-csharp")
+			requireCPlusPlus := l.getBoolFromMap(configMap, "require-cplusplus")
+			customFrameworks := l.getStringSliceFromMap(configMap, "custom-frameworks")
+
+			rule := rules.NewContractFrameworkRule(rules.ContractFrameworkRule{
+				RequirePython:     requirePython,
+				RequireRust:       requireRust,
+				RequireTypeScript: requireTypeScript,
+				RequireGo:         requireGo,
+				RequireJava:       requireJava,
+				RequireCSharp:     requireCSharp,
+				RequireCPlusPlus:  requireCPlusPlus,
+				CustomFrameworks:  customFrameworks,
+			})
+			*rulesList = append(*rulesList, rule)
+		}
+	}
 }
