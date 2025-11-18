@@ -16,10 +16,14 @@ import (
 // - Python: mypy, black, ruff, pylint, flake8
 // - TypeScript: ESLint, Prettier, TSConfig
 // - Go: golangci-lint, gofmt, go vet
-// - HTML: HTMLHint, html-validate, prettier
+// - HTML: HTMLHint, html-validate, html-eslint, prettier
 // - CSS: stylelint, prettier
 // - SQL: sqlfluff, sqlfmt
 // - Rust: clippy, rustfmt
+// - Markdown: markdownlint
+// - Java: Checkstyle, PMD, SpotBugs
+// - C++: clang-format, clang-tidy, cppcheck
+// - C#: EditorConfig, StyleCop, dotnet format
 type LinterConfigRule struct {
 	RequirePython     bool     `yaml:"require-python"`
 	RequireTypeScript bool     `yaml:"require-typescript"`
@@ -28,6 +32,10 @@ type LinterConfigRule struct {
 	RequireCSS        bool     `yaml:"require-css"`
 	RequireSQL        bool     `yaml:"require-sql"`
 	RequireRust       bool     `yaml:"require-rust"`
+	RequireMarkdown   bool     `yaml:"require-markdown"`
+	RequireJava       bool     `yaml:"require-java"`
+	RequireCpp        bool     `yaml:"require-cpp"`
+	RequireCSharp     bool     `yaml:"require-csharp"`
 	CustomLinters     []string `yaml:"custom-linters"`
 }
 
@@ -89,6 +97,26 @@ func (r *LinterConfigRule) Check(files []walker.FileInfo, dirs map[string]*walke
 		violations = append(violations, rustViolations...)
 	}
 
+	if r.RequireMarkdown && languages["markdown"] {
+		markdownViolations := r.checkLanguageLinters(files, linterConfigs["markdown"])
+		violations = append(violations, markdownViolations...)
+	}
+
+	if r.RequireJava && languages["java"] {
+		javaViolations := r.checkLanguageLinters(files, linterConfigs["java"])
+		violations = append(violations, javaViolations...)
+	}
+
+	if r.RequireCpp && languages["cpp"] {
+		cppViolations := r.checkLanguageLinters(files, linterConfigs["cpp"])
+		violations = append(violations, cppViolations...)
+	}
+
+	if r.RequireCSharp && languages["csharp"] {
+		csharpViolations := r.checkLanguageLinters(files, linterConfigs["csharp"])
+		violations = append(violations, csharpViolations...)
+	}
+
 	return violations
 }
 
@@ -121,6 +149,14 @@ func (r *LinterConfigRule) detectLanguages(files []walker.FileInfo) map[string]b
 			languages["sql"] = true
 		case ".rs":
 			languages["rust"] = true
+		case ".md", ".markdown":
+			languages["markdown"] = true
+		case ".java":
+			languages["java"] = true
+		case ".cpp", ".cc", ".cxx", ".c++", ".hpp", ".hh", ".hxx", ".h++", ".h":
+			languages["cpp"] = true
+		case ".cs":
+			languages["csharp"] = true
 		}
 	}
 
@@ -176,13 +212,18 @@ func (r *LinterConfigRule) getLinterConfigs() map[string]LinterConfig {
 			ConfigFiles: []string{
 				".htmlhintrc",         // HTMLHint config
 				".htmlvalidate.json",  // html-validate config
+				".eslintrc",           // html-eslint via ESLint plugin
+				".eslintrc.json",
+				".eslintrc.js",
+				".eslintrc.yml",
+				"eslint.config.js",
 				".prettierrc",         // Prettier (also handles HTML)
 				".prettierrc.json",
 				".prettierrc.js",
 				"prettier.config.js",
 				".github/workflows/*.yml", // Workflow with linting steps
 			},
-			WorkflowSteps: []string{"htmlhint", "html-validate", "prettier"},
+			WorkflowSteps: []string{"htmlhint", "html-validate", "html-eslint", "eslint", "prettier"},
 		},
 		"css": {
 			Language: "CSS",
@@ -219,6 +260,66 @@ func (r *LinterConfigRule) getLinterConfigs() map[string]LinterConfig {
 			},
 			WorkflowSteps: []string{"clippy", "rustfmt", "cargo clippy", "cargo fmt"},
 		},
+		"markdown": {
+			Language: "Markdown",
+			ConfigFiles: []string{
+				".markdownlint.json",     // markdownlint config (JSON)
+				".markdownlint.yaml",     // markdownlint config (YAML)
+				".markdownlint.yml",
+				".markdownlintrc",        // markdownlint config (rc format)
+				".markdownlint-cli2.jsonc", // markdownlint-cli2 config
+				".markdownlint-cli2.yaml",
+				".markdownlint-cli2.cjs",
+				".github/workflows/*.yml", // Workflow with linting steps
+			},
+			WorkflowSteps: []string{"markdownlint", "markdownlint-cli", "markdownlint-cli2", "remark-lint"},
+		},
+		"java": {
+			Language: "Java",
+			ConfigFiles: []string{
+				"checkstyle.xml",         // Checkstyle config
+				"checkstyle-config.xml",
+				".checkstyle.xml",
+				"pmd.xml",                // PMD config
+				"pmd-ruleset.xml",
+				".pmd.xml",
+				"spotbugs.xml",           // SpotBugs config
+				"spotbugs-exclude.xml",
+				".spotbugs.xml",
+				"pom.xml",                // Maven with linter plugins
+				"build.gradle",           // Gradle with linter plugins
+				"build.gradle.kts",
+				".github/workflows/*.yml", // Workflow with linting steps
+			},
+			WorkflowSteps: []string{"checkstyle", "pmd", "spotbugs", "maven checkstyle", "gradle check"},
+		},
+		"cpp": {
+			Language: "C++",
+			ConfigFiles: []string{
+				".clang-format",          // clang-format config
+				"_clang-format",
+				".clang-tidy",            // clang-tidy config
+				"_clang-tidy",
+				".cppcheck",              // cppcheck config
+				"cppcheck.xml",
+				"compile_commands.json",  // Compilation database for clang-tidy
+				"CMakeLists.txt",         // CMake with linter integration
+				".github/workflows/*.yml", // Workflow with linting steps
+			},
+			WorkflowSteps: []string{"clang-format", "clang-tidy", "cppcheck", "cpplint"},
+		},
+		"csharp": {
+			Language: "C#",
+			ConfigFiles: []string{
+				".editorconfig",          // EditorConfig (used by dotnet format and Roslyn)
+				"stylecop.json",          // StyleCop Analyzers config
+				".stylecop.json",
+				"Directory.Build.props",  // MSBuild properties (can include analyzer config)
+				"omnisharp.json",         // OmniSharp config (includes formatting)
+				".github/workflows/*.yml", // Workflow with linting steps
+			},
+			WorkflowSteps: []string{"dotnet format", "stylecop", "roslyn analyzers", "csharpier"},
+		},
 	}
 }
 
@@ -235,9 +336,12 @@ func (r *LinterConfigRule) checkLanguageLinters(files []walker.FileInfo, config 
 	// If neither config files nor workflow steps are found, report a violation
 	if !hasConfigFile && !hasWorkflowStep {
 		violations = append(violations, Violation{
-			Rule:    r.Name(),
-			Path:    ".",
-			Message: r.formatMissingLinterMessage(config),
+			Rule:        r.Name(),
+			Path:        ".",
+			Message:     r.formatMissingLinterMessage(config),
+			Expected:    fmt.Sprintf("Linter configuration for %s", config.Language),
+			Actual:      "No linter configuration found",
+			Suggestions: r.generateAutoFixSuggestions(config),
 		})
 	}
 
@@ -392,6 +496,99 @@ func min(a, b int) int {
 	return b
 }
 
+// generateAutoFixSuggestions generates best practice configuration suggestions for a language
+func (r *LinterConfigRule) generateAutoFixSuggestions(config LinterConfig) []string {
+	suggestions := []string{}
+
+	switch config.Language {
+	case "Python":
+		suggestions = []string{
+			"Create pyproject.toml with: [tool.black], [tool.ruff], [tool.mypy] sections",
+			"Install: pip install black ruff mypy",
+			"Add pre-commit hook: pip install pre-commit && pre-commit install",
+			"Example pyproject.toml: https://black.readthedocs.io/en/stable/usage_and_configuration/the_basics.html",
+		}
+	case "TypeScript":
+		suggestions = []string{
+			"Create .eslintrc.json with @typescript-eslint/recommended config",
+			"Create .prettierrc with recommended settings",
+			"Install: npm install --save-dev eslint @typescript-eslint/parser @typescript-eslint/eslint-plugin prettier",
+			"Example config: https://typescript-eslint.io/getting-started",
+		}
+	case "Go":
+		suggestions = []string{
+			"Create .golangci.yml with recommended linters",
+			"Install: go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest",
+			"Enable linters: govet, errcheck, staticcheck, gosimple, unused",
+			"Example config: https://golangci-lint.run/usage/configuration/",
+		}
+	case "HTML":
+		suggestions = []string{
+			"Create .htmlhintrc or .htmlvalidate.json for HTML linting",
+			"For html-eslint: npm install --save-dev @html-eslint/eslint-plugin @html-eslint/parser",
+			"Add to .eslintrc: extends: ['plugin:@html-eslint/recommended']",
+			"Example config: https://html-eslint.org/docs/getting-started",
+		}
+	case "CSS":
+		suggestions = []string{
+			"Create .stylelintrc.json with stylelint-config-standard",
+			"Install: npm install --save-dev stylelint stylelint-config-standard",
+			"Add extends: 'stylelint-config-standard' to .stylelintrc.json",
+			"Example config: https://stylelint.io/user-guide/get-started",
+		}
+	case "SQL":
+		suggestions = []string{
+			"Create .sqlfluff config file",
+			"Install: pip install sqlfluff",
+			"Add [sqlfluff] section to .sqlfluff or pyproject.toml",
+			"Example config: https://docs.sqlfluff.com/en/stable/configuration.html",
+		}
+	case "Rust":
+		suggestions = []string{
+			"Create rustfmt.toml for formatting rules",
+			"Create clippy.toml for linting rules",
+			"Enable in CI: cargo fmt --check && cargo clippy -- -D warnings",
+			"Example config: https://rust-lang.github.io/rustfmt/",
+		}
+	case "Markdown":
+		suggestions = []string{
+			"Create .markdownlint.json with recommended rules",
+			"Install: npm install --save-dev markdownlint-cli2",
+			"Example config: { 'default': true, 'MD013': { 'line_length': 120 } }",
+			"Docs: https://github.com/DavidAnson/markdownlint",
+		}
+	case "Java":
+		suggestions = []string{
+			"Create checkstyle.xml with Google or Sun style guide",
+			"Add to Maven: maven-checkstyle-plugin, pmd-maven-plugin, spotbugs-maven-plugin",
+			"Add to Gradle: id 'checkstyle', id 'pmd', id 'com.github.spotbugs'",
+			"Example: https://checkstyle.org/google_style.html",
+		}
+	case "C++":
+		suggestions = []string{
+			"Create .clang-format based on LLVM, Google, or Mozilla style",
+			"Create .clang-tidy with checks: -*, modernize-*, readability-*, performance-*",
+			"Generate compile_commands.json: cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON",
+			"Example: https://clang.llvm.org/docs/ClangFormatStyleOptions.html",
+		}
+	case "C#":
+		suggestions = []string{
+			"Create .editorconfig with dotnet_diagnostic rules",
+			"Create stylecop.json for StyleCop.Analyzers",
+			"Add to .csproj: <PackageReference Include='StyleCop.Analyzers' Version='1.2.0-beta.507' />",
+			"Example: https://docs.microsoft.com/en-us/dotnet/fundamentals/code-analysis/",
+		}
+	default:
+		suggestions = []string{
+			fmt.Sprintf("Add linter configuration for %s", config.Language),
+			"Create appropriate config file from the expected list",
+			"Add linting steps to GitHub workflows",
+		}
+	}
+
+	return suggestions
+}
+
 // NewLinterConfigRule creates a new LinterConfigRule
 func NewLinterConfigRule(config LinterConfigRule) *LinterConfigRule {
 	return &LinterConfigRule{
@@ -402,6 +599,10 @@ func NewLinterConfigRule(config LinterConfigRule) *LinterConfigRule {
 		RequireCSS:        config.RequireCSS,
 		RequireSQL:        config.RequireSQL,
 		RequireRust:       config.RequireRust,
+		RequireMarkdown:   config.RequireMarkdown,
+		RequireJava:       config.RequireJava,
+		RequireCpp:        config.RequireCpp,
+		RequireCSharp:     config.RequireCSharp,
 		CustomLinters:     config.CustomLinters,
 	}
 }

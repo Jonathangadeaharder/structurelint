@@ -529,3 +529,300 @@ func TestLinterConfigRule_AllLanguages(t *testing.T) {
 		t.Errorf("Expected no violations with all linter configs present, got %d violations", len(violations))
 	}
 }
+
+func TestLinterConfigRule_MarkdownWithConfig(t *testing.T) {
+	// Arrange
+	rule := &LinterConfigRule{
+		RequireMarkdown: true,
+	}
+	files := []walker.FileInfo{
+		{Path: "README.md", ParentPath: ".", IsDir: false},
+		{Path: ".markdownlint.json", ParentPath: ".", IsDir: false},
+	}
+
+	// Act
+	violations := rule.Check(files, make(map[string]*walker.DirInfo))
+
+	// Assert
+	if len(violations) != 0 {
+		t.Errorf("Expected no violations with .markdownlint.json, got %d violations", len(violations))
+	}
+}
+
+func TestLinterConfigRule_MarkdownWithoutConfig(t *testing.T) {
+	// Arrange
+	rule := &LinterConfigRule{
+		RequireMarkdown: true,
+	}
+	files := []walker.FileInfo{
+		{Path: "README.md", ParentPath: ".", IsDir: false},
+		{Path: "package.json", ParentPath: ".", IsDir: false},
+	}
+
+	// Act
+	violations := rule.Check(files, make(map[string]*walker.DirInfo))
+
+	// Assert
+	if len(violations) == 0 {
+		t.Error("Expected violation for missing Markdown linter configuration")
+	}
+	if !containsMessage(violations, "No Markdown linter configuration found") {
+		t.Error("Expected violation message about missing Markdown linter configuration")
+	}
+}
+
+func TestLinterConfigRule_JavaWithCheckstyleConfig(t *testing.T) {
+	// Arrange
+	rule := &LinterConfigRule{
+		RequireJava: true,
+	}
+	files := []walker.FileInfo{
+		{Path: "src/Main.java", ParentPath: ".", IsDir: false},
+		{Path: "checkstyle.xml", ParentPath: ".", IsDir: false},
+	}
+
+	// Act
+	violations := rule.Check(files, make(map[string]*walker.DirInfo))
+
+	// Assert
+	if len(violations) != 0 {
+		t.Errorf("Expected no violations with checkstyle.xml, got %d violations", len(violations))
+	}
+}
+
+func TestLinterConfigRule_JavaWithPomXml(t *testing.T) {
+	// Arrange
+	rule := &LinterConfigRule{
+		RequireJava: true,
+	}
+	files := []walker.FileInfo{
+		{Path: "src/Main.java", ParentPath: ".", IsDir: false},
+		{Path: "pom.xml", ParentPath: ".", IsDir: false},
+	}
+
+	// Act
+	violations := rule.Check(files, make(map[string]*walker.DirInfo))
+
+	// Assert
+	if len(violations) != 0 {
+		t.Errorf("Expected no violations with pom.xml, got %d violations", len(violations))
+	}
+}
+
+func TestLinterConfigRule_JavaWithoutConfig(t *testing.T) {
+	// Arrange
+	rule := &LinterConfigRule{
+		RequireJava: true,
+	}
+	files := []walker.FileInfo{
+		{Path: "src/Main.java", ParentPath: ".", IsDir: false},
+		{Path: "README.md", ParentPath: ".", IsDir: false},
+	}
+
+	// Act
+	violations := rule.Check(files, make(map[string]*walker.DirInfo))
+
+	// Assert
+	if len(violations) == 0 {
+		t.Error("Expected violation for missing Java linter configuration")
+	}
+	if !containsMessage(violations, "No Java linter configuration found") {
+		t.Error("Expected violation message about missing Java linter configuration")
+	}
+}
+
+func TestLinterConfigRule_CppWithClangFormatConfig(t *testing.T) {
+	// Arrange
+	rule := &LinterConfigRule{
+		RequireCpp: true,
+	}
+	files := []walker.FileInfo{
+		{Path: "src/main.cpp", ParentPath: ".", IsDir: false},
+		{Path: ".clang-format", ParentPath: ".", IsDir: false},
+	}
+
+	// Act
+	violations := rule.Check(files, make(map[string]*walker.DirInfo))
+
+	// Assert
+	if len(violations) != 0 {
+		t.Errorf("Expected no violations with .clang-format, got %d violations", len(violations))
+	}
+}
+
+func TestLinterConfigRule_CppWithClangTidyConfig(t *testing.T) {
+	// Arrange
+	rule := &LinterConfigRule{
+		RequireCpp: true,
+	}
+	files := []walker.FileInfo{
+		{Path: "src/main.cpp", ParentPath: ".", IsDir: false},
+		{Path: ".clang-tidy", ParentPath: ".", IsDir: false},
+	}
+
+	// Act
+	violations := rule.Check(files, make(map[string]*walker.DirInfo))
+
+	// Assert
+	if len(violations) != 0 {
+		t.Errorf("Expected no violations with .clang-tidy, got %d violations", len(violations))
+	}
+}
+
+func TestLinterConfigRule_CppWithoutConfig(t *testing.T) {
+	// Arrange
+	rule := &LinterConfigRule{
+		RequireCpp: true,
+	}
+	files := []walker.FileInfo{
+		{Path: "src/main.cpp", ParentPath: ".", IsDir: false},
+		{Path: "README.md", ParentPath: ".", IsDir: false},
+	}
+
+	// Act
+	violations := rule.Check(files, make(map[string]*walker.DirInfo))
+
+	// Assert
+	if len(violations) == 0 {
+		t.Error("Expected violation for missing C++ linter configuration")
+	}
+	if !containsMessage(violations, "No C++ linter configuration found") {
+		t.Error("Expected violation message about missing C++ linter configuration")
+	}
+}
+
+func TestLinterConfigRule_CSharpWithEditorConfig(t *testing.T) {
+	// Arrange
+	rule := &LinterConfigRule{
+		RequireCSharp: true,
+	}
+	files := []walker.FileInfo{
+		{Path: "src/Program.cs", ParentPath: ".", IsDir: false},
+		{Path: ".editorconfig", ParentPath: ".", IsDir: false},
+	}
+
+	// Act
+	violations := rule.Check(files, make(map[string]*walker.DirInfo))
+
+	// Assert
+	if len(violations) != 0 {
+		t.Errorf("Expected no violations with .editorconfig, got %d violations", len(violations))
+	}
+}
+
+func TestLinterConfigRule_CSharpWithStyleCopConfig(t *testing.T) {
+	// Arrange
+	rule := &LinterConfigRule{
+		RequireCSharp: true,
+	}
+	files := []walker.FileInfo{
+		{Path: "src/Program.cs", ParentPath: ".", IsDir: false},
+		{Path: "stylecop.json", ParentPath: ".", IsDir: false},
+	}
+
+	// Act
+	violations := rule.Check(files, make(map[string]*walker.DirInfo))
+
+	// Assert
+	if len(violations) != 0 {
+		t.Errorf("Expected no violations with stylecop.json, got %d violations", len(violations))
+	}
+}
+
+func TestLinterConfigRule_CSharpWithoutConfig(t *testing.T) {
+	// Arrange
+	rule := &LinterConfigRule{
+		RequireCSharp: true,
+	}
+	files := []walker.FileInfo{
+		{Path: "src/Program.cs", ParentPath: ".", IsDir: false},
+		{Path: "README.md", ParentPath: ".", IsDir: false},
+	}
+
+	// Act
+	violations := rule.Check(files, make(map[string]*walker.DirInfo))
+
+	// Assert
+	if len(violations) == 0 {
+		t.Error("Expected violation for missing C# linter configuration")
+	}
+	if !containsMessage(violations, "No C# linter configuration found") {
+		t.Error("Expected violation message about missing C# linter configuration")
+	}
+}
+
+func TestLinterConfigRule_AllLanguagesIncludingNew(t *testing.T) {
+	// Arrange
+	rule := &LinterConfigRule{
+		RequirePython:     true,
+		RequireTypeScript: true,
+		RequireGo:         true,
+		RequireHTML:       true,
+		RequireCSS:        true,
+		RequireSQL:        true,
+		RequireRust:       true,
+		RequireMarkdown:   true,
+		RequireJava:       true,
+		RequireCpp:        true,
+		RequireCSharp:     true,
+	}
+	files := []walker.FileInfo{
+		{Path: "main.py", ParentPath: ".", IsDir: false},
+		{Path: "app.ts", ParentPath: ".", IsDir: false},
+		{Path: "server.go", ParentPath: ".", IsDir: false},
+		{Path: "index.html", ParentPath: ".", IsDir: false},
+		{Path: "styles.css", ParentPath: ".", IsDir: false},
+		{Path: "query.sql", ParentPath: ".", IsDir: false},
+		{Path: "lib.rs", ParentPath: ".", IsDir: false},
+		{Path: "README.md", ParentPath: ".", IsDir: false},
+		{Path: "Main.java", ParentPath: ".", IsDir: false},
+		{Path: "main.cpp", ParentPath: ".", IsDir: false},
+		{Path: "Program.cs", ParentPath: ".", IsDir: false},
+		{Path: "pyproject.toml", ParentPath: ".", IsDir: false},
+		{Path: ".eslintrc.json", ParentPath: ".", IsDir: false},
+		{Path: ".golangci.yml", ParentPath: ".", IsDir: false},
+		{Path: ".htmlhintrc", ParentPath: ".", IsDir: false},
+		{Path: ".stylelintrc.json", ParentPath: ".", IsDir: false},
+		{Path: ".sqlfluff", ParentPath: ".", IsDir: false},
+		{Path: "rustfmt.toml", ParentPath: ".", IsDir: false},
+		{Path: ".markdownlint.json", ParentPath: ".", IsDir: false},
+		{Path: "checkstyle.xml", ParentPath: ".", IsDir: false},
+		{Path: ".clang-format", ParentPath: ".", IsDir: false},
+		{Path: ".editorconfig", ParentPath: ".", IsDir: false},
+	}
+
+	// Act
+	violations := rule.Check(files, make(map[string]*walker.DirInfo))
+
+	// Assert
+	if len(violations) != 0 {
+		t.Errorf("Expected no violations with all linter configs present, got %d violations", len(violations))
+	}
+}
+
+func TestLinterConfigRule_SuggestionsPresent(t *testing.T) {
+	// Arrange
+	rule := &LinterConfigRule{
+		RequireMarkdown: true,
+	}
+	files := []walker.FileInfo{
+		{Path: "README.md", ParentPath: ".", IsDir: false},
+	}
+
+	// Act
+	violations := rule.Check(files, make(map[string]*walker.DirInfo))
+
+	// Assert
+	if len(violations) == 0 {
+		t.Error("Expected violation for missing Markdown linter configuration")
+	}
+	if len(violations) > 0 && len(violations[0].Suggestions) == 0 {
+		t.Error("Expected suggestions to be present in violation")
+	}
+	if len(violations) > 0 && violations[0].Expected == "" {
+		t.Error("Expected 'Expected' field to be populated in violation")
+	}
+	if len(violations) > 0 && violations[0].Actual == "" {
+		t.Error("Expected 'Actual' field to be populated in violation")
+	}
+}
