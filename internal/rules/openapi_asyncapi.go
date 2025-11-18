@@ -10,23 +10,23 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// APISpecRule enforces the presence of API specifications for REST and event-driven systems.
+// OpenAPIAsyncAPIRule enforces the presence of API specifications for REST and event-driven systems.
 // It checks for:
 // - OpenAPI/Swagger specifications for REST endpoints
 // - AsyncAPI specifications for event-driven/asynchronous systems
-type APISpecRule struct {
+type OpenAPIAsyncAPIRule struct {
 	RequireOpenAPI  bool     `yaml:"require-openapi"`
 	RequireAsyncAPI bool     `yaml:"require-asyncapi"`
 	CustomSpecs     []string `yaml:"custom-specs"`
 }
 
 // Name returns the rule name
-func (r *APISpecRule) Name() string {
+func (r *OpenAPIAsyncAPIRule) Name() string {
 	return "api-spec"
 }
 
 // Check validates API specification requirements
-func (r *APISpecRule) Check(files []walker.FileInfo, dirs map[string]*walker.DirInfo) []Violation {
+func (r *OpenAPIAsyncAPIRule) Check(files []walker.FileInfo, dirs map[string]*walker.DirInfo) []Violation {
 	var violations []Violation
 
 	// Detect if the project uses REST endpoints
@@ -61,7 +61,7 @@ func (r *APISpecRule) Check(files []walker.FileInfo, dirs map[string]*walker.Dir
 }
 
 // detectRESTEndpoints detects if the project uses REST endpoints
-func (r *APISpecRule) detectRESTEndpoints(files []walker.FileInfo) bool {
+func (r *OpenAPIAsyncAPIRule) detectRESTEndpoints(files []walker.FileInfo) bool {
 	// REST endpoint indicators by language
 	restIndicators := map[string][]string{
 		// Go
@@ -144,7 +144,7 @@ func (r *APISpecRule) detectRESTEndpoints(files []walker.FileInfo) bool {
 }
 
 // detectEventDrivenPatterns detects if the project uses event-driven patterns
-func (r *APISpecRule) detectEventDrivenPatterns(files []walker.FileInfo) bool {
+func (r *OpenAPIAsyncAPIRule) detectEventDrivenPatterns(files []walker.FileInfo) bool {
 	// Event-driven indicators by language
 	eventIndicators := map[string][]string{
 		// Go
@@ -210,7 +210,7 @@ func (r *APISpecRule) detectEventDrivenPatterns(files []walker.FileInfo) bool {
 }
 
 // detectPatterns checks if any files contain the specified patterns
-func (r *APISpecRule) detectPatterns(files []walker.FileInfo, patterns map[string][]string) bool {
+func (r *OpenAPIAsyncAPIRule) detectPatterns(files []walker.FileInfo, patterns map[string][]string) bool {
 	for _, file := range files {
 		if file.IsDir {
 			continue
@@ -240,7 +240,7 @@ func (r *APISpecRule) detectPatterns(files []walker.FileInfo, patterns map[strin
 }
 
 // hasOpenAPISpec checks if OpenAPI specification files exist
-func (r *APISpecRule) hasOpenAPISpec(files []walker.FileInfo) bool {
+func (r *OpenAPIAsyncAPIRule) hasOpenAPISpec(files []walker.FileInfo) bool {
 	openAPIFiles := []string{
 		"openapi.yaml",
 		"openapi.yml",
@@ -273,7 +273,7 @@ func (r *APISpecRule) hasOpenAPISpec(files []walker.FileInfo) bool {
 }
 
 // hasAsyncAPISpec checks if AsyncAPI specification files exist
-func (r *APISpecRule) hasAsyncAPISpec(files []walker.FileInfo) bool {
+func (r *OpenAPIAsyncAPIRule) hasAsyncAPISpec(files []walker.FileInfo) bool {
 	asyncAPIFiles := []string{
 		"asyncapi.yaml",
 		"asyncapi.yml",
@@ -300,7 +300,7 @@ func (r *APISpecRule) hasAsyncAPISpec(files []walker.FileInfo) bool {
 }
 
 // isOpenAPISpec verifies if a file is a valid OpenAPI specification
-func (r *APISpecRule) isOpenAPISpec(path string) bool {
+func (r *OpenAPIAsyncAPIRule) isOpenAPISpec(path string) bool {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return false
@@ -328,7 +328,7 @@ func (r *APISpecRule) isOpenAPISpec(path string) bool {
 }
 
 // isAsyncAPISpec verifies if a file is a valid AsyncAPI specification
-func (r *APISpecRule) isAsyncAPISpec(path string) bool {
+func (r *OpenAPIAsyncAPIRule) isAsyncAPISpec(path string) bool {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return false
@@ -350,22 +350,22 @@ func (r *APISpecRule) isAsyncAPISpec(path string) bool {
 }
 
 // formatMissingOpenAPIMessage creates a detailed error message for missing OpenAPI specification
-func (r *APISpecRule) formatMissingOpenAPIMessage() string {
+func (r *OpenAPIAsyncAPIRule) formatMissingOpenAPIMessage() string {
 	return "REST endpoints detected but no OpenAPI/Swagger specification found. " +
 		"Expected one of: openapi.yaml, openapi.yml, openapi.json, swagger.yaml, swagger.yml, swagger.json. " +
 		"OpenAPI specifications enable design-by-contract for REST APIs and improve API documentation."
 }
 
 // formatMissingAsyncAPIMessage creates a detailed error message for missing AsyncAPI specification
-func (r *APISpecRule) formatMissingAsyncAPIMessage() string {
+func (r *OpenAPIAsyncAPIRule) formatMissingAsyncAPIMessage() string {
 	return "Event-driven/asynchronous patterns detected but no AsyncAPI specification found. " +
 		"Expected one of: asyncapi.yaml, asyncapi.yml, asyncapi.json. " +
 		"AsyncAPI is designed for message brokers and event streams, enabling design-by-contract for async systems."
 }
 
-// NewAPISpecRule creates a new APISpecRule
-func NewAPISpecRule(config APISpecRule) *APISpecRule {
-	return &APISpecRule{
+// NewOpenAPIAsyncAPIRule creates a new OpenAPIAsyncAPIRule
+func NewOpenAPIAsyncAPIRule(config OpenAPIAsyncAPIRule) *OpenAPIAsyncAPIRule {
+	return &OpenAPIAsyncAPIRule{
 		RequireOpenAPI:  config.RequireOpenAPI,
 		RequireAsyncAPI: config.RequireAsyncAPI,
 		CustomSpecs:     config.CustomSpecs,

@@ -174,7 +174,7 @@ func (l *Linter) addComplexRules(rulesList *[]rules.Rule, importGraph *graph.Imp
 	l.addLinterConfigRule(rulesList)
 
 	// API specification rule
-	l.addAPISpecRule(rulesList)
+	l.addOpenAPIAsyncAPIRule(rulesList)
 
 	// Contract framework rule
 	l.addContractFrameworkRule(rulesList)
@@ -453,15 +453,15 @@ func (l *Linter) getStringMapFromMap(m map[string]interface{}, key string) map[s
 	return nil
 }
 
-// addAPISpecRule adds the API specification rule
-func (l *Linter) addAPISpecRule(rulesList *[]rules.Rule) {
+// addOpenAPIAsyncAPIRule adds the API specification rule
+func (l *Linter) addOpenAPIAsyncAPIRule(rulesList *[]rules.Rule) {
 	if apiSpecConfig, ok := l.getRuleConfig("api-spec"); ok {
 		if configMap, ok := apiSpecConfig.(map[string]interface{}); ok {
 			requireOpenAPI := l.getBoolFromMap(configMap, "require-openapi")
 			requireAsyncAPI := l.getBoolFromMap(configMap, "require-asyncapi")
 			customSpecs := l.getStringSliceFromMap(configMap, "custom-specs")
 
-			rule := rules.NewAPISpecRule(rules.APISpecRule{
+			rule := rules.NewOpenAPIAsyncAPIRule(rules.OpenAPIAsyncAPIRule{
 				RequireOpenAPI:  requireOpenAPI,
 				RequireAsyncAPI: requireAsyncAPI,
 				CustomSpecs:     customSpecs,

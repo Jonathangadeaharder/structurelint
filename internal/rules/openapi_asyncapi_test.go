@@ -8,8 +8,8 @@ import (
 	"github.com/structurelint/structurelint/internal/walker"
 )
 
-// TestAPISpecRule_RESTEndpoints tests OpenAPI enforcement for REST endpoints
-func TestAPISpecRule_RESTEndpoints(t *testing.T) {
+// TestOpenAPIAsyncAPIRule_RESTEndpoints tests OpenAPI enforcement for REST endpoints
+func TestOpenAPIAsyncAPIRule_RESTEndpoints(t *testing.T) {
 	tests := []struct {
 		name           string
 		setupFiles     func(dir string) ([]walker.FileInfo, error)
@@ -155,7 +155,7 @@ def calculate(a, b):
 				t.Fatalf("Failed to setup test files: %v", err)
 			}
 
-			rule := NewAPISpecRule(APISpecRule{
+			rule := NewOpenAPIAsyncAPIRule(OpenAPIAsyncAPIRule{
 				RequireOpenAPI: tt.requireOpenAPI,
 			})
 
@@ -172,8 +172,8 @@ def calculate(a, b):
 	}
 }
 
-// TestAPISpecRule_EventDrivenPatterns tests AsyncAPI enforcement for event-driven systems
-func TestAPISpecRule_EventDrivenPatterns(t *testing.T) {
+// TestOpenAPIAsyncAPIRule_EventDrivenPatterns tests AsyncAPI enforcement for event-driven systems
+func TestOpenAPIAsyncAPIRule_EventDrivenPatterns(t *testing.T) {
 	tests := []struct {
 		name            string
 		setupFiles      func(dir string) ([]walker.FileInfo, error)
@@ -286,7 +286,7 @@ func Add(a, b int) int {
 				t.Fatalf("Failed to setup test files: %v", err)
 			}
 
-			rule := NewAPISpecRule(APISpecRule{
+			rule := NewOpenAPIAsyncAPIRule(OpenAPIAsyncAPIRule{
 				RequireAsyncAPI: tt.requireAsyncAPI,
 			})
 
@@ -303,10 +303,10 @@ func Add(a, b int) int {
 	}
 }
 
-// TestAPISpecRule_Name tests the rule name
-func TestAPISpecRule_Name(t *testing.T) {
+// TestOpenAPIAsyncAPIRule_Name tests the rule name
+func TestOpenAPIAsyncAPIRule_Name(t *testing.T) {
 	// Arrange
-	rule := NewAPISpecRule(APISpecRule{})
+	rule := NewOpenAPIAsyncAPIRule(OpenAPIAsyncAPIRule{})
 
 	// Act
 	name := rule.Name()
