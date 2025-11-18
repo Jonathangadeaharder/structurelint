@@ -24,8 +24,8 @@ func New() *Linter {
 
 // Lint runs the linter on the given path
 func (l *Linter) Lint(path string) ([]Violation, error) {
-	// Load configuration
-	configs, err := config.FindConfigs(path)
+	// Load configuration with auto-loaded .gitignore patterns
+	configs, err := config.FindConfigsWithGitignore(path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load config: %w", err)
 	}
@@ -126,9 +126,14 @@ func (l *Linter) addComplexRules(rulesList *[]rules.Rule, importGraph *graph.Imp
 	if cognitiveComplexity, ok := l.getRuleConfig("max-cognitive-complexity"); ok {
 		if complexityMap, ok := cognitiveComplexity.(map[string]interface{}); ok {
 			max := l.getIntFromMap(complexityMap, "max")
+			testMax := l.getIntFromMap(complexityMap, "test-max")
 			filePatterns := l.getStringSliceFromMap(complexityMap, "file-patterns")
 			if max > 0 {
-				*rulesList = append(*rulesList, rules.NewMaxCognitiveComplexityRule(max, filePatterns))
+				rule := rules.NewMaxCognitiveComplexityRule(max, filePatterns)
+				if testMax > 0 {
+					rule = rule.WithTestMax(testMax)
+				}
+				*rulesList = append(*rulesList, rule)
 			}
 		}
 	}
@@ -152,8 +157,25 @@ func (l *Linter) addComplexRules(rulesList *[]rules.Rule, importGraph *graph.Imp
 			}
 		}
 
-		if _, ok := l.getRuleConfig("disallow-orphaned-files"); ok {
-			*rulesList = append(*rulesList, rules.NewOrphanedFilesRule(importGraph, l.config.Entrypoints))
+		if ruleConfig, ok := l.getRuleConfig("disallow-orphaned-files"); ok {
+			rule := rules.NewOrphanedFilesRule(importGraph, l.config.Entrypoints)
+
+			// Check for entry-point-patterns in the rule config
+			if configMap, ok := ruleConfig.(map[string]interface{}); ok {
+				if patterns, ok := configMap["entry-point-patterns"].([]interface{}); ok {
+					var entryPointPatterns []string
+					for _, p := range patterns {
+						if str, ok := p.(string); ok {
+							entryPointPatterns = append(entryPointPatterns, str)
+						}
+					}
+					if len(entryPointPatterns) > 0 {
+						rule = rule.WithEntryPointPatterns(entryPointPatterns)
+					}
+				}
+			}
+
+			*rulesList = append(*rulesList, rule)
 		}
 
 		if _, ok := l.getRuleConfig("disallow-unused-exports"); ok {
