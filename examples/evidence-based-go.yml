@@ -20,15 +20,19 @@ root: true
 
 rules:
   # ============================================================================
-  # DEPRECATED: Traditional Cyclomatic Complexity
+  # BREAKING CHANGE: Cyclomatic Complexity REMOVED
   # ============================================================================
-  # Evidence shows LOC often outperforms CC in defect prediction
-  # CC deviates considerably from programmer perception of complexity
-  # Recommendation: Use max-cognitive-complexity instead
-  max-cyclomatic-complexity: 0  # Disabled (deprecated)
+  # max-cyclomatic-complexity has been completely removed (will cause error if used)
+  # Evidence shows:
+  # - LOC often outperforms CC in defect prediction
+  # - CC deviates considerably from programmer perception of complexity
+  # - Cognitive Complexity has r=0.54 correlation vs CC's weak/unsatisfactory
+  #
+  # Migration: Replace max-cyclomatic-complexity with max-cognitive-complexity
+  # ============================================================================
 
   # ============================================================================
-  # RECOMMENDED: Evidence-Based Complexity Metrics
+  # Evidence-Based Complexity Metrics (REQUIRED)
   # ============================================================================
 
   # Cognitive Complexity - Best predictor of code understandability

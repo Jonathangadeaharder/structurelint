@@ -93,16 +93,15 @@ func (a *MultiLanguageAnalyzer) analyzePythonFile(filePath string) (FileMetrics,
 		return FileMetrics{}, err
 	}
 
-	// Execute Python script
+	// BREAKING CHANGE: Requires python3 (no fallback)
+	// Install: pip3 install tree-sitter
 	cmd := exec.Command("python3", scriptPath, a.metricType, filePath)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		// Try 'python' if 'python3' fails
-		cmd = exec.Command("python", scriptPath, a.metricType, filePath)
-		output, err = cmd.CombinedOutput()
-		if err != nil {
-			return FileMetrics{}, fmt.Errorf("failed to execute Python metrics script: %w\nOutput: %s", err, string(output))
-		}
+		return FileMetrics{}, fmt.Errorf("failed to execute Python metrics script (requires python3 with tree-sitter):\n"+
+			"  Install: pip3 install tree-sitter\n"+
+			"  Error: %w\n"+
+			"  Output: %s", err, string(output))
 	}
 
 	// Parse JSON output
@@ -148,16 +147,14 @@ func (a *MultiLanguageAnalyzer) analyzeJavaFile(filePath string) (FileMetrics, e
 		return FileMetrics{}, err
 	}
 
-	// Execute Python script
+	// BREAKING CHANGE: Requires python3 with tree-sitter-java (no fallback)
 	cmd := exec.Command("python3", scriptPath, a.metricType, filePath)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		// Try 'python' if 'python3' fails
-		cmd = exec.Command("python", scriptPath, a.metricType, filePath)
-		output, err = cmd.CombinedOutput()
-		if err != nil {
-			return FileMetrics{}, fmt.Errorf("failed to execute Java metrics script: %w\nOutput: %s", err, string(output))
-		}
+		return FileMetrics{}, fmt.Errorf("failed to execute Java metrics script (requires python3 with tree-sitter-java):\n"+
+			"  Install: pip3 install tree-sitter tree-sitter-java\n"+
+			"  Error: %w\n"+
+			"  Output: %s", err, string(output))
 	}
 
 	// Parse JSON output
@@ -178,16 +175,14 @@ func (a *MultiLanguageAnalyzer) analyzeCppFile(filePath string) (FileMetrics, er
 		return FileMetrics{}, err
 	}
 
-	// Execute Python script
+	// BREAKING CHANGE: Requires python3 with tree-sitter-cpp (no fallback)
 	cmd := exec.Command("python3", scriptPath, a.metricType, filePath)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		// Try 'python' if 'python3' fails
-		cmd = exec.Command("python", scriptPath, a.metricType, filePath)
-		output, err = cmd.CombinedOutput()
-		if err != nil {
-			return FileMetrics{}, fmt.Errorf("failed to execute C++ metrics script: %w\nOutput: %s", err, string(output))
-		}
+		return FileMetrics{}, fmt.Errorf("failed to execute C++ metrics script (requires python3 with tree-sitter-cpp):\n"+
+			"  Install: pip3 install tree-sitter tree-sitter-cpp\n"+
+			"  Error: %w\n"+
+			"  Output: %s", err, string(output))
 	}
 
 	// Parse JSON output
@@ -208,16 +203,14 @@ func (a *MultiLanguageAnalyzer) analyzeCSharpFile(filePath string) (FileMetrics,
 		return FileMetrics{}, err
 	}
 
-	// Execute Python script
+	// BREAKING CHANGE: Requires python3 with tree-sitter-c-sharp (no fallback)
 	cmd := exec.Command("python3", scriptPath, a.metricType, filePath)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		// Try 'python' if 'python3' fails
-		cmd = exec.Command("python", scriptPath, a.metricType, filePath)
-		output, err = cmd.CombinedOutput()
-		if err != nil {
-			return FileMetrics{}, fmt.Errorf("failed to execute C# metrics script: %w\nOutput: %s", err, string(output))
-		}
+		return FileMetrics{}, fmt.Errorf("failed to execute C# metrics script (requires python3 with tree-sitter-c-sharp):\n"+
+			"  Install: pip3 install tree-sitter tree-sitter-c-sharp\n"+
+			"  Error: %w\n"+
+			"  Output: %s", err, string(output))
 	}
 
 	// Parse JSON output
