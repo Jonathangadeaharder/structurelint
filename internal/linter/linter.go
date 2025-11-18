@@ -118,7 +118,7 @@ func (l *Linter) addComplexRules(rulesList *[]rules.Rule, importGraph *graph.Imp
 	// Use max-cognitive-complexity instead (scientifically superior metric)
 	if _, ok := l.getRuleConfig("max-cyclomatic-complexity"); ok {
 		panic("BREAKING CHANGE: 'max-cyclomatic-complexity' rule has been removed.\n" +
-			"Use 'max-cognitive-complexity' instead - it's scientifically superior (r=0.54 vs weak correlation).\n" +
+			"Use 'max-cognitive-complexity' instead - it's scientifically superior (r=0.54 vs cyclomatic's weak correlation).\n" +
 			"See: https://github.com/structurelint/structurelint#phase-5-evidence-based-metrics")
 	}
 

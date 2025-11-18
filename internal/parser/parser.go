@@ -404,13 +404,27 @@ func (p *Parser) parseCppExports(filePath string) ([]Export, error) {
 		}
 
 		// Track multi-line comments
-		if strings.Contains(trimmed, "/*") {
+		// Handle inline block comments like: struct Foo { /* comment */ };
+		if strings.Contains(trimmed, "/*") && strings.Contains(trimmed, "*/") {
+			// Inline block comment - remove it and process the rest
+			start := strings.Index(trimmed, "/*")
+			end := strings.Index(trimmed, "*/") + 2
+			trimmed = trimmed[:start] + trimmed[end:]
+			trimmed = strings.TrimSpace(trimmed)
+			if trimmed == "" {
+				continue
+			}
+			// Fall through to process the rest of the line
+		} else if strings.Contains(trimmed, "/*") {
+			// Start of multi-line comment
 			inComment = true
-		}
-		if strings.Contains(trimmed, "*/") {
+			continue
+		} else if strings.Contains(trimmed, "*/") {
+			// End of multi-line comment
 			inComment = false
 			continue
 		}
+
 		if inComment {
 			continue
 		}
@@ -473,18 +487,29 @@ func (p *Parser) parseCSharp(filePath string) ([]Import, error) {
 		if match := usingRegex.FindStringSubmatch(line); match != nil {
 			importPath := match[1]
 
-			// Determine if relative (same namespace prefix)
+			// Determine if relative (same namespace hierarchy)
+			// Only consider exact namespace prefix matches as relative
+			// to avoid false positives with third-party libraries
 			isRelative := false
 			if currentNamespace != "" && strings.HasPrefix(importPath, currentNamespace+".") {
 				isRelative = true
 			}
 
-			// Also consider imports within the same root namespace as relative
+			// Also check if it's in the same root namespace as the current file
+			// but exclude common third-party and system namespaces
 			if currentNamespace != "" && !isRelative {
-				// Extract root namespace (first part before first dot)
+				commonExternalNamespaces := map[string]bool{
+					"System": true, "Microsoft": true, "Newtonsoft": true,
+					"AutoMapper": true, "Serilog": true, "NLog": true,
+					"Xunit": true, "NUnit": true, "Moq": true,
+					"FluentAssertions": true, "MediatR": true,
+				}
+
 				currentRoot := strings.Split(currentNamespace, ".")[0]
 				importRoot := strings.Split(importPath, ".")[0]
-				if currentRoot == importRoot && currentRoot != "System" {
+
+				// Only mark as relative if same root AND not a known external namespace
+				if currentRoot == importRoot && !commonExternalNamespaces[currentRoot] {
 					isRelative = true
 				}
 			}

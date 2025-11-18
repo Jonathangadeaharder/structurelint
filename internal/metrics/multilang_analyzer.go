@@ -52,7 +52,7 @@ func (a *MultiLanguageAnalyzer) AnalyzeFileByPath(filePath string) (FileMetrics,
 		return a.analyzeJavaScriptFile(filePath)
 	case "java":
 		return a.analyzeJavaFile(filePath)
-	case "cpp":
+	case "cpp", "c":
 		return a.analyzeCppFile(filePath)
 	case "csharp":
 		return a.analyzeCSharpFile(filePath)
@@ -73,6 +73,7 @@ func detectLanguage(filePath string) string {
 		".cpp":  "cpp",
 		".cc":   "cpp",
 		".cxx":  "cpp",
+		".c":    "c",
 		".h":    "cpp",
 		".hpp":  "cpp",
 		".cs":   "csharp",

@@ -199,12 +199,35 @@ class HalsteadCalculator:
 
     def _get_function_name(self, node: Node) -> str:
         """Extract function name from function_definition node."""
+        # Look for function_declarator
         for child in node.children:
             if child.type == 'function_declarator':
-                for subchild in child.children:
-                    if subchild.type == 'identifier' or subchild.type == 'field_identifier':
-                        return self.source[subchild.start_byte:subchild.end_byte].decode('utf-8')
+                return self._extract_declarator_name(child)
         return 'unknown'
+
+    def _extract_declarator_name(self, node: Node) -> str:
+        """Extract name from declarator."""
+        for child in node.children:
+            if child.type == 'identifier':
+                return self.source[child.start_byte:child.end_byte].decode('utf-8')
+            elif child.type == 'field_identifier':
+                return self.source[child.start_byte:child.end_byte].decode('utf-8')
+            elif child.type in ['qualified_identifier', 'scoped_identifier']:
+                # For scoped names like MyClass::method
+                parts = []
+                self._extract_scoped_name(child, parts)
+                return '::'.join(parts)
+        return 'unknown'
+
+    def _extract_scoped_name(self, node: Node, parts: List[str]):
+        """Recursively extract scoped identifier parts."""
+        for child in node.children:
+            if child.type == 'identifier' or child.type == 'field_identifier':
+                parts.append(self.source[child.start_byte:child.end_byte].decode('utf-8'))
+            elif child.type in ['namespace_identifier', 'type_identifier']:
+                parts.append(self.source[child.start_byte:child.end_byte].decode('utf-8'))
+            else:
+                self._extract_scoped_name(child, parts)
 
     def _count_operators_operands(self, node: Node, operators: Dict, operands: Dict):
         """Recursively count operators and operands."""

@@ -1,8 +1,5 @@
 package com.example.calculator;
 
-import java.util.List;
-import com.example.utils.MathHelper;
-
 public class Calculator {
     public int add(int a, int b) {
         if (a > 0 && b > 0) {
