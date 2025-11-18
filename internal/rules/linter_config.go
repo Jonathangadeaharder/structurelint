@@ -16,10 +16,18 @@ import (
 // - Python: mypy, black, ruff, pylint, flake8
 // - TypeScript: ESLint, Prettier, TSConfig
 // - Go: golangci-lint, gofmt, go vet
+// - HTML: HTMLHint, html-validate, prettier
+// - CSS: stylelint, prettier
+// - SQL: sqlfluff, sqlfmt
+// - Rust: clippy, rustfmt
 type LinterConfigRule struct {
 	RequirePython     bool     `yaml:"require-python"`
 	RequireTypeScript bool     `yaml:"require-typescript"`
 	RequireGo         bool     `yaml:"require-go"`
+	RequireHTML       bool     `yaml:"require-html"`
+	RequireCSS        bool     `yaml:"require-css"`
+	RequireSQL        bool     `yaml:"require-sql"`
+	RequireRust       bool     `yaml:"require-rust"`
 	CustomLinters     []string `yaml:"custom-linters"`
 }
 
@@ -61,6 +69,26 @@ func (r *LinterConfigRule) Check(files []walker.FileInfo, dirs map[string]*walke
 		violations = append(violations, goViolations...)
 	}
 
+	if r.RequireHTML && languages["html"] {
+		htmlViolations := r.checkLanguageLinters(files, linterConfigs["html"])
+		violations = append(violations, htmlViolations...)
+	}
+
+	if r.RequireCSS && languages["css"] {
+		cssViolations := r.checkLanguageLinters(files, linterConfigs["css"])
+		violations = append(violations, cssViolations...)
+	}
+
+	if r.RequireSQL && languages["sql"] {
+		sqlViolations := r.checkLanguageLinters(files, linterConfigs["sql"])
+		violations = append(violations, sqlViolations...)
+	}
+
+	if r.RequireRust && languages["rust"] {
+		rustViolations := r.checkLanguageLinters(files, linterConfigs["rust"])
+		violations = append(violations, rustViolations...)
+	}
+
 	return violations
 }
 
@@ -83,6 +111,14 @@ func (r *LinterConfigRule) detectLanguages(files []walker.FileInfo) map[string]b
 			languages["javascript"] = true
 		case ".go":
 			languages["go"] = true
+		case ".html", ".htm":
+			languages["html"] = true
+		case ".css", ".scss", ".sass", ".less":
+			languages["css"] = true
+		case ".sql":
+			languages["sql"] = true
+		case ".rs":
+			languages["rust"] = true
 		}
 	}
 
@@ -132,6 +168,54 @@ func (r *LinterConfigRule) getLinterConfigs() map[string]LinterConfig {
 				".github/workflows/*.yml", // Workflow with linting steps
 			},
 			WorkflowSteps: []string{"golangci-lint", "gofmt", "go vet", "go fmt"},
+		},
+		"html": {
+			Language: "HTML",
+			ConfigFiles: []string{
+				".htmlhintrc",         // HTMLHint config
+				".htmlvalidate.json",  // html-validate config
+				".prettierrc",         // Prettier (also handles HTML)
+				".prettierrc.json",
+				".prettierrc.js",
+				"prettier.config.js",
+				".github/workflows/*.yml", // Workflow with linting steps
+			},
+			WorkflowSteps: []string{"htmlhint", "html-validate", "prettier"},
+		},
+		"css": {
+			Language: "CSS",
+			ConfigFiles: []string{
+				".stylelintrc",        // Stylelint config (any format)
+				".stylelintrc.json",
+				".stylelintrc.js",
+				"stylelint.config.js",
+				".prettierrc",         // Prettier (also handles CSS)
+				".prettierrc.json",
+				".prettierrc.js",
+				"prettier.config.js",
+				".github/workflows/*.yml", // Workflow with linting steps
+			},
+			WorkflowSteps: []string{"stylelint", "prettier"},
+		},
+		"sql": {
+			Language: "SQL",
+			ConfigFiles: []string{
+				".sqlfluff",           // SQLFluff config
+				"setup.cfg",           // SQLFluff can use setup.cfg
+				"pyproject.toml",      // SQLFluff can use pyproject.toml
+				".github/workflows/*.yml", // Workflow with linting steps
+			},
+			WorkflowSteps: []string{"sqlfluff", "sqlfmt", "sql-lint"},
+		},
+		"rust": {
+			Language: "Rust",
+			ConfigFiles: []string{
+				"rustfmt.toml",        // rustfmt config
+				".rustfmt.toml",
+				"clippy.toml",         // clippy config
+				".github/workflows/*.yml", // Workflow with linting steps
+			},
+			WorkflowSteps: []string{"clippy", "rustfmt", "cargo clippy", "cargo fmt"},
 		},
 	}
 }
@@ -294,6 +378,10 @@ func NewLinterConfigRule(config LinterConfigRule) *LinterConfigRule {
 		RequirePython:     config.RequirePython,
 		RequireTypeScript: config.RequireTypeScript,
 		RequireGo:         config.RequireGo,
+		RequireHTML:       config.RequireHTML,
+		RequireCSS:        config.RequireCSS,
+		RequireSQL:        config.RequireSQL,
+		RequireRust:       config.RequireRust,
 		CustomLinters:     config.CustomLinters,
 	}
 }

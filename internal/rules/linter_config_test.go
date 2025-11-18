@@ -288,3 +288,224 @@ func TestLinterConfigRule_TsconfigJson(t *testing.T) {
 		t.Errorf("Expected no violations with tsconfig.json, got %d violations", len(violations))
 	}
 }
+
+func TestLinterConfigRule_HTMLWithHTMLHintConfig(t *testing.T) {
+	// Arrange
+	rule := &LinterConfigRule{
+		RequireHTML: true,
+	}
+	files := []walker.FileInfo{
+		{Path: "index.html", ParentPath: ".", IsDir: false},
+		{Path: ".htmlhintrc", ParentPath: ".", IsDir: false},
+	}
+
+	// Act
+	violations := rule.Check(files, make(map[string]*walker.DirInfo))
+
+	// Assert
+	if len(violations) != 0 {
+		t.Errorf("Expected no violations with .htmlhintrc, got %d violations", len(violations))
+	}
+}
+
+func TestLinterConfigRule_HTMLWithoutConfig(t *testing.T) {
+	// Arrange
+	rule := &LinterConfigRule{
+		RequireHTML: true,
+	}
+	files := []walker.FileInfo{
+		{Path: "index.html", ParentPath: ".", IsDir: false},
+		{Path: "README.md", ParentPath: ".", IsDir: false},
+	}
+
+	// Act
+	violations := rule.Check(files, make(map[string]*walker.DirInfo))
+
+	// Assert
+	if len(violations) == 0 {
+		t.Error("Expected violation for missing HTML linter configuration")
+	}
+	if !containsMessage(violations, "No HTML linter configuration found") {
+		t.Error("Expected violation message about missing HTML linter configuration")
+	}
+}
+
+func TestLinterConfigRule_CSSWithStylelintConfig(t *testing.T) {
+	// Arrange
+	rule := &LinterConfigRule{
+		RequireCSS: true,
+	}
+	files := []walker.FileInfo{
+		{Path: "styles.css", ParentPath: ".", IsDir: false},
+		{Path: ".stylelintrc.json", ParentPath: ".", IsDir: false},
+	}
+
+	// Act
+	violations := rule.Check(files, make(map[string]*walker.DirInfo))
+
+	// Assert
+	if len(violations) != 0 {
+		t.Errorf("Expected no violations with .stylelintrc.json, got %d violations", len(violations))
+	}
+}
+
+func TestLinterConfigRule_CSSWithoutConfig(t *testing.T) {
+	// Arrange
+	rule := &LinterConfigRule{
+		RequireCSS: true,
+	}
+	files := []walker.FileInfo{
+		{Path: "styles.css", ParentPath: ".", IsDir: false},
+		{Path: "package.json", ParentPath: ".", IsDir: false},
+	}
+
+	// Act
+	violations := rule.Check(files, make(map[string]*walker.DirInfo))
+
+	// Assert
+	if len(violations) == 0 {
+		t.Error("Expected violation for missing CSS linter configuration")
+	}
+	if !containsMessage(violations, "No CSS linter configuration found") {
+		t.Error("Expected violation message about missing CSS linter configuration")
+	}
+}
+
+func TestLinterConfigRule_SQLWithSQLFluffConfig(t *testing.T) {
+	// Arrange
+	rule := &LinterConfigRule{
+		RequireSQL: true,
+	}
+	files := []walker.FileInfo{
+		{Path: "query.sql", ParentPath: ".", IsDir: false},
+		{Path: ".sqlfluff", ParentPath: ".", IsDir: false},
+	}
+
+	// Act
+	violations := rule.Check(files, make(map[string]*walker.DirInfo))
+
+	// Assert
+	if len(violations) != 0 {
+		t.Errorf("Expected no violations with .sqlfluff, got %d violations", len(violations))
+	}
+}
+
+func TestLinterConfigRule_SQLWithoutConfig(t *testing.T) {
+	// Arrange
+	rule := &LinterConfigRule{
+		RequireSQL: true,
+	}
+	files := []walker.FileInfo{
+		{Path: "query.sql", ParentPath: ".", IsDir: false},
+		{Path: "README.md", ParentPath: ".", IsDir: false},
+	}
+
+	// Act
+	violations := rule.Check(files, make(map[string]*walker.DirInfo))
+
+	// Assert
+	if len(violations) == 0 {
+		t.Error("Expected violation for missing SQL linter configuration")
+	}
+	if !containsMessage(violations, "No SQL linter configuration found") {
+		t.Error("Expected violation message about missing SQL linter configuration")
+	}
+}
+
+func TestLinterConfigRule_RustWithRustfmtConfig(t *testing.T) {
+	// Arrange
+	rule := &LinterConfigRule{
+		RequireRust: true,
+	}
+	files := []walker.FileInfo{
+		{Path: "main.rs", ParentPath: ".", IsDir: false},
+		{Path: "rustfmt.toml", ParentPath: ".", IsDir: false},
+	}
+
+	// Act
+	violations := rule.Check(files, make(map[string]*walker.DirInfo))
+
+	// Assert
+	if len(violations) != 0 {
+		t.Errorf("Expected no violations with rustfmt.toml, got %d violations", len(violations))
+	}
+}
+
+func TestLinterConfigRule_RustWithoutConfig(t *testing.T) {
+	// Arrange
+	rule := &LinterConfigRule{
+		RequireRust: true,
+	}
+	files := []walker.FileInfo{
+		{Path: "main.rs", ParentPath: ".", IsDir: false},
+		{Path: "Cargo.toml", ParentPath: ".", IsDir: false},
+	}
+
+	// Act
+	violations := rule.Check(files, make(map[string]*walker.DirInfo))
+
+	// Assert
+	if len(violations) == 0 {
+		t.Error("Expected violation for missing Rust linter configuration")
+	}
+	if !containsMessage(violations, "No Rust linter configuration found") {
+		t.Error("Expected violation message about missing Rust linter configuration")
+	}
+}
+
+func TestLinterConfigRule_NoHTMLFiles(t *testing.T) {
+	// Arrange
+	rule := &LinterConfigRule{
+		RequireHTML: true,
+	}
+	files := []walker.FileInfo{
+		{Path: "main.go", ParentPath: ".", IsDir: false},
+		{Path: "README.md", ParentPath: ".", IsDir: false},
+	}
+
+	// Act
+	violations := rule.Check(files, make(map[string]*walker.DirInfo))
+
+	// Assert
+	// Should have no violations since there are no HTML files
+	if len(violations) != 0 {
+		t.Errorf("Expected no violations when no HTML files exist, got %d violations", len(violations))
+	}
+}
+
+func TestLinterConfigRule_AllLanguages(t *testing.T) {
+	// Arrange
+	rule := &LinterConfigRule{
+		RequirePython:     true,
+		RequireTypeScript: true,
+		RequireGo:         true,
+		RequireHTML:       true,
+		RequireCSS:        true,
+		RequireSQL:        true,
+		RequireRust:       true,
+	}
+	files := []walker.FileInfo{
+		{Path: "main.py", ParentPath: ".", IsDir: false},
+		{Path: "app.ts", ParentPath: ".", IsDir: false},
+		{Path: "server.go", ParentPath: ".", IsDir: false},
+		{Path: "index.html", ParentPath: ".", IsDir: false},
+		{Path: "styles.css", ParentPath: ".", IsDir: false},
+		{Path: "query.sql", ParentPath: ".", IsDir: false},
+		{Path: "lib.rs", ParentPath: ".", IsDir: false},
+		{Path: "pyproject.toml", ParentPath: ".", IsDir: false},
+		{Path: ".eslintrc.json", ParentPath: ".", IsDir: false},
+		{Path: ".golangci.yml", ParentPath: ".", IsDir: false},
+		{Path: ".htmlhintrc", ParentPath: ".", IsDir: false},
+		{Path: ".stylelintrc.json", ParentPath: ".", IsDir: false},
+		{Path: ".sqlfluff", ParentPath: ".", IsDir: false},
+		{Path: "rustfmt.toml", ParentPath: ".", IsDir: false},
+	}
+
+	// Act
+	violations := rule.Check(files, make(map[string]*walker.DirInfo))
+
+	// Assert
+	if len(violations) != 0 {
+		t.Errorf("Expected no violations with all linter configs present, got %d violations", len(violations))
+	}
+}

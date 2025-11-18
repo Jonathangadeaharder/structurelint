@@ -258,12 +258,20 @@ func (l *Linter) addLinterConfigRule(rulesList *[]rules.Rule) {
 			requirePython := l.getBoolFromMap(configMap, "require-python")
 			requireTypeScript := l.getBoolFromMap(configMap, "require-typescript")
 			requireGo := l.getBoolFromMap(configMap, "require-go")
+			requireHTML := l.getBoolFromMap(configMap, "require-html")
+			requireCSS := l.getBoolFromMap(configMap, "require-css")
+			requireSQL := l.getBoolFromMap(configMap, "require-sql")
+			requireRust := l.getBoolFromMap(configMap, "require-rust")
 			customLinters := l.getStringSliceFromMap(configMap, "custom-linters")
 
 			rule := rules.NewLinterConfigRule(rules.LinterConfigRule{
 				RequirePython:     requirePython,
 				RequireTypeScript: requireTypeScript,
 				RequireGo:         requireGo,
+				RequireHTML:       requireHTML,
+				RequireCSS:        requireCSS,
+				RequireSQL:        requireSQL,
+				RequireRust:       requireRust,
 				CustomLinters:     customLinters,
 			})
 			*rulesList = append(*rulesList, rule)
