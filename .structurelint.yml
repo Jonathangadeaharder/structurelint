@@ -50,6 +50,8 @@ rules:
   test-location:
     integration-test-dir: "tests"    # Allow integration tests in tests/ folder
     allow-adjacent: true             # Allow tests next to source code
+    file-patterns:                   # Explicitly scope to Go test files only
+      - "**/*_test.go"
     exemptions:
       - "testdata/**"
       - "internal/rules/rules_test.go"  # Integration test for all rules

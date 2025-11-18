@@ -1,0 +1,75 @@
+# Example Test/CI Workflow for structurelint GitHub workflow enforcement
+#
+# This workflow runs automated tests on every push and pull request.
+# It demonstrates the minimum requirements for a test workflow.
+
+name: CI Tests
+
+# Trigger on push to main/master and all pull requests
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        go-version: ['1.20', '1.21']
+
+    steps:
+      # Checkout code
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Setup Go environment
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: ${{ matrix.go-version }}
+
+      # Cache dependencies
+      - name: Cache Go modules
+        uses: actions/cache@v3
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
+      # Install dependencies
+      - name: Download dependencies
+        run: go mod download
+
+      # Run tests
+      - name: Run tests
+        run: go test -v -race -coverprofile=coverage.txt -covermode=atomic ./...
+
+      # Upload coverage
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          files: ./coverage.txt
+          flags: unittests
+          name: codecov-umbrella
+
+  # Integration tests (optional but recommended)
+  integration:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    needs: test  # Run after unit tests pass
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.21'
+
+      - name: Run integration tests
+        run: go test -v -tags=integration ./...
