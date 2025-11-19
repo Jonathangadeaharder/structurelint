@@ -36,3 +36,6 @@ Thumbs.db
 
 # Repomix output
 repomix-output.txt
+
+# Auto-fix backup files
+*.backup
