@@ -31,6 +31,8 @@ func run() error {
 			return runClones(os.Args[2:])
 		case "fix":
 			return runFix(os.Args[2:])
+		case "tui":
+			return runTUI(os.Args[2:])
 		case "help":
 			if len(os.Args) > 2 {
 				switch os.Args[2] {
@@ -42,6 +44,9 @@ func run() error {
 					return nil
 				case "fix":
 					printFixHelp()
+					return nil
+				case "tui":
+					printTUIHelp()
 					return nil
 				}
 			}
@@ -182,6 +187,7 @@ Usage:
   structurelint graph [options]    Visualize dependency graphs
   structurelint clones [options]   Detect code clones (duplicated code)
   structurelint fix [options]      Auto-fix detected violations
+  structurelint tui [options]      Interactive terminal UI for fixing violations
   structurelint --init [path]      Generate configuration by analyzing project
   structurelint --version          Show version information
   structurelint --help             Show this help message
@@ -191,6 +197,7 @@ Commands:
   graph                        Visualize dependency graphs (see 'structurelint help graph')
   clones                       Detect code clones (see 'structurelint help clones')
   fix                          Auto-fix violations (see 'structurelint help fix')
+  tui                          Interactive terminal UI (see 'structurelint help tui')
 
 Options:
   -v, --version                Show version information
