@@ -1,5 +1,7 @@
 # Structurelint Examples
 
+## Overview
+
 This directory contains example configurations for common architectural patterns. Use these as templates for your own projects.
 
 ## Available Examples
