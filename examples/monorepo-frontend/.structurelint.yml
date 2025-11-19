@@ -1,0 +1,97 @@
+# Example: Frontend Monorepo (React/TypeScript)
+#
+# This configuration enforces frontend monorepo patterns:
+# - App independence
+# - Shared component library
+# - No circular dependencies
+# - Proper feature organization
+
+# Apps and packages
+layers:
+  - name: design-system
+    paths:
+      - "packages/design-system/**"
+    description: "Shared UI components and theme"
+
+  - name: shared-utils
+    paths:
+      - "packages/utils/**"
+      - "packages/hooks/**"
+    description: "Shared utilities and React hooks"
+    depends_on:
+      - design-system
+
+  - name: admin-app
+    paths:
+      - "apps/admin/**"
+    description: "Admin dashboard application"
+    depends_on:
+      - design-system
+      - shared-utils
+
+  - name: customer-app
+    paths:
+      - "apps/customer/**"
+    description: "Customer-facing application"
+    depends_on:
+      - design-system
+      - shared-utils
+
+# Rules
+rules:
+  # Apps cannot depend on each other
+  enforce-layer-boundaries:
+    enabled: true
+
+  # No cross-app imports
+  disallowed-patterns:
+    "apps/admin/**":
+      - "apps/customer"
+    "apps/customer/**":
+      - "apps/admin"
+    message: "Apps must be independent"
+
+  # Naming conventions (React/TypeScript)
+  naming-convention:
+    "apps/*/src/components/*.tsx": "^[A-Z][a-zA-Z0-9]*\\.tsx$"
+    "apps/*/src/pages/*.tsx": "^[A-Z][a-zA-Z0-9]*\\.tsx$"
+    "apps/*/src/hooks/*.ts": "^use[A-Z][a-zA-Z0-9]*\\.ts$"
+    "packages/design-system/src/components/*.tsx": "^[A-Z][a-zA-Z0-9]*\\.tsx$"
+
+  # Component organization
+  path-based-layers:
+    "apps/*/src/components/**": "React components"
+    "apps/*/src/pages/**": "Page components (Next.js/React Router)"
+    "apps/*/src/hooks/**": "Custom React hooks"
+    "apps/*/src/services/**": "API services"
+    "apps/*/src/utils/**": "Utility functions"
+
+  # File organization
+  max-depth:
+    max: 6
+
+  # Component file limits
+  max-files-in-dir:
+    max: 15
+    paths: ["apps/*/src/components/*", "packages/design-system/src/components/*"]
+
+  # Test location (co-located)
+  test-location:
+    allow-adjacent: true
+
+  # Ensure TypeScript configs
+  file-existence:
+    "apps/admin/tsconfig.json": "TypeScript config required"
+    "apps/customer/tsconfig.json": "TypeScript config required"
+    "packages/design-system/tsconfig.json": "TypeScript config required"
+
+  # Package.json for each app/package
+  file-existence:
+    "apps/admin/package.json": "Package config required"
+    "apps/customer/package.json": "Package config required"
+    "packages/design-system/package.json": "Package config required"
+
+  # GitHub workflows
+  github-workflows:
+    require-tests: true
+    require-quality: true

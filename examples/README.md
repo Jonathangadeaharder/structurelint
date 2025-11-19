@@ -1,62 +1,76 @@
-# examples
+# Structurelint Examples
 
-⬆️ **[Parent Directory](../README.md)**
+This directory contains example configurations for common architectural patterns. Use these as templates for your own projects.
 
-## Overview
+## Available Examples
 
-The `examples` directory contains example projects and configuration files demonstrating various structurelint use cases and patterns.
+### 1. [Clean Architecture](./clean-architecture/)
 
-## Purpose
+**Best for**: Backend services with clear business logic separation
 
-- **Documentation by Example**: Show real-world configurations
-- **Testing**: Validate that structurelint works with different project structures
-- **Learning**: Help users understand how to configure rules for their needs
+**Key features**:
+- Domain layer with no dependencies
+- Use cases depend only on domain
+- Infrastructure at the outer layer
+- Strict layer boundaries
 
-## Available Configuration Examples
+**Use when**: Building backend services with complex business logic
 
-### Project Type Examples
+### 2. [Hexagonal Architecture](./hexagonal-architecture/)
 
-| File | Description | Key Features |
-|------|-------------|--------------|
-| `basic.yml` | Minimal setup for any project | Basic metrics, naming conventions |
-| `react-project.yml` | React/TypeScript configuration | Component organization, test adjacency |
-| `go-project.yml` | Go project structure | Standard Go layout, adjacent tests |
-| `python-project.yml` | Python project structure | Separate test directory |
-| `monorepo.yml` | Monorepo configuration | Multiple packages, shared rules |
+**Best for**: Services with multiple input/output channels
 
-### Architecture Examples
+**Key features**:
+- Application core is isolated
+- Ports define interfaces  
+- Adapters implement ports
+- No adapter-to-adapter communication
 
-| File | Description | Enforces |
-|------|-------------|----------|
-| `clean-architecture.yml` | Clean Architecture pattern | Domain, Application, Infrastructure layers |
-| `hexagonal-architecture.yml` | Ports & Adapters pattern | Core, Ports, Adapters separation |
-| `feature-sliced.yml` | Feature-Sliced Design | Shared, Entities, Features, Widgets, Pages |
+**Use when**: Multiple input sources (REST, gRPC, CLI)
 
-### Advanced Feature Examples
+### 3. [Domain-Driven Design](./ddd/)
 
-| File | Description | Demonstrates |
-|------|-------------|--------------|
-| `complete-setup.yml` | All 5 phases enabled | Full structurelint capabilities |
-| `dead-code-detection.yml` | Phase 2 features | Orphaned files, unused exports |
-| `test-aaa-pattern.yml` | AAA pattern enforcement | Test structure consistency |
-| `test-gwt-naming.yml` | Given-When-Then naming | Descriptive test names + AAA |
-| `linter-enforcement.yml` | Linter configuration enforcement | Python, TypeScript, Go linters |
+**Best for**: Complex domains with multiple bounded contexts
 
-## Using Examples
+**Key features**:
+- Bounded contexts are isolated
+- Aggregates own their entities
+- Domain events
+- Ubiquitous language
 
-Copy an example configuration to your project:
+**Use when**: Complex business domain, event-driven architecture
+
+### 4. [Microservices](./microservices/)
+
+**Best for**: Distributed systems with independent services
+
+**Key features**:
+- Service independence
+- API contracts (OpenAPI)
+- No direct database sharing
+
+**Use when**: Multiple teams, different release cycles
+
+### 5. [Frontend Monorepo](./monorepo-frontend/)
+
+**Best for**: Multiple frontend apps sharing components
+
+**Key features**:
+- Shared design system
+- Independent apps
+- React/TypeScript
+
+**Use when**: Multiple frontend applications, shared components
+
+## Quick Start
 
 ```bash
-# Copy and customize
-cp examples/react-project.yml .structurelint.yml
+# Copy example to your project
+cp examples/clean-architecture/.structurelint.yml your-project/
 
-# Or use --init for automatic configuration
-structurelint --init
-```
+# Customize for your structure
+vim your-project/.structurelint.yml
 
-Test any example configuration:
-
-```bash
-# Dry run with an example config
-structurelint . --config examples/go-project.yml
+# Run linter
+cd your-project && structurelint
 ```

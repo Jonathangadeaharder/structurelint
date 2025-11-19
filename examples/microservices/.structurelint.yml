@@ -1,0 +1,106 @@
+# Example: Microservices Architecture
+#
+# This configuration enforces microservice patterns:
+# - Service independence
+# - Shared libraries isolation
+# - API contracts
+# - No direct database sharing
+
+# Services as separate concerns
+layers:
+  - name: shared
+    paths:
+      - "pkg/**"
+    description: "Shared libraries and utilities"
+
+  - name: user-service
+    paths:
+      - "services/user/**"
+    description: "User management service"
+    depends_on:
+      - shared
+
+  - name: order-service
+    paths:
+      - "services/order/**"
+    description: "Order management service"
+    depends_on:
+      - shared
+
+  - name: payment-service
+    paths:
+      - "services/payment/**"
+    description: "Payment processing service"
+    depends_on:
+      - shared
+
+  - name: notification-service
+    paths:
+      - "services/notification/**"
+    description: "Notification service"
+    depends_on:
+      - shared
+
+# Rules
+rules:
+  # Services cannot depend on each other
+  enforce-layer-boundaries:
+    enabled: true
+
+  # No cross-service imports (except shared)
+  disallowed-patterns:
+    "services/user/**":
+      - "services/order"
+      - "services/payment"
+      - "services/notification"
+    "services/order/**":
+      - "services/user"
+      - "services/payment"
+      - "services/notification"
+    "services/payment/**":
+      - "services/user"
+      - "services/order"
+      - "services/notification"
+    message: "Services must not directly import other services"
+
+  # Each service has standard structure
+  file-existence:
+    "services/user/api/openapi.yaml": "API contract required"
+    "services/order/api/openapi.yaml": "API contract required"
+    "services/payment/api/openapi.yaml": "API contract required"
+    "services/user/cmd/server/main.go": "Service entry point required"
+    "services/order/cmd/server/main.go": "Service entry point required"
+    "services/payment/cmd/server/main.go": "Service entry point required"
+
+  # Validate API contracts
+  openapi-asyncapi:
+    openapi-paths:
+      - "services/*/api/openapi.yaml"
+    require-openapi: true
+
+  # Naming conventions
+  naming-convention:
+    "services/*/internal/handlers/*.go": "^[A-Z][a-zA-Z0-9]*Handler\\.go$"
+    "services/*/internal/models/*.go": "^[A-Z][a-zA-Z0-9]*\\.go$"
+    "services/*/internal/repository/*.go": "^[A-Z][a-zA-Z0-9]*Repository\\.go$"
+
+  # File organization per service
+  max-depth:
+    max: 5
+
+  # Shared libraries should be minimal
+  max-files-in-dir:
+    max: 20
+    paths: ["pkg/*"]
+
+  # GitHub workflows (each service can be deployed independently)
+  github-workflows:
+    require-tests: true
+    require-security: true
+    require-quality: true
+
+  # Docker requirements
+  file-existence:
+    "services/user/Dockerfile": "Dockerfile required for deployment"
+    "services/order/Dockerfile": "Dockerfile required for deployment"
+    "services/payment/Dockerfile": "Dockerfile required for deployment"

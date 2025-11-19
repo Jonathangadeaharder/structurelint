@@ -1,0 +1,93 @@
+# Example: Domain-Driven Design (DDD)
+#
+# This configuration enforces DDD patterns:
+# - Bounded contexts are isolated
+# - Aggregates own their entities
+# - Domain services in domain layer
+# - Application services orchestrate use cases
+
+# Bounded contexts as layers
+layers:
+  - name: shared-kernel
+    paths:
+      - "internal/shared/**"
+    description: "Shared domain concepts"
+
+  - name: user-context
+    paths:
+      - "internal/user/**"
+    description: "User bounded context"
+    depends_on:
+      - shared-kernel
+
+  - name: order-context
+    paths:
+      - "internal/order/**"
+    description: "Order bounded context"
+    depends_on:
+      - shared-kernel
+
+  - name: payment-context
+    paths:
+      - "internal/payment/**"
+    description: "Payment bounded context"
+    depends_on:
+      - shared-kernel
+
+# Rules
+rules:
+  # Enforce bounded context isolation
+  enforce-layer-boundaries:
+    enabled: true
+
+  # Each bounded context follows DDD structure
+  path-based-layers:
+    "internal/*/domain/**": "Domain layer (entities, value objects, aggregates)"
+    "internal/*/application/**": "Application layer (use cases, DTOs)"
+    "internal/*/infrastructure/**": "Infrastructure layer (repositories, adapters)"
+
+  # Aggregates should encapsulate entities
+  disallowed-patterns:
+    "internal/*/application/**":
+      - "internal/*/domain/entities"
+    message: "Application layer should interact with aggregates, not entities directly"
+
+  # Naming conventions
+  naming-convention:
+    "internal/*/domain/aggregates/*.go": "^[A-Z][a-zA-Z0-9]*Aggregate\\.go$"
+    "internal/*/domain/entities/*.go": "^[A-Z][a-zA-Z0-9]*\\.go$"
+    "internal/*/domain/valueobjects/*.go": "^[A-Z][a-zA-Z0-9]*\\.go$"
+    "internal/*/application/commands/*.go": "^[A-Z][a-zA-Z0-9]*Command\\.go$"
+    "internal/*/application/queries/*.go": "^[A-Z][a-zA-Z0-9]*Query\\.go$"
+
+  # Domain events
+  file-content:
+    "internal/*/domain/events/*.go":
+      must-contain: "type.*Event.*struct"
+    message: "Domain events must be structs"
+
+  # Repository interfaces in domain
+  file-existence:
+    "internal/user/domain/repository.go": "Repository interfaces in domain"
+    "internal/order/domain/repository.go": "Repository interfaces in domain"
+    "internal/payment/domain/repository.go": "Repository interfaces in domain"
+
+  # File organization
+  max-depth:
+    max: 6
+
+  # Complexity limits
+  max-cognitive-complexity:
+    max: 15
+    file-patterns: ["**/*.go"]
+
+  # Test location
+  test-location:
+    integration-test-dir: "tests/integration"
+    allow-adjacent: true
+
+  # GitHub workflows
+  github-workflows:
+    require-tests: true
+    require-security: true
+    require-quality: true
