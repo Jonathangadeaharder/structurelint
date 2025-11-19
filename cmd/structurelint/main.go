@@ -33,6 +33,8 @@ func run() error {
 			return runFix(os.Args[2:])
 		case "tui":
 			return runTUI(os.Args[2:])
+		case "scaffold":
+			return runScaffold(os.Args[2:])
 		case "help":
 			if len(os.Args) > 2 {
 				switch os.Args[2] {
@@ -47,6 +49,9 @@ func run() error {
 					return nil
 				case "tui":
 					printTUIHelp()
+					return nil
+				case "scaffold":
+					printScaffoldHelp()
 					return nil
 				}
 			}
@@ -188,6 +193,7 @@ Usage:
   structurelint clones [options]   Detect code clones (duplicated code)
   structurelint fix [options]      Auto-fix detected violations
   structurelint tui [options]      Interactive terminal UI for fixing violations
+  structurelint scaffold [options] <type> <name>  Generate code from templates
   structurelint --init [path]      Generate configuration by analyzing project
   structurelint --version          Show version information
   structurelint --help             Show this help message
@@ -198,6 +204,7 @@ Commands:
   clones                       Detect code clones (see 'structurelint help clones')
   fix                          Auto-fix violations (see 'structurelint help fix')
   tui                          Interactive terminal UI (see 'structurelint help tui')
+  scaffold                     Generate code from templates (see 'structurelint help scaffold')
 
 Options:
   -v, --version                Show version information
