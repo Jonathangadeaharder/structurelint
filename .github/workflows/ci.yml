@@ -39,7 +39,7 @@ jobs:
 
       - name: Upload test logs on failure
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: test-logs-${{ runner.os }}
           path: test.log
@@ -71,7 +71,7 @@ jobs:
 
       - name: Upload lint logs on failure
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: lint-logs-${{ runner.os }}
           path: lint.log
@@ -101,7 +101,7 @@ jobs:
 
       - name: Upload complexity logs on failure
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: complexity-logs-${{ runner.os }}
           path: complexity.log
@@ -129,7 +129,7 @@ jobs:
 
       - name: Upload build logs on failure
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: build-logs-${{ matrix.os }}
           path: build.log
@@ -148,7 +148,7 @@ jobs:
 
       - name: Upload self-check logs on failure
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: self-check-logs-${{ matrix.os }}
           path: structurelint-self-check.log
@@ -185,7 +185,7 @@ jobs:
 
       - name: Upload self-lint logs on failure
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: self-lint-logs-${{ runner.os }}
           path: |
