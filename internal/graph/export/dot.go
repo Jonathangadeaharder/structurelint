@@ -64,9 +64,9 @@ func (e *DOTExporter) Export(w io.Writer) error {
 	}
 
 	cycles := e.getCyclesIfEnabled()
-	nodeIDs := e.writeNodes(w, nodes)
-	if nodeIDs == nil {
-		return fmt.Errorf("failed to write nodes")
+	nodeIDs, err := e.writeNodes(w, nodes)
+	if err != nil {
+		return err
 	}
 
 	if err := e.writeEdges(w, nodes, nodeIDs, cycles); err != nil {
@@ -74,7 +74,9 @@ func (e *DOTExporter) Export(w io.Writer) error {
 	}
 
 	if e.options.ShowLayers {
-		e.writeLegend(w)
+		if err := e.writeLegend(w); err != nil {
+			return err
+		}
 	}
 
 	if _, err := fmt.Fprintf(w, "}\n"); err != nil {
@@ -125,7 +127,7 @@ func (e *DOTExporter) getCyclesIfEnabled() map[string]map[string]bool {
 }
 
 // writeNodes writes all nodes and returns the node ID mapping
-func (e *DOTExporter) writeNodes(w io.Writer, nodes []string) map[string]string {
+func (e *DOTExporter) writeNodes(w io.Writer, nodes []string) (map[string]string, error) {
 	nodeIDs := make(map[string]string)
 
 	for i, node := range nodes {
@@ -133,12 +135,14 @@ func (e *DOTExporter) writeNodes(w io.Writer, nodes []string) map[string]string 
 		nodeIDs[node] = nodeID
 
 		if err := e.writeSingleNode(w, node, nodeID); err != nil {
-			return nil
+			return nil, err
 		}
 	}
 
-	_, _ = fmt.Fprintf(w, "\n")
-	return nodeIDs
+	if _, err := fmt.Fprintf(w, "\n"); err != nil {
+		return nil, fmt.Errorf("failed to write node separator: %w", err)
+	}
+	return nodeIDs, nil
 }
 
 // writeSingleNode writes a single node definition
@@ -494,12 +498,22 @@ func (e *DOTExporter) simplifyPath(path string) string {
 }
 
 // writeLegend adds a legend showing layer colors
-func (e *DOTExporter) writeLegend(w io.Writer) {
-	_, _ = fmt.Fprintf(w, "\n  // Legend\n")
-	_, _ = fmt.Fprintf(w, "  subgraph cluster_legend {\n")
-	_, _ = fmt.Fprintf(w, "    label=\"Layers\";\n")
-	_, _ = fmt.Fprintf(w, "    style=filled;\n")
-	_, _ = fmt.Fprintf(w, "    fillcolor=\"#F0F0F0\";\n")
+func (e *DOTExporter) writeLegend(w io.Writer) error {
+	if _, err := fmt.Fprintf(w, "\n  // Legend\n"); err != nil {
+		return fmt.Errorf("failed to write legend comment: %w", err)
+	}
+	if _, err := fmt.Fprintf(w, "  subgraph cluster_legend {\n"); err != nil {
+		return fmt.Errorf("failed to write legend subgraph: %w", err)
+	}
+	if _, err := fmt.Fprintf(w, "    label=\"Layers\";\n"); err != nil {
+		return fmt.Errorf("failed to write legend label: %w", err)
+	}
+	if _, err := fmt.Fprintf(w, "    style=filled;\n"); err != nil {
+		return fmt.Errorf("failed to write legend style: %w", err)
+	}
+	if _, err := fmt.Fprintf(w, "    fillcolor=\"#F0F0F0\";\n"); err != nil {
+		return fmt.Errorf("failed to write legend fillcolor: %w", err)
+	}
 
 	// Collect unique layers
 	layerMap := make(map[string]*config.Layer)
@@ -516,10 +530,15 @@ func (e *DOTExporter) writeLegend(w io.Writer) {
 		fillColor := e.getNodeFillColor(tempFile)
 		delete(e.graph.FileLayers, tempFile)
 
-		_, _ = fmt.Fprintf(w, "    legend%d [label=\"%s\", color=\"%s\", fillcolor=\"%s\", style=\"rounded,filled\"];\n",
-			i, layer.Name, color, fillColor)
+		if _, err := fmt.Fprintf(w, "    legend%d [label=\"%s\", color=\"%s\", fillcolor=\"%s\", style=\"rounded,filled\"];\n",
+			i, layer.Name, color, fillColor); err != nil {
+			return fmt.Errorf("failed to write legend node: %w", err)
+		}
 		i++
 	}
 
-	_, _ = fmt.Fprintf(w, "  }\n")
+	if _, err := fmt.Fprintf(w, "  }\n"); err != nil {
+		return fmt.Errorf("failed to write legend closing: %w", err)
+	}
+	return nil
 }

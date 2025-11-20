@@ -73,7 +73,9 @@ func (e *MermaidExporter) Export(w io.Writer) error {
 	}
 
 	if e.options.ShowLayers {
-		e.writeStyles(w, nodeIDs, nodes)
+		if err := e.writeStyles(w, nodeIDs, nodes); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -227,8 +229,10 @@ func (e *MermaidExporter) writeIsolatedNode(w io.Writer, nodeID, label string) e
 }
 
 // writeStyles adds CSS styling for layer colors
-func (e *MermaidExporter) writeStyles(w io.Writer, nodeIDs map[string]string, nodes []string) {
-	_, _ = fmt.Fprintf(w, "\n  %% Layer styling\n")
+func (e *MermaidExporter) writeStyles(w io.Writer, nodeIDs map[string]string, nodes []string) error {
+	if _, err := fmt.Fprintf(w, "\n  %% Layer styling\n"); err != nil {
+		return fmt.Errorf("failed to write style comment: %w", err)
+	}
 
 	// Color scheme for different layers (Mermaid uses fill and stroke)
 	layerStyles := map[string]string{
@@ -259,34 +263,46 @@ func (e *MermaidExporter) writeStyles(w io.Writer, nodeIDs map[string]string, no
 
 		for _, node := range layerNodeList {
 			nodeID := nodeIDs[node]
-			_, _ = fmt.Fprintf(w, "  style %s %s\n", nodeID, style)
+			if _, err := fmt.Fprintf(w, "  style %s %s\n", nodeID, style); err != nil {
+				return fmt.Errorf("failed to write node style: %w", err)
+			}
 		}
 	}
 
 	// Style for violations (if enabled)
 	if e.options.HighlightViolations {
-		_, _ = fmt.Fprintf(w, "  linkStyle default stroke:#333,stroke-width:1px\n")
+		if _, err := fmt.Fprintf(w, "  linkStyle default stroke:#333,stroke-width:1px\n"); err != nil {
+			return fmt.Errorf("failed to write violation link style: %w", err)
+		}
 	}
 
 	// Style for cycles (if enabled)
 	if e.options.ShowCycles {
-		_, _ = fmt.Fprintf(w, "  linkStyle default stroke:#333,stroke-width:1px\n")
+		if _, err := fmt.Fprintf(w, "  linkStyle default stroke:#333,stroke-width:1px\n"); err != nil {
+			return fmt.Errorf("failed to write cycle link style: %w", err)
+		}
 	}
+
+	return nil
 }
 
 // ExportWithWrapper wraps the Mermaid graph in markdown code fences
 func (e *MermaidExporter) ExportWithWrapper(w io.Writer) error {
-	_, _ = fmt.Fprintf(w, "```mermaid\n")
+	if _, err := fmt.Fprintf(w, "```mermaid\n"); err != nil {
+		return fmt.Errorf("failed to write markdown opening: %w", err)
+	}
 	if err := e.Export(w); err != nil {
 		return err
 	}
-	_, _ = fmt.Fprintf(w, "```\n")
+	if _, err := fmt.Fprintf(w, "```\n"); err != nil {
+		return fmt.Errorf("failed to write markdown closing: %w", err)
+	}
 	return nil
 }
 
 // ExportHTML generates an HTML file with embedded Mermaid
 func (e *MermaidExporter) ExportHTML(w io.Writer) error {
-	_, _ = fmt.Fprintf(w, `<!DOCTYPE html>
+	if _, err := fmt.Fprintf(w, `<!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
@@ -318,20 +334,24 @@ func (e *MermaidExporter) ExportHTML(w io.Writer) error {
   <div class="container">
     <h1>%s</h1>
     <div class="mermaid">
-`, e.options.Title, e.options.Title)
+`, e.options.Title, e.options.Title); err != nil {
+		return fmt.Errorf("failed to write HTML header: %w", err)
+	}
 
 	if err := e.Export(w); err != nil {
 		return err
 	}
 
-	_, _ = fmt.Fprintf(w, `    </div>
+	if _, err := fmt.Fprintf(w, `    </div>
   </div>
   <script>
     mermaid.initialize({ startOnLoad: true, theme: 'default' });
   </script>
 </body>
 </html>
-`)
+`); err != nil {
+		return fmt.Errorf("failed to write HTML footer: %w", err)
+	}
 
 	return nil
 }
