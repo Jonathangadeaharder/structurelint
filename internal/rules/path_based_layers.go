@@ -120,90 +120,152 @@ func (r *PathBasedLayerRule) checkFileLocation(
 	layer *PathLayer,
 	fileToLayer map[string]*PathLayer,
 ) []Violation {
+	violationPaths := make(map[string]bool)
 	var violations []Violation
-	violationPaths := make(map[string]bool) // Track which patterns have already triggered violations
 
 	// Check forbidden paths
-	for _, forbiddenPattern := range layer.ForbiddenPaths {
-		regex, err := regexp.Compile(globToRegex(forbiddenPattern))
-		if err != nil {
-			continue
-		}
+	violations = r.checkForbiddenPaths(file, layer, violationPaths)
 
-		// Check if this file's path contains the forbidden pattern
-		// This catches cases like "presentation/data/repository.py" (presentation shouldn't have data paths)
-		if regex.MatchString(file.Path) {
-			violations = append(violations, Violation{
-				Rule: r.Name(),
-				Path: file.Path,
-				Message: fmt.Sprintf(
-					"layer '%s' file contains forbidden path pattern '%s'",
-					layer.Name,
-					forbiddenPattern,
-				),
-			})
-			// Mark this pattern as having triggered a violation
+	// Check CanDependOn constraints
+	if len(layer.CanDependOn) > 0 {
+		canDependOnViolations := r.checkCanDependOnConstraints(file, layer, violationPaths)
+		violations = append(violations, canDependOnViolations...)
+	}
+
+	return violations
+}
+
+// checkForbiddenPaths checks if file path contains explicitly forbidden patterns
+func (r *PathBasedLayerRule) checkForbiddenPaths(
+	file walker.FileInfo,
+	layer *PathLayer,
+	violationPaths map[string]bool,
+) []Violation {
+	var violations []Violation
+
+	for _, forbiddenPattern := range layer.ForbiddenPaths {
+		if violation := r.checkSingleForbiddenPattern(file, layer, forbiddenPattern); violation != nil {
+			violations = append(violations, *violation)
 			violationPaths[forbiddenPattern] = true
 		}
 	}
 
-	// Check CanDependOn constraints by inferring forbidden layers
-	// If a layer specifies what it can depend on, implicitly forbid other layers
-	if len(layer.CanDependOn) > 0 {
-		// Build set of forbidden layer names (all layers except self and allowed dependencies)
-		forbiddenLayers := r.getForbiddenLayersFromCanDependOn(layer)
-		
-		// Check if file path contains patterns from forbidden layers
-		for _, forbiddenLayerName := range forbiddenLayers {
-			// Find the forbidden layer definition to get its patterns
-			var forbiddenLayer *PathLayer
-			for i := range r.Layers {
-				if r.Layers[i].Name == forbiddenLayerName {
-					forbiddenLayer = &r.Layers[i]
-					break
-				}
-			}
-			
-			if forbiddenLayer == nil {
-				continue
-			}
-			
-			// Check if file path contains the forbidden layer's path segments
-			// For example, if "presentation" can depend on "business" but not "data",
-			// flag files like "src/presentation/utils/data/cache.py"
-			for _, pattern := range forbiddenLayer.Patterns {
-				// Extract the layer-specific path segment from the pattern
-				// e.g., "src/data/**" -> check for "/data/" in the path
-				layerSegment := r.extractLayerSegment(pattern)
-				if layerSegment != "" && strings.Contains(file.Path, layerSegment) {
-					// Skip if we already reported this via ForbiddenPaths
-					// Check if any ForbiddenPath matches this layer segment
-					skipDuplicate := false
-					for forbiddenPattern := range violationPaths {
-						if strings.Contains(forbiddenPattern, strings.Trim(layerSegment, "/")) {
-							skipDuplicate = true
-							break
-						}
-					}
-					
-					if !skipDuplicate {
-						violations = append(violations, Violation{
-							Rule: r.Name(),
-							Path: file.Path,
-							Message: fmt.Sprintf(
-								"layer '%s' file contains path from layer '%s' which is not in its allowed dependencies (canDependOn: %v)",
-								layer.Name,
-								forbiddenLayerName,
-								layer.CanDependOn,
-							),
-						})
-					}
-				}
-			}
+	return violations
+}
+
+// checkSingleForbiddenPattern checks a single forbidden pattern
+func (r *PathBasedLayerRule) checkSingleForbiddenPattern(
+	file walker.FileInfo,
+	layer *PathLayer,
+	forbiddenPattern string,
+) *Violation {
+	regex, err := regexp.Compile(globToRegex(forbiddenPattern))
+	if err != nil {
+		return nil
+	}
+
+	if !regex.MatchString(file.Path) {
+		return nil
+	}
+
+	return &Violation{
+		Rule: r.Name(),
+		Path: file.Path,
+		Message: fmt.Sprintf(
+			"layer '%s' file contains forbidden path pattern '%s'",
+			layer.Name,
+			forbiddenPattern,
+		),
+	}
+}
+
+// checkCanDependOnConstraints checks if file violates CanDependOn constraints
+func (r *PathBasedLayerRule) checkCanDependOnConstraints(
+	file walker.FileInfo,
+	layer *PathLayer,
+	violationPaths map[string]bool,
+) []Violation {
+	var violations []Violation
+	forbiddenLayers := r.getForbiddenLayersFromCanDependOn(layer)
+
+	for _, forbiddenLayerName := range forbiddenLayers {
+		layerViolations := r.checkForbiddenLayer(file, layer, forbiddenLayerName, violationPaths)
+		violations = append(violations, layerViolations...)
+	}
+
+	return violations
+}
+
+// checkForbiddenLayer checks if file contains paths from a forbidden layer
+func (r *PathBasedLayerRule) checkForbiddenLayer(
+	file walker.FileInfo,
+	layer *PathLayer,
+	forbiddenLayerName string,
+	violationPaths map[string]bool,
+) []Violation {
+	forbiddenLayer := r.findLayerByName(forbiddenLayerName)
+	if forbiddenLayer == nil {
+		return nil
+	}
+
+	var violations []Violation
+	for _, pattern := range forbiddenLayer.Patterns {
+		if violation := r.checkForbiddenLayerPattern(file, layer, forbiddenLayerName, pattern, violationPaths); violation != nil {
+			violations = append(violations, *violation)
 		}
 	}
 
 	return violations
+}
+
+// findLayerByName finds a layer by its name
+func (r *PathBasedLayerRule) findLayerByName(name string) *PathLayer {
+	for i := range r.Layers {
+		if r.Layers[i].Name == name {
+			return &r.Layers[i]
+		}
+	}
+	return nil
+}
+
+// checkForbiddenLayerPattern checks a single pattern from a forbidden layer
+func (r *PathBasedLayerRule) checkForbiddenLayerPattern(
+	file walker.FileInfo,
+	layer *PathLayer,
+	forbiddenLayerName string,
+	pattern string,
+	violationPaths map[string]bool,
+) *Violation {
+	layerSegment := r.extractLayerSegment(pattern)
+	if layerSegment == "" || !strings.Contains(file.Path, layerSegment) {
+		return nil
+	}
+
+	if r.isDuplicateViolation(layerSegment, violationPaths) {
+		return nil
+	}
+
+	return &Violation{
+		Rule: r.Name(),
+		Path: file.Path,
+		Message: fmt.Sprintf(
+			"layer '%s' file contains path from layer '%s' which is not in its allowed dependencies (canDependOn: %v)",
+			layer.Name,
+			forbiddenLayerName,
+			layer.CanDependOn,
+		),
+	}
+}
+
+// isDuplicateViolation checks if a violation has already been reported
+func (r *PathBasedLayerRule) isDuplicateViolation(layerSegment string, violationPaths map[string]bool) bool {
+	trimmedSegment := strings.Trim(layerSegment, "/")
+	for forbiddenPattern := range violationPaths {
+		if strings.Contains(forbiddenPattern, trimmedSegment) {
+			return true
+		}
+	}
+	return false
 }
 
 // getForbiddenLayersFromCanDependOn returns layer names that are implicitly forbidden

@@ -120,86 +120,150 @@ func applyFixes(
 	}
 
 	reader := bufio.NewReader(os.Stdin)
+	ctx := &fixApplyContext{
+		engine:      engine,
+		reader:      reader,
+		interactive: interactive,
+		auto:        auto,
+		dryRun:      dryRun,
+	}
 
 	for _, fix := range fixes {
-		// Show fix details
-		fmt.Printf("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n")
-		fmt.Printf("Rule:        %s\n", fix.Violation.Rule)
-		fmt.Printf("File:        %s\n", fix.Violation.Path)
-		fmt.Printf("Description: %s\n", fix.Description)
-		fmt.Printf("Confidence:  %.0f%%\n", fix.Confidence*100)
+		displayFixDetails(fix)
 
-		if len(fix.Actions) > 0 {
-			fmt.Printf("\nActions:\n")
-			for i, action := range fix.Actions {
-				fmt.Printf("  %d. %s\n", i+1, action.Describe())
-			}
+		shouldApply, quit, err := decideShouldApply(ctx, fix)
+		if err != nil {
+			return result, err
+		}
+		if quit {
+			fmt.Println("\nQuitting...")
+			return result, nil
 		}
 
-		// Decide whether to apply
-		shouldApply := false
-
-		if dryRun {
-			shouldApply = true // Just show, don't actually apply
-		} else if auto {
-			shouldApply = fix.Safe // Auto-apply only safe fixes
-			if !fix.Safe {
-				fmt.Printf("\n⚠ Skipping unsafe fix (use --interactive to review)\n")
-			}
-		} else if interactive {
-			// Prompt user
-			fmt.Printf("\nApply this fix? [y/n/q] ")
-			response, err := reader.ReadString('\n')
-			if err != nil {
-				return result, fmt.Errorf("failed to read input: %w", err)
-			}
-
-			response = strings.ToLower(strings.TrimSpace(response))
-
-			if response == "q" {
-				fmt.Println("\nQuitting...")
-				return result, nil
-			}
-
-			shouldApply = (response == "y" || response == "yes")
-		} else {
-			// Default: apply safe fixes, prompt for unsafe
-			if fix.Safe {
-				shouldApply = true
-			} else {
-				fmt.Printf("\n⚠ Unsafe fix requires confirmation. Apply? [y/n] ")
-				response, err := reader.ReadString('\n')
-				if err != nil {
-					return result, fmt.Errorf("failed to read input: %w", err)
-				}
-				shouldApply = strings.ToLower(strings.TrimSpace(response)) == "y"
-			}
-		}
-
-		// Apply or skip
-		if shouldApply {
-			if dryRun {
-				fmt.Printf("\n[DRY RUN] Would apply fix\n")
-				result.Applied++
-			} else {
-				// Apply the fix
-				applied, err := engine.ApplyFixes([]*autofix.Fix{fix})
-				if err != nil {
-					fmt.Printf("\n✗ Failed to apply fix: %v\n", err)
-					result.Failed++
-					result.Errors = append(result.Errors, err)
-				} else if applied > 0 {
-					fmt.Printf("\n✓ Fix applied\n")
-					result.Applied++
-				}
-			}
-		} else {
-			fmt.Printf("\n⊘ Skipped\n")
-			result.Skipped++
-		}
+		executeFix(ctx, fix, shouldApply, result)
 	}
 
 	return result, nil
+}
+
+// fixApplyContext holds context for applying fixes
+type fixApplyContext struct {
+	engine      *autofix.Engine
+	reader      *bufio.Reader
+	interactive bool
+	auto        bool
+	dryRun      bool
+}
+
+// displayFixDetails shows the fix details to the user
+func displayFixDetails(fix *autofix.Fix) {
+	fmt.Printf("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n")
+	fmt.Printf("Rule:        %s\n", fix.Violation.Rule)
+	fmt.Printf("File:        %s\n", fix.Violation.Path)
+	fmt.Printf("Description: %s\n", fix.Description)
+	fmt.Printf("Confidence:  %.0f%%\n", fix.Confidence*100)
+
+	if len(fix.Actions) > 0 {
+		fmt.Printf("\nActions:\n")
+		for i, action := range fix.Actions {
+			fmt.Printf("  %d. %s\n", i+1, action.Describe())
+		}
+	}
+}
+
+// decideShouldApply determines whether a fix should be applied
+func decideShouldApply(ctx *fixApplyContext, fix *autofix.Fix) (shouldApply, quit bool, err error) {
+	if ctx.dryRun {
+		return true, false, nil
+	}
+
+	if ctx.auto {
+		return decideAutoMode(fix), false, nil
+	}
+
+	if ctx.interactive {
+		return decideInteractiveMode(ctx.reader)
+	}
+
+	return decideDefaultMode(ctx.reader, fix)
+}
+
+// decideAutoMode decides whether to apply in auto mode
+func decideAutoMode(fix *autofix.Fix) bool {
+	if fix.Safe {
+		return true
+	}
+	fmt.Printf("\n⚠ Skipping unsafe fix (use --interactive to review)\n")
+	return false
+}
+
+// decideInteractiveMode prompts the user for each fix
+func decideInteractiveMode(reader *bufio.Reader) (shouldApply, quit bool, err error) {
+	fmt.Printf("\nApply this fix? [y/n/q] ")
+	response, err := reader.ReadString('\n')
+	if err != nil {
+		return false, false, fmt.Errorf("failed to read input: %w", err)
+	}
+
+	response = strings.ToLower(strings.TrimSpace(response))
+	if response == "q" {
+		return false, true, nil
+	}
+
+	return response == "y" || response == "yes", false, nil
+}
+
+// decideDefaultMode applies safe fixes automatically, prompts for unsafe
+func decideDefaultMode(reader *bufio.Reader, fix *autofix.Fix) (shouldApply, quit bool, err error) {
+	if fix.Safe {
+		return true, false, nil
+	}
+
+	return promptForUnsafeFix(reader)
+}
+
+// promptForUnsafeFix prompts the user to confirm an unsafe fix
+func promptForUnsafeFix(reader *bufio.Reader) (shouldApply, quit bool, err error) {
+	fmt.Printf("\n⚠ Unsafe fix requires confirmation. Apply? [y/n] ")
+	response, err := reader.ReadString('\n')
+	if err != nil {
+		return false, false, fmt.Errorf("failed to read input: %w", err)
+	}
+
+	return strings.ToLower(strings.TrimSpace(response)) == "y", false, nil
+}
+
+// executeFix applies or skips a fix and updates the result
+func executeFix(ctx *fixApplyContext, fix *autofix.Fix, shouldApply bool, result *autofix.FixResult) {
+	if !shouldApply {
+		fmt.Printf("\n⊘ Skipped\n")
+		result.Skipped++
+		return
+	}
+
+	if ctx.dryRun {
+		fmt.Printf("\n[DRY RUN] Would apply fix\n")
+		result.Applied++
+		return
+	}
+
+	applyFixToFile(ctx.engine, fix, result)
+}
+
+// applyFixToFile actually applies the fix to the file
+func applyFixToFile(engine *autofix.Engine, fix *autofix.Fix, result *autofix.FixResult) {
+	applied, err := engine.ApplyFixes([]*autofix.Fix{fix})
+	if err != nil {
+		fmt.Printf("\n✗ Failed to apply fix: %v\n", err)
+		result.Failed++
+		result.Errors = append(result.Errors, err)
+		return
+	}
+
+	if applied > 0 {
+		fmt.Printf("\n✓ Fix applied\n")
+		result.Applied++
+	}
 }
 
 func printFixHelp() {

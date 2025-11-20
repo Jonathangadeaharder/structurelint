@@ -54,106 +54,25 @@ func NewDOTExporter(g *graph.ImportGraph, options DOTOptions) *DOTExporter {
 
 // Export writes the graph in DOT format to the writer
 func (e *DOTExporter) Export(w io.Writer) error {
-	// Write header
-	if _, err := fmt.Fprintf(w, "digraph \"%s\" {\n", e.options.Title); err != nil {
-		return fmt.Errorf("failed to write DOT header: %w", err)
-	}
-	if _, err := fmt.Fprintf(w, "  rankdir=LR;\n"); err != nil {
-		return fmt.Errorf("failed to write DOT rankdir: %w", err)
-	}
-	if _, err := fmt.Fprintf(w, "  node [shape=box, style=rounded];\n"); err != nil {
-		return fmt.Errorf("failed to write DOT node style: %w", err)
-	}
-	if _, err := fmt.Fprintf(w, "  edge [arrowhead=vee];\n\n"); err != nil {
-		return fmt.Errorf("failed to write DOT edge style: %w", err)
+	if err := e.writeDOTHeader(w); err != nil {
+		return err
 	}
 
-	// Get nodes to display
 	nodes := e.getFilteredNodes()
 	if len(nodes) == 0 {
-		if _, err := fmt.Fprintf(w, "  // No nodes to display\n"); err != nil {
-			return fmt.Errorf("failed to write DOT comment: %w", err)
-		}
-		if _, err := fmt.Fprintf(w, "}\n"); err != nil {
-			return fmt.Errorf("failed to write DOT closing: %w", err)
-		}
-		return nil
+		return e.writeEmptyGraph(w)
 	}
 
-	// Detect cycles if needed
-	cycles := make(map[string]map[string]bool)
-	if e.options.ShowCycles {
-		cycles = e.detectAllCycles()
+	cycles := e.getCyclesIfEnabled()
+	nodeIDs := e.writeNodes(w, nodes)
+	if nodeIDs == nil {
+		return fmt.Errorf("failed to write nodes")
 	}
 
-	// Define nodes with colors
-	nodeIDs := make(map[string]string)
-	for i, node := range nodes {
-		nodeID := fmt.Sprintf("n%d", i)
-		nodeIDs[node] = nodeID
-
-		label := node
-		if e.options.SimplifyPaths {
-			label = e.simplifyPath(node)
-		}
-
-		// Determine node color based on layer
-		color := e.getNodeColor(node)
-		fillColor := e.getNodeFillColor(node)
-
-		if _, err := fmt.Fprintf(w, "  %s [label=\"%s\", color=\"%s\", fillcolor=\"%s\", style=\"rounded,filled\"];\n",
-			nodeID, label, color, fillColor); err != nil {
-			return fmt.Errorf("failed to write DOT node: %w", err)
-		}
+	if err := e.writeEdges(w, nodes, nodeIDs, cycles); err != nil {
+		return err
 	}
 
-	if _, err := fmt.Fprintf(w, "\n"); err != nil {
-		return fmt.Errorf("failed to write DOT newline: %w", err)
-	}
-
-	// Add edges
-	for _, fromNode := range nodes {
-		fromID := nodeIDs[fromNode]
-		deps := e.graph.GetDependencies(fromNode)
-
-		for _, toNode := range deps {
-			// Only show edge if target node is in our filtered set
-			toID, exists := nodeIDs[toNode]
-			if !exists {
-				continue
-			}
-
-			// Check if this is a cycle
-			isCycle := cycles[fromNode] != nil && cycles[fromNode][toNode]
-
-			// Check if this is a violation
-			isViolation := e.isViolation(fromNode, toNode)
-
-			// Determine edge style
-			edgeColor := "black"
-			edgeStyle := "solid"
-			edgeWidth := "1.0"
-
-			if isCycle && e.options.ShowCycles {
-				edgeColor = "orange"
-				edgeWidth = "2.0"
-				edgeStyle = "bold"
-			}
-
-			if isViolation && e.options.HighlightViolations {
-				edgeColor = "red"
-				edgeWidth = "2.0"
-				edgeStyle = "bold"
-			}
-
-			if _, err := fmt.Fprintf(w, "  %s -> %s [color=\"%s\", style=\"%s\", penwidth=%s];\n",
-				fromID, toID, edgeColor, edgeStyle, edgeWidth); err != nil {
-				return fmt.Errorf("failed to write DOT edge: %w", err)
-			}
-		}
-	}
-
-	// Add legend if showing layers
 	if e.options.ShowLayers {
 		e.writeLegend(w)
 	}
@@ -161,7 +80,144 @@ func (e *DOTExporter) Export(w io.Writer) error {
 	if _, err := fmt.Fprintf(w, "}\n"); err != nil {
 		return fmt.Errorf("failed to write DOT closing brace: %w", err)
 	}
+
 	return nil
+}
+
+// writeDOTHeader writes the DOT file header
+func (e *DOTExporter) writeDOTHeader(w io.Writer) error {
+	headers := []struct {
+		content string
+		errMsg  string
+	}{
+		{fmt.Sprintf("digraph \"%s\" {\n", e.options.Title), "failed to write DOT header"},
+		{"  rankdir=LR;\n", "failed to write DOT rankdir"},
+		{"  node [shape=box, style=rounded];\n", "failed to write DOT node style"},
+		{"  edge [arrowhead=vee];\n\n", "failed to write DOT edge style"},
+	}
+
+	for _, h := range headers {
+		if _, err := fmt.Fprintf(w, "%s", h.content); err != nil {
+			return fmt.Errorf("%s: %w", h.errMsg, err)
+		}
+	}
+
+	return nil
+}
+
+// writeEmptyGraph writes an empty graph and closes it
+func (e *DOTExporter) writeEmptyGraph(w io.Writer) error {
+	if _, err := fmt.Fprintf(w, "  // No nodes to display\n"); err != nil {
+		return fmt.Errorf("failed to write DOT comment: %w", err)
+	}
+	if _, err := fmt.Fprintf(w, "}\n"); err != nil {
+		return fmt.Errorf("failed to write DOT closing: %w", err)
+	}
+	return nil
+}
+
+// getCyclesIfEnabled returns cycles if cycle detection is enabled
+func (e *DOTExporter) getCyclesIfEnabled() map[string]map[string]bool {
+	if e.options.ShowCycles {
+		return e.detectAllCycles()
+	}
+	return make(map[string]map[string]bool)
+}
+
+// writeNodes writes all nodes and returns the node ID mapping
+func (e *DOTExporter) writeNodes(w io.Writer, nodes []string) map[string]string {
+	nodeIDs := make(map[string]string)
+
+	for i, node := range nodes {
+		nodeID := fmt.Sprintf("n%d", i)
+		nodeIDs[node] = nodeID
+
+		if err := e.writeSingleNode(w, node, nodeID); err != nil {
+			return nil
+		}
+	}
+
+	_, _ = fmt.Fprintf(w, "\n")
+	return nodeIDs
+}
+
+// writeSingleNode writes a single node definition
+func (e *DOTExporter) writeSingleNode(w io.Writer, node, nodeID string) error {
+	label := node
+	if e.options.SimplifyPaths {
+		label = e.simplifyPath(node)
+	}
+
+	color := e.getNodeColor(node)
+	fillColor := e.getNodeFillColor(node)
+
+	if _, err := fmt.Fprintf(w, "  %s [label=\"%s\", color=\"%s\", fillcolor=\"%s\", style=\"rounded,filled\"];\n",
+		nodeID, label, color, fillColor); err != nil {
+		return fmt.Errorf("failed to write DOT node: %w", err)
+	}
+
+	return nil
+}
+
+// writeEdges writes all edges between nodes
+func (e *DOTExporter) writeEdges(w io.Writer, nodes []string, nodeIDs map[string]string, cycles map[string]map[string]bool) error {
+	for _, fromNode := range nodes {
+		if err := e.writeNodeEdges(w, fromNode, nodeIDs, cycles); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// writeNodeEdges writes all edges from a single node
+func (e *DOTExporter) writeNodeEdges(w io.Writer, fromNode string, nodeIDs map[string]string, cycles map[string]map[string]bool) error {
+	fromID := nodeIDs[fromNode]
+	deps := e.graph.GetDependencies(fromNode)
+
+	for _, toNode := range deps {
+		toID, exists := nodeIDs[toNode]
+		if !exists {
+			continue
+		}
+
+		if err := e.writeSingleEdge(w, fromNode, toNode, fromID, toID, cycles); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// writeSingleEdge writes a single edge with appropriate styling
+func (e *DOTExporter) writeSingleEdge(w io.Writer, fromNode, toNode, fromID, toID string, cycles map[string]map[string]bool) error {
+	edgeColor, edgeStyle, edgeWidth := e.getEdgeStyle(fromNode, toNode, cycles)
+
+	if _, err := fmt.Fprintf(w, "  %s -> %s [color=\"%s\", style=\"%s\", penwidth=%s];\n",
+		fromID, toID, edgeColor, edgeStyle, edgeWidth); err != nil {
+		return fmt.Errorf("failed to write DOT edge: %w", err)
+	}
+
+	return nil
+}
+
+// getEdgeStyle determines the styling for an edge
+func (e *DOTExporter) getEdgeStyle(fromNode, toNode string, cycles map[string]map[string]bool) (color, style, width string) {
+	color = "black"
+	style = "solid"
+	width = "1.0"
+
+	isCycle := cycles[fromNode] != nil && cycles[fromNode][toNode]
+	isViolation := e.isViolation(fromNode, toNode)
+
+	if isCycle && e.options.ShowCycles {
+		return "orange", "bold", "2.0"
+	}
+
+	if isViolation && e.options.HighlightViolations {
+		return "red", "bold", "2.0"
+	}
+
+	return color, style, width
 }
 
 // getFilteredNodes returns nodes to display based on filter options
@@ -320,65 +376,102 @@ func (e *DOTExporter) isViolation(from, to string) bool {
 
 // detectAllCycles finds all circular dependencies in the graph
 func (e *DOTExporter) detectAllCycles() map[string]map[string]bool {
-	cycles := make(map[string]map[string]bool)
-
-	// Use DFS to detect cycles
-	visited := make(map[string]bool)
-	recStack := make(map[string]bool)
-	path := make([]string, 0)
-
-	var dfs func(node string) bool
-	dfs = func(node string) bool {
-		visited[node] = true
-		recStack[node] = true
-		path = append(path, node)
-
-		for _, dep := range e.graph.GetDependencies(node) {
-			if !visited[dep] {
-				if dfs(dep) {
-					return true
-				}
-			} else if recStack[dep] {
-				// Found a cycle - mark all edges in the cycle
-				cycleStart := -1
-				for i, n := range path {
-					if n == dep {
-						cycleStart = i
-						break
-					}
-				}
-				if cycleStart >= 0 {
-					for i := cycleStart; i < len(path); i++ {
-						from := path[i]
-						to := ""
-						if i+1 < len(path) {
-							to = path[i+1]
-						} else {
-							to = dep
-						}
-						if cycles[from] == nil {
-							cycles[from] = make(map[string]bool)
-						}
-						cycles[from][to] = true
-					}
-				}
-				return true
-			}
-		}
-
-		path = path[:len(path)-1]
-		recStack[node] = false
-		return false
+	detector := &cycleDetector{
+		exporter: e,
+		cycles:   make(map[string]map[string]bool),
+		visited:  make(map[string]bool),
+		recStack: make(map[string]bool),
+		path:     make([]string, 0),
 	}
 
 	// Check all nodes
 	for _, node := range e.graph.AllFiles {
-		if !visited[node] {
-			dfs(node)
+		if !detector.visited[node] {
+			detector.dfs(node)
 		}
 	}
 
-	return cycles
+	return detector.cycles
+}
+
+// cycleDetector manages state for cycle detection
+type cycleDetector struct {
+	exporter *DOTExporter
+	cycles   map[string]map[string]bool
+	visited  map[string]bool
+	recStack map[string]bool
+	path     []string
+}
+
+// dfs performs depth-first search to detect cycles
+func (cd *cycleDetector) dfs(node string) bool {
+	cd.visited[node] = true
+	cd.recStack[node] = true
+	cd.path = append(cd.path, node)
+
+	for _, dep := range cd.exporter.graph.GetDependencies(node) {
+		if cd.processDependency(dep) {
+			return true
+		}
+	}
+
+	cd.path = cd.path[:len(cd.path)-1]
+	cd.recStack[node] = false
+	return false
+}
+
+// processDependency handles a single dependency during DFS
+func (cd *cycleDetector) processDependency(dep string) bool {
+	if !cd.visited[dep] {
+		return cd.dfs(dep)
+	}
+
+	if cd.recStack[dep] {
+		cd.recordCycle(dep)
+		return true
+	}
+
+	return false
+}
+
+// recordCycle marks all edges in the detected cycle
+func (cd *cycleDetector) recordCycle(dep string) {
+	cycleStart := cd.findCycleStart(dep)
+	if cycleStart < 0 {
+		return
+	}
+
+	for i := cycleStart; i < len(cd.path); i++ {
+		from := cd.path[i]
+		to := cd.getNextNode(i, dep)
+		cd.addCycleEdge(from, to)
+	}
+}
+
+// findCycleStart finds where the cycle begins in the path
+func (cd *cycleDetector) findCycleStart(dep string) int {
+	for i, n := range cd.path {
+		if n == dep {
+			return i
+		}
+	}
+	return -1
+}
+
+// getNextNode returns the next node in the cycle path
+func (cd *cycleDetector) getNextNode(i int, dep string) string {
+	if i+1 < len(cd.path) {
+		return cd.path[i+1]
+	}
+	return dep
+}
+
+// addCycleEdge adds an edge to the cycles map
+func (cd *cycleDetector) addCycleEdge(from, to string) {
+	if cd.cycles[from] == nil {
+		cd.cycles[from] = make(map[string]bool)
+	}
+	cd.cycles[from][to] = true
 }
 
 // simplifyPath shortens a file path for display

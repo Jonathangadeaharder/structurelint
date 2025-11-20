@@ -56,97 +56,173 @@ func NewMermaidExporter(g *graph.ImportGraph, options MermaidOptions) *MermaidEx
 
 // Export writes the graph in Mermaid format to the writer
 func (e *MermaidExporter) Export(w io.Writer) error {
-	// Write header
+	if err := e.writeMermaidHeader(w); err != nil {
+		return err
+	}
+
+	dotExporter, nodes := e.prepareExport()
+	if len(nodes) == 0 {
+		return e.writeEmptyGraph(w)
+	}
+
+	cycles := e.getCyclesIfEnabled(dotExporter)
+	nodeIDs := e.createNodeIDMap(nodes)
+
+	if err := e.writeMermaidEdges(w, nodes, nodeIDs, cycles, dotExporter); err != nil {
+		return err
+	}
+
+	if e.options.ShowLayers {
+		e.writeStyles(w, nodeIDs, nodes)
+	}
+
+	return nil
+}
+
+// writeMermaidHeader writes the Mermaid graph header
+func (e *MermaidExporter) writeMermaidHeader(w io.Writer) error {
 	if _, err := fmt.Fprintf(w, "graph %s\n", e.options.Direction); err != nil {
 		return fmt.Errorf("failed to write Mermaid header: %w", err)
 	}
+	return nil
+}
 
-	// Get nodes to display (reuse DOT exporter logic)
+// prepareExport prepares the DOT exporter and retrieves filtered nodes
+func (e *MermaidExporter) prepareExport() (*DOTExporter, []string) {
 	dotExporter := NewDOTExporter(e.graph, DOTOptions{
 		FilterLayer:   e.options.FilterLayer,
 		MaxDepth:      e.options.MaxDepth,
 		SimplifyPaths: e.options.SimplifyPaths,
 	})
-	nodes := dotExporter.getFilteredNodes()
+	return dotExporter, dotExporter.getFilteredNodes()
+}
 
-	if len(nodes) == 0 {
-		if _, err := fmt.Fprintf(w, "  %% No nodes to display\n"); err != nil {
-			return fmt.Errorf("failed to write Mermaid comment: %w", err)
-		}
-		return nil
+// writeEmptyGraph writes an empty graph message
+func (e *MermaidExporter) writeEmptyGraph(w io.Writer) error {
+	if _, err := fmt.Fprintf(w, "  %% No nodes to display\n"); err != nil {
+		return fmt.Errorf("failed to write Mermaid comment: %w", err)
 	}
+	return nil
+}
 
-	// Detect cycles if needed
-	cycles := make(map[string]map[string]bool)
+// getCyclesIfEnabled returns cycles if cycle detection is enabled
+func (e *MermaidExporter) getCyclesIfEnabled(dotExporter *DOTExporter) map[string]map[string]bool {
 	if e.options.ShowCycles {
-		cycles = dotExporter.detectAllCycles()
+		return dotExporter.detectAllCycles()
 	}
+	return make(map[string]map[string]bool)
+}
 
-	// Create node ID map
+// createNodeIDMap creates a mapping of node names to IDs
+func (e *MermaidExporter) createNodeIDMap(nodes []string) map[string]string {
 	nodeIDs := make(map[string]string)
 	for i, node := range nodes {
 		nodeIDs[node] = fmt.Sprintf("n%d", i)
 	}
+	return nodeIDs
+}
 
-	// Add edges (Mermaid defines nodes implicitly through edges)
+// writeMermaidEdges writes all edges in Mermaid format
+func (e *MermaidExporter) writeMermaidEdges(
+	w io.Writer,
+	nodes []string,
+	nodeIDs map[string]string,
+	cycles map[string]map[string]bool,
+	dotExporter *DOTExporter,
+) error {
 	for _, fromNode := range nodes {
-		fromID := nodeIDs[fromNode]
-		fromLabel := fromNode
-		if e.options.SimplifyPaths {
-			fromLabel = dotExporter.simplifyPath(fromNode)
+		if err := e.writeNodeEdges(w, fromNode, nodeIDs, cycles, dotExporter); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// writeNodeEdges writes edges for a single node
+func (e *MermaidExporter) writeNodeEdges(
+	w io.Writer,
+	fromNode string,
+	nodeIDs map[string]string,
+	cycles map[string]map[string]bool,
+	dotExporter *DOTExporter,
+) error {
+	fromID := nodeIDs[fromNode]
+	fromLabel := e.getNodeLabel(fromNode, dotExporter)
+	deps := e.graph.GetDependencies(fromNode)
+	hasEdges := false
+
+	for _, toNode := range deps {
+		toID, exists := nodeIDs[toNode]
+		if !exists {
+			continue
 		}
 
-		deps := e.graph.GetDependencies(fromNode)
-		hasEdges := false
-
-		for _, toNode := range deps {
-			// Only show edge if target node is in our filtered set
-			toID, exists := nodeIDs[toNode]
-			if !exists {
-				continue
-			}
-
-			hasEdges = true
-			toLabel := toNode
-			if e.options.SimplifyPaths {
-				toLabel = dotExporter.simplifyPath(toNode)
-			}
-
-			// Check if this is a cycle or violation
-			isCycle := cycles[fromNode] != nil && cycles[fromNode][toNode]
-			isViolation := dotExporter.isViolation(fromNode, toNode)
-
-			// Determine edge style
-			var edgeStyle string
-			if isCycle && e.options.ShowCycles {
-				edgeStyle = fmt.Sprintf("  %s[\"%s\"] -.->|cycle| %s[\"%s\"]\n",
-					fromID, fromLabel, toID, toLabel)
-			} else if isViolation && e.options.HighlightViolations {
-				edgeStyle = fmt.Sprintf("  %s[\"%s\"] -.->|violation| %s[\"%s\"]\n",
-					fromID, fromLabel, toID, toLabel)
-			} else {
-				edgeStyle = fmt.Sprintf("  %s[\"%s\"] --> %s[\"%s\"]\n",
-					fromID, fromLabel, toID, toLabel)
-			}
-
-			if _, err := fmt.Fprintf(w, "%s", edgeStyle); err != nil {
-				return fmt.Errorf("failed to write Mermaid edge: %w", err)
-			}
-		}
-
-		// If node has no edges, define it explicitly
-		if !hasEdges {
-			if _, err := fmt.Fprintf(w, "  %s[\"%s\"]\n", fromID, fromLabel); err != nil {
-				return fmt.Errorf("failed to write Mermaid node: %w", err)
-			}
+		hasEdges = true
+		if err := e.writeSingleEdge(w, fromNode, toNode, fromID, toID, fromLabel, cycles, dotExporter); err != nil {
+			return err
 		}
 	}
 
-	// Add styling if showing layers
-	if e.options.ShowLayers {
-		e.writeStyles(w, nodeIDs, nodes)
+	if !hasEdges {
+		return e.writeIsolatedNode(w, fromID, fromLabel)
 	}
 
+	return nil
+}
+
+// getNodeLabel returns the label for a node
+func (e *MermaidExporter) getNodeLabel(node string, dotExporter *DOTExporter) string {
+	if e.options.SimplifyPaths {
+		return dotExporter.simplifyPath(node)
+	}
+	return node
+}
+
+// writeSingleEdge writes a single Mermaid edge
+func (e *MermaidExporter) writeSingleEdge(
+	w io.Writer,
+	fromNode, toNode, fromID, toID, fromLabel string,
+	cycles map[string]map[string]bool,
+	dotExporter *DOTExporter,
+) error {
+	toLabel := e.getNodeLabel(toNode, dotExporter)
+	edgeStyle := e.getMermaidEdgeStyle(fromNode, toNode, fromID, toID, fromLabel, toLabel, cycles, dotExporter)
+
+	if _, err := fmt.Fprintf(w, "%s", edgeStyle); err != nil {
+		return fmt.Errorf("failed to write Mermaid edge: %w", err)
+	}
+
+	return nil
+}
+
+// getMermaidEdgeStyle determines the Mermaid edge style
+func (e *MermaidExporter) getMermaidEdgeStyle(
+	fromNode, toNode, fromID, toID, fromLabel, toLabel string,
+	cycles map[string]map[string]bool,
+	dotExporter *DOTExporter,
+) string {
+	isCycle := cycles[fromNode] != nil && cycles[fromNode][toNode]
+	isViolation := dotExporter.isViolation(fromNode, toNode)
+
+	if isCycle && e.options.ShowCycles {
+		return fmt.Sprintf("  %s[\"%s\"] -.->|cycle| %s[\"%s\"]\n",
+			fromID, fromLabel, toID, toLabel)
+	}
+
+	if isViolation && e.options.HighlightViolations {
+		return fmt.Sprintf("  %s[\"%s\"] -.->|violation| %s[\"%s\"]\n",
+			fromID, fromLabel, toID, toLabel)
+	}
+
+	return fmt.Sprintf("  %s[\"%s\"] --> %s[\"%s\"]\n",
+		fromID, fromLabel, toID, toLabel)
+}
+
+// writeIsolatedNode writes a node with no edges
+func (e *MermaidExporter) writeIsolatedNode(w io.Writer, nodeID, label string) error {
+	if _, err := fmt.Fprintf(w, "  %s[\"%s\"]\n", nodeID, label); err != nil {
+		return fmt.Errorf("failed to write Mermaid node: %w", err)
+	}
 	return nil
 }
 

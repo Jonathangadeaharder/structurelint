@@ -13,8 +13,57 @@ import (
 
 // runClones handles the 'clones' subcommand
 func runClones(args []string) error {
-	// Create flagset for clones subcommand
+	config, err := parseClonesFlags(args)
+	if err != nil {
+		return err
+	}
+
+	var totalClones int
+
+	if config.runSyntactic {
+		count, err := runSyntacticDetection(config)
+		if err != nil {
+			return err
+		}
+		totalClones += count
+	}
+
+	if config.runSemantic {
+		count, err := runSemanticDetection(config)
+		if err != nil {
+			return err
+		}
+		totalClones += count
+	}
+
+	if totalClones > 0 {
+		return fmt.Errorf("found %d total clone(s)", totalClones)
+	}
+
+	return nil
+}
+
+// clonesConfig holds configuration for clone detection
+type clonesConfig struct {
+	path                string
+	mode                string
+	runSyntactic        bool
+	runSemantic         bool
+	minTokens           int
+	minLines            int
+	kGramSize           int
+	crossFileOnly       bool
+	workers             int
+	pluginURL           string
+	similarityThreshold float64
+	format              string
+}
+
+// parseClonesFlags parses command-line flags for clone detection
+func parseClonesFlags(args []string) (*clonesConfig, error) {
 	fs := flag.NewFlagSet("clones", flag.ExitOnError)
+
+	config := &clonesConfig{}
 
 	// Clone detection modes
 	modeFlag := fs.String("mode", "syntactic", "Detection mode: syntactic, semantic, both")
@@ -33,142 +82,170 @@ func runClones(args []string) error {
 	// Output options
 	formatFlag := fs.String("format", "console", "Output format: console, json, sarif")
 
-	// Parse flags
 	if err := fs.Parse(args); err != nil {
-		return err
+		return nil, err
 	}
 
 	// Get path argument
-	path := "."
+	config.path = "."
 	if fs.NArg() > 0 {
-		path = fs.Arg(0)
+		config.path = fs.Arg(0)
 	}
 
-	// Determine which detection modes to run
-	runSyntactic := *modeFlag == "syntactic" || *modeFlag == "both"
-	runSemantic := *modeFlag == "semantic" || *modeFlag == "both"
+	// Set config values
+	config.mode = *modeFlag
+	config.runSyntactic = *modeFlag == "syntactic" || *modeFlag == "both"
+	config.runSemantic = *modeFlag == "semantic" || *modeFlag == "both"
+	config.minTokens = *minTokens
+	config.minLines = *minLines
+	config.kGramSize = *kGramSize
+	config.crossFileOnly = *crossFileOnly
+	config.workers = *workers
+	config.pluginURL = *pluginURL
+	config.similarityThreshold = *similarityThreshold
+	config.format = *formatFlag
 
-	var totalClones int
+	return config, nil
+}
 
-	// Run syntactic clone detection
-	if runSyntactic {
-		fmt.Printf("🔍 Detecting syntactic clones in %s...\n\n", path)
+// runSyntacticDetection performs syntactic clone detection
+func runSyntacticDetection(config *clonesConfig) (int, error) {
+	fmt.Printf("🔍 Detecting syntactic clones in %s...\n\n", config.path)
 
-		config := detector.Config{
-			MinTokens:      *minTokens,
-			MinLines:       *minLines,
-			KGramSize:      *kGramSize,
-			ExcludePattern: []string{"*_test.go", "**/*_gen.go", "**/vendor/**"},
-			CrossFileOnly:  *crossFileOnly,
-			NumWorkers:     *workers,
+	detectorConfig := detector.Config{
+		MinTokens:      config.minTokens,
+		MinLines:       config.minLines,
+		KGramSize:      config.kGramSize,
+		ExcludePattern: []string{"*_test.go", "**/*_gen.go", "**/vendor/**"},
+		CrossFileOnly:  config.crossFileOnly,
+		NumWorkers:     config.workers,
+	}
+
+	d := detector.NewDetector(detectorConfig)
+	clones, err := d.DetectClones(config.path)
+	if err != nil {
+		return 0, fmt.Errorf("syntactic clone detection failed: %w", err)
+	}
+
+	if len(clones) > 0 {
+		reporter := detector.NewReporter(config.format)
+		output := reporter.Report(clones)
+		fmt.Print(output)
+
+		if config.format == "console" {
+			fmt.Println("\n" + reporter.Summary(clones))
 		}
+	} else {
+		fmt.Println("✓ No syntactic clones found")
+	}
 
-		d := detector.NewDetector(config)
-		clones, err := d.DetectClones(path)
-		if err != nil {
-			return fmt.Errorf("syntactic clone detection failed: %w", err)
-		}
+	fmt.Println()
+	return len(clones), nil
+}
 
-		if len(clones) > 0 {
-			reporter := detector.NewReporter(*formatFlag)
-			output := reporter.Report(clones)
-			fmt.Print(output)
+// runSemanticDetection performs semantic clone detection via plugin
+func runSemanticDetection(config *clonesConfig) (int, error) {
+	fmt.Printf("🧠 Detecting semantic clones via plugin at %s...\n", config.pluginURL)
 
-			if *formatFlag == "console" {
-				fmt.Println("\n" + reporter.Summary(clones))
-			}
+	absPath := resolveAbsolutePath(config.path)
+	client := plugin.NewHTTPPluginClient(config.pluginURL)
 
-			totalClones += len(clones)
-		} else {
-			fmt.Println("✓ No syntactic clones found")
+	if !client.IsAvailable() {
+		return handlePluginUnavailable(config.mode)
+	}
+
+	return runSemanticDetectionWithPlugin(client, absPath, config)
+}
+
+// resolveAbsolutePath resolves the absolute path for semantic detection
+func resolveAbsolutePath(path string) string {
+	absPath, err := os.Getwd()
+	if err != nil || path != "." {
+		return path
+	}
+	return absPath
+}
+
+// handlePluginUnavailable handles the case when the plugin is not available
+func handlePluginUnavailable(mode string) (int, error) {
+	fmt.Fprintf(os.Stderr, "⚠ Warning: Semantic clone detection plugin not available\n")
+	fmt.Fprintf(os.Stderr, "  To enable semantic detection:\n")
+	fmt.Fprintf(os.Stderr, "    1. cd clone_detection\n")
+	fmt.Fprintf(os.Stderr, "    2. pip install -r requirements.txt\n")
+	fmt.Fprintf(os.Stderr, "    3. python plugin_server.py\n\n")
+
+	if mode == "semantic" {
+		return 0, fmt.Errorf("semantic clone detection plugin required but not available")
+	}
+
+	fmt.Println("Continuing with syntactic detection only...")
+	return 0, nil
+}
+
+// runSemanticDetectionWithPlugin executes semantic detection with the available plugin
+func runSemanticDetectionWithPlugin(client *plugin.HTTPPluginClient, absPath string, config *clonesConfig) (int, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
+	defer cancel()
+
+	req := &plugin.SemanticCloneRequest{
+		SourceDir:           absPath,
+		Languages:           []string{"go", "python", "javascript"},
+		ExcludePatterns:     []string{"**/*_test.*", "**/vendor/**", "**/node_modules/**"},
+		SimilarityThreshold: config.similarityThreshold,
+		MaxResults:          100,
+	}
+
+	resp, err := client.DetectClones(ctx, req)
+	if err != nil {
+		return handleSemanticDetectionError(err, config.mode)
+	}
+
+	if resp.Error != "" {
+		fmt.Fprintf(os.Stderr, "⚠ Warning: %s\n\n", resp.Error)
+		return 0, nil
+	}
+
+	return reportSemanticClones(resp)
+}
+
+// handleSemanticDetectionError handles errors from semantic detection
+func handleSemanticDetectionError(err error, mode string) (int, error) {
+	fmt.Fprintf(os.Stderr, "⚠ Warning: Semantic detection failed: %v\n\n", err)
+	if mode == "semantic" {
+		return 0, err
+	}
+	return 0, nil
+}
+
+// reportSemanticClones reports semantic clone detection results
+func reportSemanticClones(resp *plugin.SemanticCloneResponse) (int, error) {
+	if len(resp.Clones) == 0 {
+		fmt.Println("✓ No semantic clones found")
+		printSemanticStats(resp)
+		return 0, nil
+	}
+
+	fmt.Printf("\nFound %d semantic clone pairs:\n\n", len(resp.Clones))
+	for i, clone := range resp.Clones {
+		fmt.Printf("%d. Similarity: %.2f%%\n", i+1, clone.Similarity*100)
+		fmt.Printf("   %s:%d-%d\n", clone.SourceFile, clone.SourceStartLine, clone.SourceEndLine)
+		fmt.Printf("   %s:%d-%d\n", clone.TargetFile, clone.TargetStartLine, clone.TargetEndLine)
+		if clone.Explanation != "" {
+			fmt.Printf("   %s\n", clone.Explanation)
 		}
 		fmt.Println()
 	}
 
-	// Run semantic clone detection (via plugin)
-	if runSemantic {
-		fmt.Printf("🧠 Detecting semantic clones via plugin at %s...\n", *pluginURL)
+	printSemanticStats(resp)
+	return len(resp.Clones), nil
+}
 
-		// Get absolute path
-		absPath, err := os.Getwd()
-		if err != nil {
-			absPath = path
-		}
-		if path != "." {
-			absPath = path
-		}
-
-		// Try to connect to plugin
-		client := plugin.NewHTTPPluginClient(*pluginURL)
-
-		if !client.IsAvailable() {
-			fmt.Fprintf(os.Stderr, "⚠ Warning: Semantic clone detection plugin not available at %s\n", *pluginURL)
-			fmt.Fprintf(os.Stderr, "  To enable semantic detection:\n")
-			fmt.Fprintf(os.Stderr, "    1. cd clone_detection\n")
-			fmt.Fprintf(os.Stderr, "    2. pip install -r requirements.txt\n")
-			fmt.Fprintf(os.Stderr, "    3. python plugin_server.py\n\n")
-
-			if *modeFlag == "semantic" {
-				return fmt.Errorf("semantic clone detection plugin required but not available")
-			}
-			// Graceful degradation for "both" mode
-			fmt.Println("Continuing with syntactic detection only...")
-		} else {
-			// Plugin is available - run semantic detection
-			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
-			defer cancel()
-
-			req := &plugin.SemanticCloneRequest{
-				SourceDir:           absPath,
-				Languages:           []string{"go", "python", "javascript"},
-				ExcludePatterns:     []string{"**/*_test.*", "**/vendor/**", "**/node_modules/**"},
-				SimilarityThreshold: *similarityThreshold,
-				MaxResults:          100,
-			}
-
-			resp, err := client.DetectClones(ctx, req)
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "⚠ Warning: Semantic detection failed: %v\n\n", err)
-				if *modeFlag == "semantic" {
-					return err
-				}
-				// Graceful degradation for "both" mode
-			} else if resp.Error != "" {
-				fmt.Fprintf(os.Stderr, "⚠ Warning: %s\n\n", resp.Error)
-			} else {
-				// Report semantic clones
-				if len(resp.Clones) > 0 {
-					fmt.Printf("\nFound %d semantic clone pairs:\n\n", len(resp.Clones))
-					for i, clone := range resp.Clones {
-						fmt.Printf("%d. Similarity: %.2f%%\n", i+1, clone.Similarity*100)
-						fmt.Printf("   %s:%d-%d\n", clone.SourceFile, clone.SourceStartLine, clone.SourceEndLine)
-						fmt.Printf("   %s:%d-%d\n", clone.TargetFile, clone.TargetStartLine, clone.TargetEndLine)
-						if clone.Explanation != "" {
-							fmt.Printf("   %s\n", clone.Explanation)
-						}
-						fmt.Println()
-					}
-
-					totalClones += len(resp.Clones)
-				} else {
-					fmt.Println("✓ No semantic clones found")
-				}
-
-				// Print stats
-				fmt.Printf("Analyzed %d files, %d functions in %dms\n",
-					resp.Stats.FilesAnalyzed,
-					resp.Stats.FunctionsAnalyzed,
-					resp.Stats.DurationMs)
-			}
-		}
-	}
-
-	// Return error if clones found
-	if totalClones > 0 {
-		return fmt.Errorf("found %d total clone(s)", totalClones)
-	}
-
-	return nil
+// printSemanticStats prints semantic detection statistics
+func printSemanticStats(resp *plugin.SemanticCloneResponse) {
+	fmt.Printf("Analyzed %d files, %d functions in %dms\n",
+		resp.Stats.FilesAnalyzed,
+		resp.Stats.FunctionsAnalyzed,
+		resp.Stats.DurationMs)
 }
 
 // printClonesHelp prints help for the clones subcommand
