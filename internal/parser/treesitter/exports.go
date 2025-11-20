@@ -164,20 +164,34 @@ func isGoExported(name string) bool {
 func (e *ExportExtractor) extractPythonExports(tree *sitter.Tree, source []byte, filePath string) ([]Export, error) {
 	// Python: top-level functions and classes (not starting with _)
 	var exports []Export
-	
+
 	root := tree.RootNode()
 	for i := 0; i < int(root.ChildCount()); i++ {
 		child := root.Child(i)
 		if child == nil {
 			continue
 		}
-		
-		nodeType := child.Type()
+
+		// Handle decorated definitions (@decorator syntax)
+		// In tree-sitter-python, decorated functions/classes are wrapped in decorated_definition
+		definitionNode := child
+		if child.Type() == "decorated_definition" {
+			// Find the inner function_definition or class_definition
+			for j := 0; j < int(child.ChildCount()); j++ {
+				innerNode := child.Child(j)
+				if innerNode != nil && (innerNode.Type() == "function_definition" || innerNode.Type() == "class_definition") {
+					definitionNode = innerNode
+					break
+				}
+			}
+		}
+
+		nodeType := definitionNode.Type()
 		if nodeType != "function_definition" && nodeType != "class_definition" {
 			continue
 		}
-		
-		nameNode := child.ChildByFieldName("name")
+
+		nameNode := definitionNode.ChildByFieldName("name")
 		if nameNode != nil {
 			name := string(source[nameNode.StartByte():nameNode.EndByte()])
 			// Skip private (starting with _)
@@ -191,7 +205,7 @@ func (e *ExportExtractor) extractPythonExports(tree *sitter.Tree, source []byte,
 			}
 		}
 	}
-	
+
 	return exports, nil
 }
 

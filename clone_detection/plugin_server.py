@@ -47,7 +47,8 @@ app = FastAPI(
 )
 
 # Global state with thread-safe initialization
-embedder: Optional[GraphCodeBERTEmbedder] = None
+# Use string annotation to avoid NameError when ML dependencies unavailable
+embedder: Optional["GraphCodeBERTEmbedder"] = None
 embedder_lock = Lock()  # Thread-safe initialization
 
 
