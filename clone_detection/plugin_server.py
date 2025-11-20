@@ -12,6 +12,7 @@ ML-based clone detection as an opt-in feature.
 import logging
 import time
 from pathlib import Path
+from threading import Lock
 from typing import List, Optional
 
 from fastapi import FastAPI, HTTPException
@@ -45,8 +46,9 @@ app = FastAPI(
     description="HTTP API for semantic code clone detection using GraphCodeBERT"
 )
 
-# Global state
+# Global state with thread-safe initialization
 embedder: Optional[GraphCodeBERTEmbedder] = None
+embedder_lock = Lock()  # Thread-safe initialization
 
 
 # --- API Models ---
@@ -130,25 +132,28 @@ async def health_check() -> HealthResponse:
             message=f"Dependencies not available: {IMPORT_ERROR}"
         )
 
-    # Check if model can be loaded
+    # Check if model can be loaded (thread-safe)
     global embedder
     if embedder is None:
-        try:
-            # Try to initialize embedder (this can fail if model not downloaded)
-            embedder = GraphCodeBERTEmbedder(
-                model_name="microsoft/graphcodebert-base",
-                device="cpu"  # Use CPU for health check
-            )
-            return HealthResponse(
-                status="healthy",
-                message="Semantic clone detection ready"
-            )
-        except Exception as e:
-            return HealthResponse(
-                status="degraded",
-                message=f"Model loading failed: {str(e)}",
-                capabilities=["limited"]
-            )
+        with embedder_lock:
+            # Double-check after acquiring lock
+            if embedder is None:
+                try:
+                    # Try to initialize embedder (this can fail if model not downloaded)
+                    embedder = GraphCodeBERTEmbedder(
+                        model_name="microsoft/graphcodebert-base",
+                        device="cpu"  # Use CPU for health check
+                    )
+                    return HealthResponse(
+                        status="healthy",
+                        message="Semantic clone detection ready"
+                    )
+                except Exception as e:
+                    return HealthResponse(
+                        status="degraded",
+                        message=f"Model loading failed: {str(e)}",
+                        capabilities=["limited"]
+                    )
 
     return HealthResponse(
         status="healthy",
@@ -173,23 +178,26 @@ async def detect_clones(request: SemanticCloneRequest) -> SemanticCloneResponse:
     start_time = time.time()
 
     try:
-        # Initialize components
+        # Initialize components (thread-safe)
         global embedder
         if embedder is None:
-            logger.info("Initializing GraphCodeBERT embedder...")
-            embedder = GraphCodeBERTEmbedder(
-                model_name="microsoft/graphcodebert-base",
-                device="cpu"  # TODO: Support GPU via config
-            )
+            with embedder_lock:
+                # Double-check after acquiring lock
+                if embedder is None:
+                    logger.info("Initializing GraphCodeBERT embedder...")
+                    embedder = GraphCodeBERTEmbedder(
+                        model_name="microsoft/graphcodebert-base",
+                        device="cpu"  # TODO: Support GPU via config
+                    )
 
         # Parse source files
         logger.info(f"Parsing source directory: {request.source_dir}")
-        parser = TreeSitterParser(
-            languages=request.languages,
+        parser = TreeSitterParser(languages=request.languages)
+
+        functions = parser.parse_directory(
+            Path(request.source_dir),
             exclude_patterns=request.exclude_patterns
         )
-
-        functions = parser.parse_directory(Path(request.source_dir))
         logger.info(f"Found {len(functions)} functions across {len(set(f.file_path for f in functions))} files")
 
         if len(functions) == 0:
@@ -207,7 +215,7 @@ async def detect_clones(request: SemanticCloneRequest) -> SemanticCloneResponse:
         logger.info("Generating embeddings...")
         embeddings = []
         for func in functions:
-            embedding = embedder.embed(func.code)
+            embedding = embedder.embed_single(func.code)
             embeddings.append(embedding)
 
         # Build FAISS index
@@ -219,8 +227,7 @@ async def detect_clones(request: SemanticCloneRequest) -> SemanticCloneResponse:
 
         import numpy as np
         embeddings_array = np.vstack(embeddings)
-        index_builder.add_embeddings(embeddings_array)
-        index = index_builder.build()
+        index = index_builder.build(embeddings_array)
 
         # Search for similar code
         logger.info("Searching for semantic clones...")
@@ -346,7 +353,7 @@ def main():
         logger.warning("ML dependencies not available. Install with: pip install -e .")
 
     uvicorn.run(
-        "plugin_server:app",
+        "clone_detection.plugin_server:app",
         host=args.host,
         port=args.port,
         reload=args.reload,

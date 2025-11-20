@@ -17,7 +17,7 @@ Phase 2 has **transformed** structurelint from a basic linter into a **powerful 
 ### ✅ Milestone 2.1: Dependency Graph Visualization
 
 #### Created (5 files, ~1,200 lines)
-```
+```text
 ✅ internal/graph/export/dot.go          (430 lines)
 ✅ internal/graph/export/mermaid.go      (230 lines)
 ✅ internal/graph/analysis/cycles.go     (330 lines)
@@ -37,7 +37,7 @@ Phase 2 has **transformed** structurelint from a basic linter into a **powerful 
 ### ✅ Milestone 2.2: Enhanced Rule Expressiveness
 
 #### Created (4 files, ~1,000 lines)
-```
+```text
 ✅ internal/rules/predicate/predicate.go (360 lines)
 ✅ internal/rules/predicate_rule.go      (240 lines)
 ✅ internal/rules/ast_query_rule.go      (310 lines)
@@ -217,7 +217,7 @@ $ go test ./... -short
 
 **Result**: ✅ **ALL TESTS PASS**
 
-```
+```text
 ok  	internal/config	        (cached)
 ok  	internal/graph	        (cached)
 ok  	internal/graph/analysis	[no test files]
@@ -242,7 +242,7 @@ ok  	internal/walker	        (cached)
 ### Created (9 files, ~2,200 lines)
 
 **Graph Visualization:**
-```
+```text
 ✅ internal/graph/export/dot.go          (430 lines)
 ✅ internal/graph/export/mermaid.go      (230 lines)
 ✅ internal/graph/analysis/cycles.go     (330 lines)
@@ -250,7 +250,7 @@ ok  	internal/walker	        (cached)
 ```
 
 **Enhanced Rules:**
-```
+```text
 ✅ internal/rules/predicate/predicate.go (360 lines)
 ✅ internal/rules/predicate_rule.go      (240 lines)
 ✅ internal/rules/ast_query_rule.go      (310 lines)
@@ -258,12 +258,12 @@ ok  	internal/walker	        (cached)
 ```
 
 **Documentation:**
-```
+```text
 ✅ PHASE2_COMPLETION.md                  (this file)
 ```
 
 ### Modified (1 file)
-```
+```text
 ✅ cmd/structurelint/main.go             (added graph subcommand)
 ```
 
@@ -418,7 +418,7 @@ IfProjectLanguage(".go", rule)     // Only if language detected
 ## Performance
 
 ### Graph Export Benchmarks (estimated)
-```
+```text
 10 files:      <10ms
 100 files:     <50ms
 1,000 files:   <500ms
@@ -426,7 +426,7 @@ IfProjectLanguage(".go", rule)     // Only if language detected
 ```
 
 ### Predicate Evaluation (per file)
-```
+```text
 Simple predicate:   <0.1ms
 Complex predicate:  <1ms
 AST query:          ~5ms (cached parser)

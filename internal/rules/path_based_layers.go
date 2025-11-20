@@ -16,11 +16,12 @@ type PathBasedLayerRule struct {
 
 // PathLayer defines a layer by its directory pattern
 type PathLayer struct {
-	Name            string   // Layer name (e.g., "presentation", "business", "data")
-	Patterns        []string // Glob/regex patterns matching files in this layer
-	CanDependOn     []string // Names of layers this can depend on
-	ForbiddenPaths  []string // Path patterns that files in this layer cannot reference
-	compiledRegexes []*regexp.Regexp
+	Name                    string   // Layer name (e.g., "presentation", "business", "data")
+	Patterns                []string // Glob/regex patterns matching files in this layer
+	CanDependOn             []string // Names of layers this can depend on
+	ForbiddenPaths          []string // Path patterns that files in this layer cannot reference
+	compiledRegexes         []*regexp.Regexp
+	compiledForbiddenRegexes []*regexp.Regexp // Cached compiled forbidden patterns
 }
 
 // Name returns the rule name
@@ -77,6 +78,17 @@ func (r *PathBasedLayerRule) compileAllPatterns() error {
 				return fmt.Errorf("layer '%s' pattern '%s': %w", layer.Name, pattern, err)
 			}
 			layer.compiledRegexes = append(layer.compiledRegexes, regex)
+		}
+
+		// Also compile forbidden path patterns
+		layer.compiledForbiddenRegexes = make([]*regexp.Regexp, 0, len(layer.ForbiddenPaths))
+		for _, forbiddenPattern := range layer.ForbiddenPaths {
+			regexPattern := globToRegex(forbiddenPattern)
+			regex, err := regexp.Compile(regexPattern)
+			if err != nil {
+				return fmt.Errorf("layer '%s' forbidden pattern '%s': %w", layer.Name, forbiddenPattern, err)
+			}
+			layer.compiledForbiddenRegexes = append(layer.compiledForbiddenRegexes, regex)
 		}
 	}
 	return nil
@@ -143,8 +155,9 @@ func (r *PathBasedLayerRule) checkForbiddenPaths(
 ) []Violation {
 	var violations []Violation
 
-	for _, forbiddenPattern := range layer.ForbiddenPaths {
-		if violation := r.checkSingleForbiddenPattern(file, layer, forbiddenPattern); violation != nil {
+	for i, compiledRegex := range layer.compiledForbiddenRegexes {
+		forbiddenPattern := layer.ForbiddenPaths[i]
+		if violation := r.checkSingleForbiddenPattern(file, layer, forbiddenPattern, compiledRegex); violation != nil {
 			violations = append(violations, *violation)
 			violationPaths[forbiddenPattern] = true
 		}
@@ -153,18 +166,14 @@ func (r *PathBasedLayerRule) checkForbiddenPaths(
 	return violations
 }
 
-// checkSingleForbiddenPattern checks a single forbidden pattern
+// checkSingleForbiddenPattern checks a single forbidden pattern using precompiled regex
 func (r *PathBasedLayerRule) checkSingleForbiddenPattern(
 	file walker.FileInfo,
 	layer *PathLayer,
 	forbiddenPattern string,
+	compiledRegex *regexp.Regexp,
 ) *Violation {
-	regex, err := regexp.Compile(globToRegex(forbiddenPattern))
-	if err != nil {
-		return nil
-	}
-
-	if !regex.MatchString(file.Path) {
+	if !compiledRegex.MatchString(file.Path) {
 		return nil
 	}
 

@@ -3,6 +3,7 @@ package treesitter
 import (
 	"fmt"
 	"os"
+	"unicode"
 
 	sitter "github.com/smacker/go-tree-sitter"
 )
@@ -68,9 +69,8 @@ func (e *ExportExtractor) extractExports(tree *sitter.Tree, source []byte, fileP
 
 // extractGoExports extracts public (capitalized) symbols from Go
 func (e *ExportExtractor) extractGoExports(tree *sitter.Tree, source []byte, filePath string) ([]Export, error) {
-	// In Go, exported symbols start with uppercase letters - simplified version without regex
 	var exports []Export
-	
+
 	// Walk the tree looking for top-level declarations
 	root := tree.RootNode()
 	for i := 0; i < int(root.ChildCount()); i++ {
@@ -78,39 +78,86 @@ func (e *ExportExtractor) extractGoExports(tree *sitter.Tree, source []byte, fil
 		if child == nil {
 			continue
 		}
-		
-		nodeType := child.Type()
-		var nameNode *sitter.Node
-		
-		switch nodeType {
+
+		switch child.Type() {
 		case "function_declaration":
-			nameNode = child.ChildByFieldName("name")
+			if exp := e.extractGoFunction(child, source, filePath); exp != nil {
+				exports = append(exports, *exp)
+			}
 		case "type_declaration":
-			// Get type_spec -> name
-			for j := 0; j < int(child.ChildCount()); j++ {
-				typeSpec := child.Child(j)
-				if typeSpec != nil && typeSpec.Type() == "type_spec" {
-					nameNode = typeSpec.ChildByFieldName("name")
-					break
-				}
-			}
-		}
-		
-		if nameNode != nil {
-			name := string(source[nameNode.StartByte():nameNode.EndByte()])
-			// Check if capitalized (exported in Go)
-			if len(name) > 0 && name[0] >= 'A' && name[0] <= 'Z' {
-				exports = append(exports, Export{
-					SourceFile: filePath,
-					Names:      []string{name},
-					IsDefault:  false,
-					Line:       nameNode.StartPoint().Row,
-				})
-			}
+			exports = append(exports, e.extractGoTypes(child, source, filePath)...)
 		}
 	}
-	
+
 	return exports, nil
+}
+
+// extractGoFunction extracts a function export if it's exported
+func (e *ExportExtractor) extractGoFunction(node *sitter.Node, source []byte, filePath string) *Export {
+	nameNode := node.ChildByFieldName("name")
+	if nameNode == nil {
+		return nil
+	}
+
+	name := string(source[nameNode.StartByte():nameNode.EndByte()])
+	if !isGoExported(name) {
+		return nil
+	}
+
+	return &Export{
+		SourceFile: filePath,
+		Names:      []string{name},
+		IsDefault:  false,
+		Line:       nameNode.StartPoint().Row + 1, // Convert 0-based to 1-based
+	}
+}
+
+// extractGoTypes extracts all exported types from a type_declaration
+func (e *ExportExtractor) extractGoTypes(node *sitter.Node, source []byte, filePath string) []Export {
+	var exports []Export
+
+	// Handle grouped type declarations: type ( Foo struct {}; Bar struct {} )
+	for j := 0; j < int(node.ChildCount()); j++ {
+		typeSpec := node.Child(j)
+		if typeSpec == nil || typeSpec.Type() != "type_spec" {
+			continue
+		}
+
+		if exp := e.extractGoTypeSpec(typeSpec, source, filePath); exp != nil {
+			exports = append(exports, *exp)
+		}
+	}
+
+	return exports
+}
+
+// extractGoTypeSpec extracts a single type spec if it's exported
+func (e *ExportExtractor) extractGoTypeSpec(typeSpec *sitter.Node, source []byte, filePath string) *Export {
+	nameNode := typeSpec.ChildByFieldName("name")
+	if nameNode == nil {
+		return nil
+	}
+
+	name := string(source[nameNode.StartByte():nameNode.EndByte()])
+	if !isGoExported(name) {
+		return nil
+	}
+
+	return &Export{
+		SourceFile: filePath,
+		Names:      []string{name},
+		IsDefault:  false,
+		Line:       nameNode.StartPoint().Row + 1, // Convert 0-based to 1-based
+	}
+}
+
+// isGoExported checks if a Go identifier is exported (starts with uppercase Unicode letter)
+func isGoExported(name string) bool {
+	if len(name) == 0 {
+		return false
+	}
+	firstRune := []rune(name)[0]
+	return unicode.IsUpper(firstRune)
 }
 
 // extractPythonExports extracts symbols from Python
@@ -139,7 +186,7 @@ func (e *ExportExtractor) extractPythonExports(tree *sitter.Tree, source []byte,
 					SourceFile: filePath,
 					Names:      []string{name},
 					IsDefault:  false,
-					Line:       nameNode.StartPoint().Row,
+					Line:       nameNode.StartPoint().Row + 1, // Convert 0-based to 1-based
 				})
 			}
 		}

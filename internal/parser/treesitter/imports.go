@@ -197,6 +197,7 @@ func (e *ImportExtractor) extractJavaPackage(tree *sitter.Tree, source []byte) s
 	if err != nil {
 		return ""
 	}
+	defer cursor.Close()
 	defer query.Close()
 
 	for {
@@ -226,6 +227,7 @@ func (e *ImportExtractor) executeQuery(
 	if err != nil {
 		return nil, err
 	}
+	defer cursor.Close()
 	defer query.Close()
 
 	var imports []Import

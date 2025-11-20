@@ -103,6 +103,8 @@ func (r *ASTQueryRule) executeQuery(filePath string, lang treesitter.Language, q
 	if err != nil {
 		return nil, err
 	}
+	defer cursor.Close()
+	defer query.Close()
 
 	// Collect matches
 	var matches []*QueryMatch
@@ -260,7 +262,7 @@ func ExampleRequireDeprecationCommentRule() Rule {
 			// for @deprecated comment above the function
 			for _, match := range matches {
 				funcName := match.CaptureMap["func.name"]
-				if funcName != "" && len(funcName) > 3 && funcName[:3] == "Old" {
+				if funcName != "" && strings.HasPrefix(funcName, "Old") {
 					// Check if there's a deprecation comment (simplified)
 					violations = append(violations, Violation{
 						Rule:    "require-deprecation-comment",
@@ -304,7 +306,7 @@ func ExampleDisallowGlobalVariablesRule() Rule {
 			var violations []Violation
 
 			// Skip test files
-			if filepath.Base(file.Path)[len(filepath.Base(file.Path))-8:] == "_test.go" {
+			if strings.HasSuffix(filepath.Base(file.Path), "_test.go") {
 				return nil
 			}
 

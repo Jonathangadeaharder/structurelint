@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/structurelint/structurelint/internal/clones/detector"
@@ -94,6 +95,20 @@ func parseClonesFlags(args []string) (*clonesConfig, error) {
 
 	// Set config values
 	config.mode = *modeFlag
+
+	// Validate mode flag
+	validModes := []string{"syntactic", "semantic", "both"}
+	isValidMode := false
+	for _, validMode := range validModes {
+		if *modeFlag == validMode {
+			isValidMode = true
+			break
+		}
+	}
+	if !isValidMode {
+		return nil, fmt.Errorf("invalid mode '%s': must be one of: syntactic, semantic, both", *modeFlag)
+	}
+
 	config.runSyntactic = *modeFlag == "syntactic" || *modeFlag == "both"
 	config.runSemantic = *modeFlag == "semantic" || *modeFlag == "both"
 	config.minTokens = *minTokens
@@ -159,8 +174,9 @@ func runSemanticDetection(config *clonesConfig) (int, error) {
 
 // resolveAbsolutePath resolves the absolute path for semantic detection
 func resolveAbsolutePath(path string) string {
-	absPath, err := os.Getwd()
-	if err != nil || path != "." {
+	absPath, err := filepath.Abs(path)
+	if err != nil {
+		// If we can't resolve to absolute path, return original
 		return path
 	}
 	return absPath
