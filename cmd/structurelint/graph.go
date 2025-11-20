@@ -14,7 +14,7 @@ import (
 	"github.com/structurelint/structurelint/internal/walker"
 )
 
-func runGraph(args []string) error {
+func runGraph(args []string) (err error) {
 	fs := flag.NewFlagSet("graph", flag.ExitOnError)
 
 	// Output options
@@ -88,7 +88,11 @@ func runGraph(args []string) error {
 		if err != nil {
 			return fmt.Errorf("failed to create output file: %w", err)
 		}
-		defer writer.Close()
+		defer func() {
+			if closeErr := writer.Close(); closeErr != nil && err == nil {
+				err = fmt.Errorf("failed to close output file: %w", closeErr)
+			}
+		}()
 	}
 
 	// Export graph in requested format

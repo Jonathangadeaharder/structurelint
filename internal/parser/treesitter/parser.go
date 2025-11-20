@@ -2,6 +2,7 @@
 package treesitter
 
 import (
+	"context"
 	"fmt"
 	"os"
 
@@ -62,7 +63,10 @@ func New(lang Language) (*Parser, error) {
 
 // Parse parses the source code and returns a syntax tree
 func (p *Parser) Parse(sourceCode []byte) (*sitter.Tree, error) {
-	tree := p.parser.Parse(nil, sourceCode)
+	tree, err := p.parser.ParseCtx(context.TODO(), nil, sourceCode)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse: %w", err)
+	}
 	if tree == nil {
 		return nil, fmt.Errorf("failed to parse: tree is nil")
 	}

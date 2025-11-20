@@ -55,16 +55,28 @@ func NewDOTExporter(g *graph.ImportGraph, options DOTOptions) *DOTExporter {
 // Export writes the graph in DOT format to the writer
 func (e *DOTExporter) Export(w io.Writer) error {
 	// Write header
-	fmt.Fprintf(w, "digraph \"%s\" {\n", e.options.Title)
-	fmt.Fprintf(w, "  rankdir=LR;\n")
-	fmt.Fprintf(w, "  node [shape=box, style=rounded];\n")
-	fmt.Fprintf(w, "  edge [arrowhead=vee];\n\n")
+	if _, err := fmt.Fprintf(w, "digraph \"%s\" {\n", e.options.Title); err != nil {
+		return fmt.Errorf("failed to write DOT header: %w", err)
+	}
+	if _, err := fmt.Fprintf(w, "  rankdir=LR;\n"); err != nil {
+		return fmt.Errorf("failed to write DOT rankdir: %w", err)
+	}
+	if _, err := fmt.Fprintf(w, "  node [shape=box, style=rounded];\n"); err != nil {
+		return fmt.Errorf("failed to write DOT node style: %w", err)
+	}
+	if _, err := fmt.Fprintf(w, "  edge [arrowhead=vee];\n\n"); err != nil {
+		return fmt.Errorf("failed to write DOT edge style: %w", err)
+	}
 
 	// Get nodes to display
 	nodes := e.getFilteredNodes()
 	if len(nodes) == 0 {
-		fmt.Fprintf(w, "  // No nodes to display\n")
-		fmt.Fprintf(w, "}\n")
+		if _, err := fmt.Fprintf(w, "  // No nodes to display\n"); err != nil {
+			return fmt.Errorf("failed to write DOT comment: %w", err)
+		}
+		if _, err := fmt.Fprintf(w, "}\n"); err != nil {
+			return fmt.Errorf("failed to write DOT closing: %w", err)
+		}
 		return nil
 	}
 
@@ -89,11 +101,15 @@ func (e *DOTExporter) Export(w io.Writer) error {
 		color := e.getNodeColor(node)
 		fillColor := e.getNodeFillColor(node)
 
-		fmt.Fprintf(w, "  %s [label=\"%s\", color=\"%s\", fillcolor=\"%s\", style=\"rounded,filled\"];\n",
-			nodeID, label, color, fillColor)
+		if _, err := fmt.Fprintf(w, "  %s [label=\"%s\", color=\"%s\", fillcolor=\"%s\", style=\"rounded,filled\"];\n",
+			nodeID, label, color, fillColor); err != nil {
+			return fmt.Errorf("failed to write DOT node: %w", err)
+		}
 	}
 
-	fmt.Fprintf(w, "\n")
+	if _, err := fmt.Fprintf(w, "\n"); err != nil {
+		return fmt.Errorf("failed to write DOT newline: %w", err)
+	}
 
 	// Add edges
 	for _, fromNode := range nodes {
@@ -130,8 +146,10 @@ func (e *DOTExporter) Export(w io.Writer) error {
 				edgeStyle = "bold"
 			}
 
-			fmt.Fprintf(w, "  %s -> %s [color=\"%s\", style=\"%s\", penwidth=%s];\n",
-				fromID, toID, edgeColor, edgeStyle, edgeWidth)
+			if _, err := fmt.Fprintf(w, "  %s -> %s [color=\"%s\", style=\"%s\", penwidth=%s];\n",
+				fromID, toID, edgeColor, edgeStyle, edgeWidth); err != nil {
+				return fmt.Errorf("failed to write DOT edge: %w", err)
+			}
 		}
 	}
 
@@ -140,7 +158,9 @@ func (e *DOTExporter) Export(w io.Writer) error {
 		e.writeLegend(w)
 	}
 
-	fmt.Fprintf(w, "}\n")
+	if _, err := fmt.Fprintf(w, "}\n"); err != nil {
+		return fmt.Errorf("failed to write DOT closing brace: %w", err)
+	}
 	return nil
 }
 
@@ -382,11 +402,11 @@ func (e *DOTExporter) simplifyPath(path string) string {
 
 // writeLegend adds a legend showing layer colors
 func (e *DOTExporter) writeLegend(w io.Writer) {
-	fmt.Fprintf(w, "\n  // Legend\n")
-	fmt.Fprintf(w, "  subgraph cluster_legend {\n")
-	fmt.Fprintf(w, "    label=\"Layers\";\n")
-	fmt.Fprintf(w, "    style=filled;\n")
-	fmt.Fprintf(w, "    fillcolor=\"#F0F0F0\";\n")
+	_, _ = fmt.Fprintf(w, "\n  // Legend\n")
+	_, _ = fmt.Fprintf(w, "  subgraph cluster_legend {\n")
+	_, _ = fmt.Fprintf(w, "    label=\"Layers\";\n")
+	_, _ = fmt.Fprintf(w, "    style=filled;\n")
+	_, _ = fmt.Fprintf(w, "    fillcolor=\"#F0F0F0\";\n")
 
 	// Collect unique layers
 	layerMap := make(map[string]*config.Layer)
@@ -396,20 +416,17 @@ func (e *DOTExporter) writeLegend(w io.Writer) {
 
 	i := 0
 	for _, layer := range e.graph.Layers {
-		color := e.getNodeColor("")
-		fillColor := e.getNodeFillColor("")
-
 		// Temporarily set layer for color lookup
 		tempFile := "temp"
 		e.graph.FileLayers[tempFile] = &layer
-		color = e.getNodeColor(tempFile)
-		fillColor = e.getNodeFillColor(tempFile)
+		color := e.getNodeColor(tempFile)
+		fillColor := e.getNodeFillColor(tempFile)
 		delete(e.graph.FileLayers, tempFile)
 
-		fmt.Fprintf(w, "    legend%d [label=\"%s\", color=\"%s\", fillcolor=\"%s\", style=\"rounded,filled\"];\n",
+		_, _ = fmt.Fprintf(w, "    legend%d [label=\"%s\", color=\"%s\", fillcolor=\"%s\", style=\"rounded,filled\"];\n",
 			i, layer.Name, color, fillColor)
 		i++
 	}
 
-	fmt.Fprintf(w, "  }\n")
+	_, _ = fmt.Fprintf(w, "  }\n")
 }

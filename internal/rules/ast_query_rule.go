@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/structurelint/structurelint/internal/parser/treesitter"
 	"github.com/structurelint/structurelint/internal/walker"
@@ -161,7 +162,7 @@ func ExampleRequireInterfaceRule() Rule {
 			var violations []Violation
 
 			// Check if file is in domain layer
-			if !filepath.HasPrefix(file.Path, "internal/domain/") {
+			if !strings.HasPrefix(filepath.ToSlash(file.Path), "internal/domain/") {
 				return nil
 			}
 
@@ -210,7 +211,7 @@ func ExampleDisallowDirectDBAccessRule() Rule {
 			var violations []Violation
 
 			// Only check domain layer
-			if !filepath.HasPrefix(file.Path, "internal/domain/") {
+			if !strings.HasPrefix(filepath.ToSlash(file.Path), "internal/domain/") {
 				return nil
 			}
 

@@ -434,9 +434,7 @@ func (r *LinterConfigRule) formatMissingLinterMessage(config LinterConfig) strin
 	}
 
 	// Extract tool names from workflow steps
-	for _, step := range config.WorkflowSteps {
-		toolNames = append(toolNames, step)
-	}
+	toolNames = append(toolNames, config.WorkflowSteps...)
 
 	// Format config files display
 	var configFilesDisplay string

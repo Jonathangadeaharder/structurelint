@@ -176,11 +176,7 @@ func (e *ImportExtractor) extractJavaImports(tree *sitter.Tree, source []byte, f
 	return e.executeQuery(tree, source, queryString, filePath, func(match *sitter.QueryMatch, src []byte) Import {
 		importNode := match.Captures[0].Node
 		importPath := string(src[importNode.StartByte():importNode.EndByte()])
-
-		isRelative := false
-		if packageName != "" && strings.HasPrefix(importPath, packageName+".") {
-			isRelative = true
-		}
+		isRelative := packageName != "" && strings.HasPrefix(importPath, packageName+".")
 
 		return Import{
 			SourceFile: filePath,

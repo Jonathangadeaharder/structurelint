@@ -3,7 +3,6 @@ package export
 import (
 	"fmt"
 	"io"
-	"strings"
 
 	"github.com/structurelint/structurelint/internal/graph"
 )
@@ -58,7 +57,9 @@ func NewMermaidExporter(g *graph.ImportGraph, options MermaidOptions) *MermaidEx
 // Export writes the graph in Mermaid format to the writer
 func (e *MermaidExporter) Export(w io.Writer) error {
 	// Write header
-	fmt.Fprintf(w, "graph %s\n", e.options.Direction)
+	if _, err := fmt.Fprintf(w, "graph %s\n", e.options.Direction); err != nil {
+		return fmt.Errorf("failed to write Mermaid header: %w", err)
+	}
 
 	// Get nodes to display (reuse DOT exporter logic)
 	dotExporter := NewDOTExporter(e.graph, DOTOptions{
@@ -69,7 +70,9 @@ func (e *MermaidExporter) Export(w io.Writer) error {
 	nodes := dotExporter.getFilteredNodes()
 
 	if len(nodes) == 0 {
-		fmt.Fprintf(w, "  %% No nodes to display\n")
+		if _, err := fmt.Fprintf(w, "  %% No nodes to display\n"); err != nil {
+			return fmt.Errorf("failed to write Mermaid comment: %w", err)
+		}
 		return nil
 	}
 
@@ -126,12 +129,16 @@ func (e *MermaidExporter) Export(w io.Writer) error {
 					fromID, fromLabel, toID, toLabel)
 			}
 
-			fmt.Fprintf(w, "%s", edgeStyle)
+			if _, err := fmt.Fprintf(w, "%s", edgeStyle); err != nil {
+				return fmt.Errorf("failed to write Mermaid edge: %w", err)
+			}
 		}
 
 		// If node has no edges, define it explicitly
 		if !hasEdges {
-			fmt.Fprintf(w, "  %s[\"%s\"]\n", fromID, fromLabel)
+			if _, err := fmt.Fprintf(w, "  %s[\"%s\"]\n", fromID, fromLabel); err != nil {
+				return fmt.Errorf("failed to write Mermaid node: %w", err)
+			}
 		}
 	}
 
@@ -145,7 +152,7 @@ func (e *MermaidExporter) Export(w io.Writer) error {
 
 // writeStyles adds CSS styling for layer colors
 func (e *MermaidExporter) writeStyles(w io.Writer, nodeIDs map[string]string, nodes []string) {
-	fmt.Fprintf(w, "\n  %% Layer styling\n")
+	_, _ = fmt.Fprintf(w, "\n  %% Layer styling\n")
 
 	// Color scheme for different layers (Mermaid uses fill and stroke)
 	layerStyles := map[string]string{
@@ -176,34 +183,34 @@ func (e *MermaidExporter) writeStyles(w io.Writer, nodeIDs map[string]string, no
 
 		for _, node := range layerNodeList {
 			nodeID := nodeIDs[node]
-			fmt.Fprintf(w, "  style %s %s\n", nodeID, style)
+			_, _ = fmt.Fprintf(w, "  style %s %s\n", nodeID, style)
 		}
 	}
 
 	// Style for violations (if enabled)
 	if e.options.HighlightViolations {
-		fmt.Fprintf(w, "  linkStyle default stroke:#333,stroke-width:1px\n")
+		_, _ = fmt.Fprintf(w, "  linkStyle default stroke:#333,stroke-width:1px\n")
 	}
 
 	// Style for cycles (if enabled)
 	if e.options.ShowCycles {
-		fmt.Fprintf(w, "  linkStyle default stroke:#333,stroke-width:1px\n")
+		_, _ = fmt.Fprintf(w, "  linkStyle default stroke:#333,stroke-width:1px\n")
 	}
 }
 
 // ExportWithWrapper wraps the Mermaid graph in markdown code fences
 func (e *MermaidExporter) ExportWithWrapper(w io.Writer) error {
-	fmt.Fprintf(w, "```mermaid\n")
+	_, _ = fmt.Fprintf(w, "```mermaid\n")
 	if err := e.Export(w); err != nil {
 		return err
 	}
-	fmt.Fprintf(w, "```\n")
+	_, _ = fmt.Fprintf(w, "```\n")
 	return nil
 }
 
 // ExportHTML generates an HTML file with embedded Mermaid
 func (e *MermaidExporter) ExportHTML(w io.Writer) error {
-	fmt.Fprintf(w, `<!DOCTYPE html>
+	_, _ = fmt.Fprintf(w, `<!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
@@ -241,7 +248,7 @@ func (e *MermaidExporter) ExportHTML(w io.Writer) error {
 		return err
 	}
 
-	fmt.Fprintf(w, `    </div>
+	_, _ = fmt.Fprintf(w, `    </div>
   </div>
   <script>
     mermaid.initialize({ startOnLoad: true, theme: 'default' });
@@ -251,11 +258,4 @@ func (e *MermaidExporter) ExportHTML(w io.Writer) error {
 `)
 
 	return nil
-}
-
-// sanitizeForMermaid removes characters that might break Mermaid syntax
-func sanitizeForMermaid(s string) string {
-	s = strings.ReplaceAll(s, "\"", "'")
-	s = strings.ReplaceAll(s, "\n", " ")
-	return s
 }
