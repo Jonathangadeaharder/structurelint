@@ -53,7 +53,7 @@ jobs:
           ls -lh structurelint.txt
 
       - name: Upload repomix artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: repomixed-codebase-${{ github.event_name }}-${{ github.sha }}
           path: structurelint.txt
@@ -61,7 +61,7 @@ jobs:
           if-no-files-found: error
 
       - name: Upload repomix artifact (latest)
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: repomixed-codebase-latest
           path: structurelint.txt
