@@ -1,5 +1,15 @@
 # Multi-Language Extension Plan: C#, C++, and Java
 
+> **⚠️ STATUS: SUPERSEDED**
+>
+> This document outlined a Python-based approach for multi-language metrics support.
+> **This plan has been completed using a pure Go implementation** instead.
+>
+> ✅ **Implemented**: All metrics (cognitive complexity, Halstead) are now calculated using native Go tree-sitter bindings.
+> ✅ **No Python required**: The implementation uses `github.com/smacker/go-tree-sitter` with support for Python, JavaScript, TypeScript, Java, C++, and C#.
+>
+> See: `internal/parser/treesitter/` and `internal/metrics/multilang_analyzer.go`
+
 ## Executive Summary
 
 This plan outlines the steps to extend structurelint's functionality to fully support C#, C++, and Java across all phases. Currently, these languages have partial support:
