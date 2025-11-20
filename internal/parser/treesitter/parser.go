@@ -7,6 +7,8 @@ import (
 	"os"
 
 	sitter "github.com/smacker/go-tree-sitter"
+	"github.com/smacker/go-tree-sitter/cpp"
+	"github.com/smacker/go-tree-sitter/csharp"
 	"github.com/smacker/go-tree-sitter/golang"
 	"github.com/smacker/go-tree-sitter/java"
 	"github.com/smacker/go-tree-sitter/javascript"
@@ -23,6 +25,8 @@ const (
 	LanguageJavaScript Language = "javascript"
 	LanguageTypeScript Language = "typescript"
 	LanguageJava       Language = "java"
+	LanguageCpp        Language = "cpp"
+	LanguageCSharp     Language = "csharp"
 )
 
 // Parser wraps tree-sitter parsing functionality
@@ -48,6 +52,10 @@ func New(lang Language) (*Parser, error) {
 		treeSitterLang = typescript.GetLanguage()
 	case LanguageJava:
 		treeSitterLang = java.GetLanguage()
+	case LanguageCpp:
+		treeSitterLang = cpp.GetLanguage()
+	case LanguageCSharp:
+		treeSitterLang = csharp.GetLanguage()
 	default:
 		return nil, fmt.Errorf("unsupported language: %s", lang)
 	}
@@ -108,6 +116,10 @@ func DetectLanguageFromExtension(ext string) (Language, error) {
 		return LanguageTypeScript, nil
 	case ".java":
 		return LanguageJava, nil
+	case ".cpp", ".cc", ".cxx", ".c", ".h", ".hpp":
+		return LanguageCpp, nil
+	case ".cs":
+		return LanguageCSharp, nil
 	default:
 		return "", fmt.Errorf("unsupported file extension: %s", ext)
 	}

@@ -155,32 +155,38 @@ rules:
 
 **Evidence**: Cognitive Complexity has r=0.54 correlation with comprehension time vs Cyclomatic's weak/unsatisfactory correlation.
 
-### 2. **Mandatory: Python 3 with tree-sitter** 🐍
+### 2. **Pure Go Implementation** 🚀
 
-**Why**: No more silent fallbacks - fail fast with clear error messages.
+**Why**: Zero external dependencies - fast, reliable, and portable.
 
-**Requirements**:
-```bash
-# Required for metrics (Python, JS/TS, Java, C++, C#)
-pip3 install tree-sitter tree-sitter-java tree-sitter-cpp tree-sitter-c-sharp
-```
+**Features**:
+- Native Go tree-sitter bindings for multi-language analysis
+- Support for Python, JS/TS, Java, C++, C#
+- No Python, Node.js, or external runtime required
+- Single binary deployment
 
 **Changed behavior**:
-- ❌ **OLD**: Falls back to `python` if `python3` not found (silent degradation)
-- ✅ **NEW**: Requires `python3` explicitly (fails with installation instructions)
+- ❌ **OLD**: Required Python 3 with tree-sitter packages
+- ✅ **NEW**: Pure Go implementation with embedded language parsers
+
+**Metrics granularity**:
+- ❌ **OLD**: Multi-language metrics provided function-level granularity
+- ✅ **NEW**: Multi-language metrics provide file-level granularity only
+- **Note**: Go-specific metrics (for `.go` files) still provide function-level granularity as before
+- **Reason**: Simplifies the pure Go implementation while maintaining file-level quality assessment
 
 ### 3. **Explicit Error Messages** 📣
 
 All errors now include:
-- Clear explanation of what's missing
-- Exact installation commands
+- Clear explanation of what's wrong
+- Actionable suggestions
 - No silent failures or degradation
 
 **Example**:
 ```
-Error: failed to execute Java metrics script (requires python3 with tree-sitter-java):
-  Install: pip3 install tree-sitter tree-sitter-java
-  Error: exec: "python3": executable file not found in $PATH
+Error: failed to parse file example.java:
+  Line 42: syntax error - unexpected token '}'
+  Suggestion: check for unmatched braces or missing semicolons
 ```
 
 ## Installation
