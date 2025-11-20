@@ -2,12 +2,12 @@ package metrics
 
 import (
 	"os"
-	"path/filepath"
 	"testing"
 )
 
-func TestDetectLanguage(t *testing.T) {
+func TestDetectLanguageFromPath(t *testing.T) {
 	// Arrange
+	analyzer := NewMultiLanguageCognitiveComplexityAnalyzer()
 	tests := []struct {
 		filePath string
 		expected string
@@ -17,8 +17,10 @@ func TestDetectLanguage(t *testing.T) {
 		{"component.jsx", "javascript"},
 		{"app.ts", "typescript"},
 		{"component.tsx", "typescript"},
-		{"main.go", "unknown"},
-		{"README.md", "unknown"},
+		{"Main.java", "java"},
+		{"example.cpp", "cpp"},
+		{"example.cc", "cpp"},
+		{"example.cs", "csharp"},
 		{"/path/to/script.PY", "python"}, // Case insensitive
 		{"/path/to/app.JS", "javascript"},
 	}
@@ -26,11 +28,36 @@ func TestDetectLanguage(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.filePath, func(t *testing.T) {
 			// Act
-			result := detectLanguage(tt.filePath)
+			result, err := analyzer.detectLanguageFromPath(tt.filePath)
 
 			// Assert
+			if err != nil {
+				t.Errorf("detectLanguageFromPath(%q) returned unexpected error: %v", tt.filePath, err)
+			}
 			if result != tt.expected {
-				t.Errorf("detectLanguage(%q) = %q, want %q", tt.filePath, result, tt.expected)
+				t.Errorf("detectLanguageFromPath(%q) = %q, want %q", tt.filePath, result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestDetectLanguageFromPath_Unsupported(t *testing.T) {
+	// Arrange
+	analyzer := NewMultiLanguageCognitiveComplexityAnalyzer()
+	tests := []string{
+		"main.go",
+		"README.md",
+		"data.json",
+	}
+
+	for _, filePath := range tests {
+		t.Run(filePath, func(t *testing.T) {
+			// Act
+			_, err := analyzer.detectLanguageFromPath(filePath)
+
+			// Assert
+			if err == nil {
+				t.Errorf("detectLanguageFromPath(%q) expected error for unsupported extension, got nil", filePath)
 			}
 		})
 	}
@@ -72,26 +99,6 @@ func TestNewMultiLanguageHalsteadAnalyzer(t *testing.T) {
 	}
 }
 
-func TestGetScriptPath(t *testing.T) {
-	// Act
-	scriptPath, err := getScriptPath("python_metrics.py")
-
-	// Assert
-	if err != nil {
-		t.Fatalf("getScriptPath() error = %v", err)
-	}
-
-	// Check that path ends with expected structure
-	expectedSuffix := filepath.Join("metrics", "scripts", "python_metrics.py")
-	if !filepath.IsAbs(scriptPath) {
-		t.Errorf("getScriptPath() returned relative path %q, want absolute path", scriptPath)
-	}
-
-	if !containsSuffix(scriptPath, expectedSuffix) {
-		t.Errorf("getScriptPath() = %q, want path ending with %q", scriptPath, expectedSuffix)
-	}
-}
-
 func TestAnalyzeFileByPath_UnsupportedLanguage(t *testing.T) {
 	// Arrange
 	analyzer := NewMultiLanguageCognitiveComplexityAnalyzer()
@@ -111,7 +118,7 @@ func TestAnalyzeFileByPath_UnsupportedLanguage(t *testing.T) {
 		t.Error("AnalyzeFileByPath() with .go file should return error, got nil")
 	}
 
-	expectedErrMsg := "unsupported language"
+	expectedErrMsg := "unsupported"
 	if err != nil && !containsString(err.Error(), expectedErrMsg) {
 		t.Errorf("AnalyzeFileByPath() error = %q, want error containing %q", err.Error(), expectedErrMsg)
 	}
@@ -145,10 +152,6 @@ def complex_function(x):
 	metrics, err := analyzer.AnalyzeFileByPath(tmpFile.Name())
 
 	// Assert
-	if err != nil && containsString(err.Error(), "failed to execute") {
-		t.Skip("Python interpreter not available, skipping test")
-	}
-
 	if err != nil {
 		t.Fatalf("AnalyzeFileByPath() error = %v", err)
 	}
@@ -157,12 +160,13 @@ def complex_function(x):
 		t.Errorf("FilePath = %q, want %q", metrics.FilePath, tmpFile.Name())
 	}
 
-	if len(metrics.Functions) == 0 {
-		t.Error("Expected at least one function in metrics")
+	// New implementation provides file-level metrics
+	if metrics.FileLevel == nil {
+		t.Fatal("Expected FileLevel metrics, got nil")
 	}
 
-	if len(metrics.Functions) != 2 {
-		t.Errorf("Got %d functions, want 2", len(metrics.Functions))
+	if _, ok := metrics.FileLevel["cognitive_complexity"]; !ok {
+		t.Error("Expected cognitive_complexity in FileLevel metrics")
 	}
 }
 
@@ -198,10 +202,6 @@ function complexFunction(x) {
 	metrics, err := analyzer.AnalyzeFileByPath(tmpFile.Name())
 
 	// Assert
-	if err != nil && (containsString(err.Error(), "failed to execute") || containsString(err.Error(), "@babel/parser")) {
-		t.Skip("Node.js or @babel/parser not available, skipping test")
-	}
-
 	if err != nil {
 		t.Fatalf("AnalyzeFileByPath() error = %v", err)
 	}
@@ -210,20 +210,55 @@ function complexFunction(x) {
 		t.Errorf("FilePath = %q, want %q", metrics.FilePath, tmpFile.Name())
 	}
 
-	if len(metrics.Functions) == 0 {
-		t.Error("Expected at least one function in metrics")
+	// New implementation provides file-level metrics
+	if metrics.FileLevel == nil {
+		t.Fatal("Expected FileLevel metrics, got nil")
+	}
+
+	if _, ok := metrics.FileLevel["cognitive_complexity"]; !ok {
+		t.Error("Expected cognitive_complexity in FileLevel metrics")
+	}
+}
+
+func TestAnalyzeHalsteadMetrics(t *testing.T) {
+	// Arrange
+	analyzer := NewMultiLanguageHalsteadAnalyzer()
+
+	tmpFile, err := os.CreateTemp("", "test*.py")
+	if err != nil {
+		t.Fatalf("Failed to create temp file: %v", err)
+	}
+	defer os.Remove(tmpFile.Name())
+
+	pythonCode := `def add(a, b):
+    return a + b
+`
+	if _, err := tmpFile.WriteString(pythonCode); err != nil {
+		t.Fatalf("Failed to write to temp file: %v", err)
+	}
+	tmpFile.Close()
+
+	// Act
+	metrics, err := analyzer.AnalyzeFileByPath(tmpFile.Name())
+
+	// Assert
+	if err != nil {
+		t.Fatalf("AnalyzeFileByPath() error = %v", err)
+	}
+
+	if metrics.FileLevel == nil {
+		t.Fatal("Expected FileLevel metrics, got nil")
+	}
+
+	expectedMetrics := []string{"halstead_effort", "halstead_volume", "halstead_difficulty"}
+	for _, metric := range expectedMetrics {
+		if _, ok := metrics.FileLevel[metric]; !ok {
+			t.Errorf("Expected %s in FileLevel metrics", metric)
+		}
 	}
 }
 
 // Helper functions for tests
-
-func containsSuffix(path, suffix string) bool {
-	// Normalize separators for cross-platform compatibility
-	normalizedPath := filepath.ToSlash(path)
-	normalizedSuffix := filepath.ToSlash(suffix)
-	return len(normalizedPath) >= len(normalizedSuffix) &&
-		normalizedPath[len(normalizedPath)-len(normalizedSuffix):] == normalizedSuffix
-}
 
 func containsString(s, substr string) bool {
 	return len(s) >= len(substr) && (s == substr || len(s) > len(substr) && findSubstring(s, substr))
