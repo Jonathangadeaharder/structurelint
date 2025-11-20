@@ -38,7 +38,7 @@ func (r *MaxHalsteadEffortRule) Check(files []walker.FileInfo, dirs map[string]*
 	files = FilterIgnoredFiles(files, r.Name())
 
 	goAnalyzer := metrics.NewHalsteadAnalyzer()
-	multiLangAnalyzer := metrics.NewMultiLanguageHalsteadAnalyzer()
+	multiLangAnalyzer := metrics.NewHalsteadAnalyzerV2()
 
 	for _, file := range files {
 		if file.IsDir {
@@ -56,7 +56,7 @@ func (r *MaxHalsteadEffortRule) Check(files []walker.FileInfo, dirs map[string]*
 func (r *MaxHalsteadEffortRule) checkFile(
 	file walker.FileInfo,
 	goAnalyzer *metrics.HalsteadAnalyzer,
-	multiLangAnalyzer *metrics.MultiLanguageAnalyzer,
+	multiLangAnalyzer *metrics.AnalyzerV2,
 ) []Violation {
 	fileType := detectFileType(file.Path)
 
@@ -102,16 +102,29 @@ func (r *MaxHalsteadEffortRule) analyzeFile(file walker.FileInfo, analyzer *metr
 }
 
 // analyzeMultiLangFile analyzes a Python/JavaScript/TypeScript file for Halstead effort
-func (r *MaxHalsteadEffortRule) analyzeMultiLangFile(file walker.FileInfo, analyzer *metrics.MultiLanguageAnalyzer) []Violation {
+func (r *MaxHalsteadEffortRule) analyzeMultiLangFile(file walker.FileInfo, analyzer *metrics.AnalyzerV2) []Violation {
 	var violations []Violation
 
 	// Analyze the file using the multi-language analyzer
 	fileMetrics, err := analyzer.AnalyzeFileByPath(file.AbsPath)
 	if err != nil {
-		// Skip files that can't be analyzed (e.g., missing interpreter)
+		// Skip files that can't be analyzed
 		return violations
 	}
 
+	// V2 analyzer returns file-level metrics in FileLevel map
+	if effort, ok := fileMetrics.FileLevel["halstead_effort"]; ok {
+		if effort > r.Max {
+			violations = append(violations, Violation{
+				Rule:    r.Name(),
+				Path:    file.Path,
+				Message: fmt.Sprintf("file has Halstead effort %.0f, exceeds max %.0f (evidence: rs=0.901 correlation with cognitive load)",
+					effort, r.Max),
+			})
+		}
+	}
+
+	// Also check function-level metrics if available
 	for _, funcMetric := range fileMetrics.Functions {
 		if funcMetric.Value > r.Max {
 			violations = append(violations, Violation{

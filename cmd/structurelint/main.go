@@ -25,12 +25,35 @@ func run() error {
 	// Check for subcommands
 	if len(os.Args) > 1 {
 		switch os.Args[1] {
+		case "graph":
+			return runGraph(os.Args[2:])
 		case "clones":
 			return runClones(os.Args[2:])
+		case "fix":
+			return runFix(os.Args[2:])
+		case "tui":
+			return runTUI(os.Args[2:])
+		case "scaffold":
+			return runScaffold(os.Args[2:])
 		case "help":
-			if len(os.Args) > 2 && os.Args[2] == "clones" {
-				printClonesHelp()
-				return nil
+			if len(os.Args) > 2 {
+				switch os.Args[2] {
+				case "graph":
+					printGraphHelp()
+					return nil
+				case "clones":
+					printClonesHelp()
+					return nil
+				case "fix":
+					printFixHelp()
+					return nil
+				case "tui":
+					printTUIHelp()
+					return nil
+				case "scaffold":
+					printScaffoldHelp()
+					return nil
+				}
 			}
 		}
 	}
@@ -166,14 +189,22 @@ func printHelp() {
 
 Usage:
   structurelint [options] [path]   Lint the project at path (default: current directory)
+  structurelint graph [options]    Visualize dependency graphs
   structurelint clones [options]   Detect code clones (duplicated code)
+  structurelint fix [options]      Auto-fix detected violations
+  structurelint tui [options]      Interactive terminal UI for fixing violations
+  structurelint scaffold [options] <type> <name>  Generate code from templates
   structurelint --init [path]      Generate configuration by analyzing project
   structurelint --version          Show version information
   structurelint --help             Show this help message
 
 Commands:
   (default)                    Lint project structure and architecture
+  graph                        Visualize dependency graphs (see 'structurelint help graph')
   clones                       Detect code clones (see 'structurelint help clones')
+  fix                          Auto-fix violations (see 'structurelint help fix')
+  tui                          Interactive terminal UI (see 'structurelint help tui')
+  scaffold                     Generate code from templates (see 'structurelint help scaffold')
 
 Options:
   -v, --version                Show version information

@@ -345,6 +345,16 @@ func splitIntoWords(name string) []string {
 	return words
 }
 
+// titleCase uppercases the first letter of a string
+func titleCase(s string) string {
+	if s == "" {
+		return ""
+	}
+	runes := []rune(s)
+	runes[0] = unicode.ToUpper(runes[0])
+	return string(runes)
+}
+
 // toCamelCase converts words to camelCase
 func toCamelCase(words []string) string {
 	if len(words) == 0 {
@@ -352,7 +362,7 @@ func toCamelCase(words []string) string {
 	}
 	result := strings.ToLower(words[0])
 	for i := 1; i < len(words); i++ {
-		result += strings.Title(strings.ToLower(words[i]))
+		result += titleCase(strings.ToLower(words[i]))
 	}
 	return result
 }
@@ -361,7 +371,7 @@ func toCamelCase(words []string) string {
 func toPascalCase(words []string) string {
 	var result string
 	for _, word := range words {
-		result += strings.Title(strings.ToLower(word))
+		result += titleCase(strings.ToLower(word))
 	}
 	return result
 }

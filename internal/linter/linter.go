@@ -146,126 +146,204 @@ func (l *Linter) createRules(files []walker.FileInfo, importGraph *graph.ImportG
 
 // addComplexRules adds rules that require more complex configuration
 func (l *Linter) addComplexRules(rulesList *[]rules.Rule, importGraph *graph.ImportGraph) {
-	// BREAKING CHANGE: max-cyclomatic-complexity has been removed
-	// Use max-cognitive-complexity instead (scientifically superior metric)
+	l.checkBreakingChanges()
+	l.addComplexityRules(rulesList)
+	l.addGraphDependentRules(rulesList, importGraph)
+	l.addPathBasedLayerRule(rulesList)
+	l.addTestValidationRules(rulesList)
+	l.addContentRules(rulesList)
+	l.addGitHubWorkflowsRule(rulesList)
+	l.addLinterConfigRule(rulesList)
+}
+
+// checkBreakingChanges checks for deprecated rule configurations
+func (l *Linter) checkBreakingChanges() {
 	if _, ok := l.getRuleConfig("max-cyclomatic-complexity"); ok {
 		panic("BREAKING CHANGE: 'max-cyclomatic-complexity' rule has been removed.\n" +
 			"Use 'max-cognitive-complexity' instead - it's scientifically superior (r=0.54 vs cyclomatic's weak correlation).\n" +
 			"See: https://github.com/structurelint/structurelint#phase-5-evidence-based-metrics")
 	}
+}
 
-	// Max cognitive complexity rule (evidence-based replacement for cyclomatic complexity)
-	if cognitiveComplexity, ok := l.getRuleConfig("max-cognitive-complexity"); ok {
-		if complexityMap, ok := cognitiveComplexity.(map[string]interface{}); ok {
-			max := l.getIntFromMap(complexityMap, "max")
-			testMax := l.getIntFromMap(complexityMap, "test-max")
-			filePatterns := l.getStringSliceFromMap(complexityMap, "file-patterns")
-			if max > 0 {
-				rule := rules.NewMaxCognitiveComplexityRule(max, filePatterns)
-				if testMax > 0 {
-					rule = rule.WithTestMax(testMax)
-				}
-				*rulesList = append(*rulesList, rule)
+// addComplexityRules adds evidence-based complexity measurement rules
+func (l *Linter) addComplexityRules(rulesList *[]rules.Rule) {
+	l.addCognitiveComplexityRule(rulesList)
+	l.addHalsteadEffortRule(rulesList)
+}
+
+// addCognitiveComplexityRule adds max cognitive complexity rule
+func (l *Linter) addCognitiveComplexityRule(rulesList *[]rules.Rule) {
+	cognitiveComplexity, ok := l.getRuleConfig("max-cognitive-complexity")
+	if !ok {
+		return
+	}
+
+	complexityMap, ok := cognitiveComplexity.(map[string]interface{})
+	if !ok {
+		return
+	}
+
+	max := l.getIntFromMap(complexityMap, "max")
+	if max <= 0 {
+		return
+	}
+
+	testMax := l.getIntFromMap(complexityMap, "test-max")
+	filePatterns := l.getStringSliceFromMap(complexityMap, "file-patterns")
+
+	rule := rules.NewMaxCognitiveComplexityRule(max, filePatterns)
+	if testMax > 0 {
+		rule = rule.WithTestMax(testMax)
+	}
+	*rulesList = append(*rulesList, rule)
+}
+
+// addHalsteadEffortRule adds max Halstead effort rule
+func (l *Linter) addHalsteadEffortRule(rulesList *[]rules.Rule) {
+	halsteadEffort, ok := l.getRuleConfig("max-halstead-effort")
+	if !ok {
+		return
+	}
+
+	effortMap, ok := halsteadEffort.(map[string]interface{})
+	if !ok {
+		return
+	}
+
+	max := l.getFloatFromMap(effortMap, "max")
+	if max <= 0 {
+		return
+	}
+
+	filePatterns := l.getStringSliceFromMap(effortMap, "file-patterns")
+	*rulesList = append(*rulesList, rules.NewMaxHalsteadEffortRule(max, filePatterns))
+}
+
+// addGraphDependentRules adds rules that require import graph analysis
+func (l *Linter) addGraphDependentRules(rulesList *[]rules.Rule, importGraph *graph.ImportGraph) {
+	if importGraph == nil {
+		return
+	}
+
+	l.addLayerBoundariesRule(rulesList, importGraph)
+	l.addOrphanedFilesRule(rulesList, importGraph)
+	l.addUnusedExportsRule(rulesList, importGraph)
+	l.addPropertyEnforcementRule(rulesList, importGraph)
+}
+
+// addLayerBoundariesRule adds layer boundaries enforcement rule
+func (l *Linter) addLayerBoundariesRule(rulesList *[]rules.Rule, importGraph *graph.ImportGraph) {
+	if _, ok := l.getRuleConfig("enforce-layer-boundaries"); ok {
+		if len(l.config.Layers) > 0 {
+			*rulesList = append(*rulesList, rules.NewLayerBoundariesRule(importGraph))
+		}
+	}
+}
+
+// addOrphanedFilesRule adds orphaned files detection rule
+func (l *Linter) addOrphanedFilesRule(rulesList *[]rules.Rule, importGraph *graph.ImportGraph) {
+	ruleConfig, ok := l.getRuleConfig("disallow-orphaned-files")
+	if !ok {
+		return
+	}
+
+	rule := rules.NewOrphanedFilesRule(importGraph, l.config.Entrypoints)
+
+	// Check for entry-point-patterns in the rule config
+	if configMap, ok := ruleConfig.(map[string]interface{}); ok {
+		if patterns, ok := configMap["entry-point-patterns"].([]interface{}); ok {
+			entryPointPatterns := l.extractStringSlice(patterns)
+			if len(entryPointPatterns) > 0 {
+				rule = rule.WithEntryPointPatterns(entryPointPatterns)
 			}
 		}
 	}
 
-	// Max Halstead effort rule (evidence-based data complexity metric)
-	if halsteadEffort, ok := l.getRuleConfig("max-halstead-effort"); ok {
-		if effortMap, ok := halsteadEffort.(map[string]interface{}); ok {
-			max := l.getFloatFromMap(effortMap, "max")
-			filePatterns := l.getStringSliceFromMap(effortMap, "file-patterns")
-			if max > 0 {
-				*rulesList = append(*rulesList, rules.NewMaxHalsteadEffortRule(max, filePatterns))
-			}
+	*rulesList = append(*rulesList, rule)
+}
+
+// extractStringSlice converts []interface{} to []string
+func (l *Linter) extractStringSlice(patterns []interface{}) []string {
+	var result []string
+	for _, p := range patterns {
+		if str, ok := p.(string); ok {
+			result = append(result, str)
 		}
 	}
+	return result
+}
 
-	// Graph-dependent rules
-	if importGraph != nil {
-		if _, ok := l.getRuleConfig("enforce-layer-boundaries"); ok {
-			if len(l.config.Layers) > 0 {
-				*rulesList = append(*rulesList, rules.NewLayerBoundariesRule(importGraph))
-			}
-		}
+// addUnusedExportsRule adds unused exports detection rule
+func (l *Linter) addUnusedExportsRule(rulesList *[]rules.Rule, importGraph *graph.ImportGraph) {
+	if _, ok := l.getRuleConfig("disallow-unused-exports"); ok {
+		*rulesList = append(*rulesList, rules.NewUnusedExportsRule(importGraph))
+	}
+}
 
-		if ruleConfig, ok := l.getRuleConfig("disallow-orphaned-files"); ok {
-			rule := rules.NewOrphanedFilesRule(importGraph, l.config.Entrypoints)
-
-			// Check for entry-point-patterns in the rule config
-			if configMap, ok := ruleConfig.(map[string]interface{}); ok {
-				if patterns, ok := configMap["entry-point-patterns"].([]interface{}); ok {
-					var entryPointPatterns []string
-					for _, p := range patterns {
-						if str, ok := p.(string); ok {
-							entryPointPatterns = append(entryPointPatterns, str)
-						}
-					}
-					if len(entryPointPatterns) > 0 {
-						rule = rule.WithEntryPointPatterns(entryPointPatterns)
-					}
-				}
-			}
-
-			*rulesList = append(*rulesList, rule)
-		}
-
-		if _, ok := l.getRuleConfig("disallow-unused-exports"); ok {
-			*rulesList = append(*rulesList, rules.NewUnusedExportsRule(importGraph))
-		}
-
-		// Property enforcement rule - comprehensive dependency management
-		if propertyConfig, ok := l.getRuleConfig("property-enforcement"); ok {
-			if configMap, ok := propertyConfig.(map[string]interface{}); ok {
-				config := rules.PropertyEnforcementConfig{
-					MaxDependenciesPerFile: l.getIntFromMap(configMap, "max_dependencies_per_file"),
-					MaxDependencyDepth:     l.getIntFromMap(configMap, "max_dependency_depth"),
-					DetectCycles:           l.getBoolFromMap(configMap, "detect_cycles"),
-					ForbiddenPatterns:      l.getStringSliceFromMap(configMap, "forbidden_patterns"),
-				}
-				*rulesList = append(*rulesList, rules.NewPropertyEnforcementRule(importGraph, config))
-			}
-		}
+// addPropertyEnforcementRule adds comprehensive dependency management rule
+func (l *Linter) addPropertyEnforcementRule(rulesList *[]rules.Rule, importGraph *graph.ImportGraph) {
+	propertyConfig, ok := l.getRuleConfig("property-enforcement")
+	if !ok {
+		return
 	}
 
-	// Path-based layer rule (Priority 3 - doesn't require import graph)
-	if ruleConfig, ok := l.getRuleConfig("path-based-layers"); ok {
-		if configMap, ok := ruleConfig.(map[string]interface{}); ok {
-			if layersConfig, ok := configMap["layers"].([]interface{}); ok {
-				var pathLayers []rules.PathLayer
-				for _, layerInterface := range layersConfig {
-					layerMap, ok := layerInterface.(map[string]interface{})
-					if !ok {
-						continue
-					}
-
-					layer := rules.PathLayer{
-						Name:           l.getStringFromMap(layerMap, "name"),
-						Patterns:       l.getStringSliceFromMap(layerMap, "patterns"),
-						CanDependOn:    l.getStringSliceFromMap(layerMap, "canDependOn"),
-						ForbiddenPaths: l.getStringSliceFromMap(layerMap, "forbiddenPaths"),
-					}
-					pathLayers = append(pathLayers, layer)
-				}
-
-				if len(pathLayers) > 0 {
-					*rulesList = append(*rulesList, rules.NewPathBasedLayerRule(pathLayers))
-				}
-			}
-		}
+	configMap, ok := propertyConfig.(map[string]interface{})
+	if !ok {
+		return
 	}
 
-	// Test validation rules (Phase 3)
-	l.addTestValidationRules(rulesList)
+	config := rules.PropertyEnforcementConfig{
+		MaxDependenciesPerFile: l.getIntFromMap(configMap, "max_dependencies_per_file"),
+		MaxDependencyDepth:     l.getIntFromMap(configMap, "max_dependency_depth"),
+		DetectCycles:           l.getBoolFromMap(configMap, "detect_cycles"),
+		ForbiddenPatterns:      l.getStringSliceFromMap(configMap, "forbidden_patterns"),
+	}
+	*rulesList = append(*rulesList, rules.NewPropertyEnforcementRule(importGraph, config))
+}
 
-	// Content rules (Phase 4)
-	l.addContentRules(rulesList)
+// addPathBasedLayerRule adds path-based layer validation rule
+func (l *Linter) addPathBasedLayerRule(rulesList *[]rules.Rule) {
+	ruleConfig, ok := l.getRuleConfig("path-based-layers")
+	if !ok {
+		return
+	}
 
-	// GitHub workflows rule
-	l.addGitHubWorkflowsRule(rulesList)
+	configMap, ok := ruleConfig.(map[string]interface{})
+	if !ok {
+		return
+	}
 
-	// Linter configuration rule
-	l.addLinterConfigRule(rulesList)
+	layersConfig, ok := configMap["layers"].([]interface{})
+	if !ok {
+		return
+	}
+
+	pathLayers := l.parsePathLayers(layersConfig)
+	if len(pathLayers) > 0 {
+		*rulesList = append(*rulesList, rules.NewPathBasedLayerRule(pathLayers))
+	}
+}
+
+// parsePathLayers parses path layer configurations
+func (l *Linter) parsePathLayers(layersConfig []interface{}) []rules.PathLayer {
+	var pathLayers []rules.PathLayer
+
+	for _, layerInterface := range layersConfig {
+		layerMap, ok := layerInterface.(map[string]interface{})
+		if !ok {
+			continue
+		}
+
+		layer := rules.PathLayer{
+			Name:           l.getStringFromMap(layerMap, "name"),
+			Patterns:       l.getStringSliceFromMap(layerMap, "patterns"),
+			CanDependOn:    l.getStringSliceFromMap(layerMap, "canDependOn"),
+			ForbiddenPaths: l.getStringSliceFromMap(layerMap, "forbiddenPaths"),
+		}
+		pathLayers = append(pathLayers, layer)
+	}
+
+	return pathLayers
 }
 
 // addTestValidationRules adds Phase 3 test validation rules

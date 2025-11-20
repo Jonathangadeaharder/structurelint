@@ -63,74 +63,113 @@ func (r *PropertyEnforcementRule) Check(files []walker.FileInfo, dirs map[string
 
 // detectCycles finds circular dependencies in the import graph
 func (r *PropertyEnforcementRule) detectCycles() []Violation {
-	var violations []Violation
-
-	// Track visited nodes and current path for cycle detection
-	visited := make(map[string]bool)
-	recStack := make(map[string]bool)
-	var currentPath []string
-
-	var dfs func(string) bool
-	dfs = func(file string) bool {
-		visited[file] = true
-		recStack[file] = true
-		currentPath = append(currentPath, file)
-
-		// Check all dependencies of this file
-		if deps, exists := r.Graph.Dependencies[file]; exists {
-			for _, dep := range deps {
-				// Resolve dependency to actual file path
-				depFile := r.resolveImportToFile(dep, file)
-				if depFile == "" {
-					continue
-				}
-
-				if !visited[depFile] {
-					if dfs(depFile) {
-						return true
-					}
-				} else if recStack[depFile] {
-					// Cycle detected! Build the cycle path
-					cycleStart := -1
-					for i, p := range currentPath {
-						if p == depFile {
-							cycleStart = i
-							break
-						}
-					}
-					if cycleStart >= 0 {
-						cyclePath := append(currentPath[cycleStart:], depFile)
-						violations = append(violations, Violation{
-							Rule:    r.Name(),
-							Path:    file,
-							Message: "cyclic dependency detected",
-							Context: fmt.Sprintf("cycle: %s", strings.Join(cyclePath, " -> ")),
-							Suggestions: []string{
-								"Break the cycle by introducing an interface or abstraction",
-								"Restructure the code to remove circular imports",
-								"Consider dependency inversion principle",
-							},
-						})
-					}
-					return true
-				}
-			}
-		}
-
-		currentPath = currentPath[:len(currentPath)-1]
-		recStack[file] = false
-		return false
+	detector := &propertyCycleDetector{
+		rule:        r,
+		visited:     make(map[string]bool),
+		recStack:    make(map[string]bool),
+		currentPath: []string{},
+		violations:  []Violation{},
 	}
 
 	// Run DFS from each unvisited file
 	for file := range r.Graph.Dependencies {
-		if !visited[file] {
-			currentPath = []string{}
-			dfs(file)
+		if !detector.visited[file] {
+			detector.currentPath = []string{}
+			detector.dfs(file)
 		}
 	}
 
-	return violations
+	return detector.violations
+}
+
+// propertyCycleDetector manages state for cycle detection in property enforcement
+type propertyCycleDetector struct {
+	rule        *PropertyEnforcementRule
+	visited     map[string]bool
+	recStack    map[string]bool
+	currentPath []string
+	violations  []Violation
+}
+
+// dfs performs depth-first search to detect cycles
+func (pcd *propertyCycleDetector) dfs(file string) bool {
+	pcd.visited[file] = true
+	pcd.recStack[file] = true
+	pcd.currentPath = append(pcd.currentPath, file)
+
+	if pcd.checkDependencies(file) {
+		return true
+	}
+
+	pcd.currentPath = pcd.currentPath[:len(pcd.currentPath)-1]
+	pcd.recStack[file] = false
+	return false
+}
+
+// checkDependencies checks all dependencies of a file for cycles
+func (pcd *propertyCycleDetector) checkDependencies(file string) bool {
+	deps, exists := pcd.rule.Graph.Dependencies[file]
+	if !exists {
+		return false
+	}
+
+	for _, dep := range deps {
+		if pcd.checkSingleDependency(file, dep) {
+			return true
+		}
+	}
+
+	return false
+}
+
+// checkSingleDependency checks a single dependency for cycles
+func (pcd *propertyCycleDetector) checkSingleDependency(file, dep string) bool {
+	depFile := pcd.rule.resolveImportToFile(dep, file)
+	if depFile == "" {
+		return false
+	}
+
+	if !pcd.visited[depFile] {
+		return pcd.dfs(depFile)
+	}
+
+	if pcd.recStack[depFile] {
+		pcd.recordCycleViolation(file, depFile)
+		return true
+	}
+
+	return false
+}
+
+// recordCycleViolation records a cycle violation
+func (pcd *propertyCycleDetector) recordCycleViolation(file, depFile string) {
+	cycleStart := pcd.findCycleStart(depFile)
+	if cycleStart < 0 {
+		return
+	}
+
+	cyclePath := append(pcd.currentPath[cycleStart:], depFile)
+	pcd.violations = append(pcd.violations, Violation{
+		Rule:    pcd.rule.Name(),
+		Path:    file,
+		Message: "cyclic dependency detected",
+		Context: fmt.Sprintf("cycle: %s", strings.Join(cyclePath, " -> ")),
+		Suggestions: []string{
+			"Break the cycle by introducing an interface or abstraction",
+			"Restructure the code to remove circular imports",
+			"Consider dependency inversion principle",
+		},
+	})
+}
+
+// findCycleStart finds the index where the cycle starts
+func (pcd *propertyCycleDetector) findCycleStart(depFile string) int {
+	for i, p := range pcd.currentPath {
+		if p == depFile {
+			return i
+		}
+	}
+	return -1
 }
 
 // checkMaxDependencies ensures no file has too many direct dependencies

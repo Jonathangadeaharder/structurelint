@@ -1,0 +1,75 @@
+# Example: Hexagonal Architecture (Ports & Adapters)
+#
+# This configuration enforces Hexagonal Architecture:
+# - Application core is isolated
+# - Ports define interfaces
+# - Adapters implement ports
+# - No adapter-to-adapter communication
+
+# Layer definitions
+layers:
+  - name: core
+    paths:
+      - "internal/core/**"
+    description: "Business logic (domain + application)"
+
+  - name: ports
+    paths:
+      - "internal/ports/**"
+    description: "Interfaces for inbound/outbound communication"
+    depends_on:
+      - core
+
+  - name: adapters
+    paths:
+      - "internal/adapters/**"
+    description: "Implementations of ports"
+    depends_on:
+      - core
+      - ports
+
+# Rules
+rules:
+  # Enforce layer boundaries
+  enforce-layer-boundaries:
+    enabled: true
+
+  # Core must not depend on adapters
+  disallowed-patterns:
+    "internal/core/**":
+      - "internal/adapters"
+      - "database/sql"
+      - "net/http"
+    message: "Core must not depend on adapters or infrastructure"
+
+  # Ports should only contain interfaces
+  file-content:
+    "internal/ports/**/*.go":
+      must-contain: "type.*interface"
+      must-not-contain: "func.*{"
+    message: "Ports should only define interfaces, not implementations"
+
+  # Organize adapters by type
+  path-based-layers:
+    "internal/adapters/primary/**": "Primary adapters (inbound)"
+    "internal/adapters/secondary/**": "Secondary adapters (outbound)"
+
+  # Naming conventions
+  naming-convention:
+    "internal/ports/primary/*.go": "^[A-Z][a-zA-Z0-9]*Port\\.go$"
+    "internal/ports/secondary/*.go": "^[A-Z][a-zA-Z0-9]*Port\\.go$"
+    "internal/adapters/**/*.go": "^[A-Z][a-zA-Z0-9]*Adapter\\.go$"
+
+  # File organization
+  max-depth:
+    max: 5
+
+  # Test requirements
+  test-location:
+    integration-test-dir: "tests"
+    allow-adjacent: true
+
+  # GitHub workflows
+  github-workflows:
+    require-tests: true
+    require-security: true

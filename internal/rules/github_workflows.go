@@ -159,12 +159,7 @@ func (r *GitHubWorkflowsRule) findRootDir(files []walker.FileInfo) string {
 // findWorkflowFiles finds all GitHub workflow files
 func (r *GitHubWorkflowsRule) findWorkflowFiles(files []walker.FileInfo, workflowsDir string) []walker.FileInfo {
 	var workflowFiles []walker.FileInfo
-
-	// Normalize workflows dir path
-	normalizedDir := filepath.ToSlash(workflowsDir)
-	if normalizedDir == "./.github/workflows" {
-		normalizedDir = ".github/workflows"
-	}
+	_ = workflowsDir // Parameter kept for API compatibility but unused
 
 	for _, file := range files {
 		if file.IsDir {
@@ -1043,59 +1038,4 @@ jobs:
         run: echo "Configure linting for your language"
 `
 	}
-}
-
-// generateRepomixWorkflow generates a repomix workflow with project name
-func (r *GitHubWorkflowsRule) generateRepomixWorkflow(rootDir string) string {
-	projectName := filepath.Base(rootDir)
-
-	return fmt.Sprintf(`name: Repomix Codebase Archive
-
-on:
-  push:
-    branches: [ main, master ]
-  pull_request:
-    branches: [ main, master ]
-  workflow_dispatch:  # Allow manual trigger
-
-jobs:
-  repomix:
-    name: Generate Repomixed Codebase
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Install repomix
-        run: npm install -g repomix
-
-      - name: Run repomix
-        run: |
-          repomix --output %s.txt --style plain
-          echo "Repomix completed successfully"
-          ls -lh %s.txt
-
-      - name: Upload repomix artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: repomixed-codebase-${{ github.event_name }}-${{ github.sha }}
-          path: %s.txt
-          retention-days: 30
-          if-no-files-found: error
-
-      - name: Upload repomix artifact (latest)
-        uses: actions/upload-artifact@v4
-        with:
-          name: repomixed-codebase-latest
-          path: %s.txt
-          retention-days: 90
-          if-no-files-found: error
-        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
-`, projectName, projectName, projectName, projectName)
 }

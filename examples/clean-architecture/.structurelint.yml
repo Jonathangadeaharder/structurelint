@@ -1,0 +1,79 @@
+# Example: Clean Architecture (Go)
+#
+# This configuration enforces Clean Architecture patterns:
+# - Domain layer has no dependencies
+# - Use cases depend only on domain
+# - Infrastructure depends on use cases
+# - Controllers/Handlers are at the outer layer
+
+# Layer definitions (innermost to outermost)
+layers:
+  - name: domain
+    paths:
+      - "internal/domain/**"
+    description: "Core business logic and entities"
+
+  - name: usecases
+    paths:
+      - "internal/usecases/**"
+    description: "Application business rules"
+    depends_on:
+      - domain
+
+  - name: infrastructure
+    paths:
+      - "internal/infrastructure/**"
+    description: "External interfaces (DB, APIs, etc.)"
+    depends_on:
+      - domain
+      - usecases
+
+  - name: interfaces
+    paths:
+      - "internal/interfaces/**"
+      - "cmd/**"
+    description: "Controllers, presenters, gateways"
+    depends_on:
+      - domain
+      - usecases
+      - infrastructure
+
+# Rules
+rules:
+  # Enforce layer boundaries
+  enforce-layer-boundaries:
+    enabled: true
+
+  # Domain layer should be pure (no external dependencies)
+  disallowed-patterns:
+    "internal/domain/**":
+      - "database/sql"
+      - "net/http"
+      - "github.com/*/orm"
+    message: "Domain layer must not depend on infrastructure"
+
+  # Naming conventions
+  naming-convention:
+    "internal/domain/entities/*.go": "^[A-Z][a-zA-Z0-9]*\\.go$"
+    "internal/usecases/*.go": "^[A-Z][a-zA-Z0-9]*UseCase\\.go$"
+    "internal/infrastructure/repository/*.go": "^[A-Z][a-zA-Z0-9]*Repository\\.go$"
+
+  # File organization
+  max-depth:
+    max: 4
+
+  # Ensure core interfaces are defined in domain
+  file-existence:
+    "internal/domain/repository.go": "Repository interfaces must be in domain"
+    "internal/domain/service.go": "Service interfaces must be in domain"
+
+  # Test location
+  test-location:
+    integration-test-dir: "tests/integration"
+    allow-adjacent: true
+
+  # GitHub workflows for CI/CD
+  github-workflows:
+    require-tests: true
+    require-security: true
+    require-quality: true

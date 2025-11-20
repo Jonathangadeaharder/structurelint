@@ -36,3 +36,10 @@ Thumbs.db
 
 # Repomix output
 repomix-output.txt
+
+# Auto-fix backup files
+*.backup
+
+# Test output files
+test-results.txt
+coverage.out
