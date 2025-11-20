@@ -90,45 +90,40 @@ func (a *MultiLanguageAnalyzer) AnalyzeFileByPath(filePath string) (FileMetrics,
 func (a *MultiLanguageAnalyzer) detectLanguageFromPath(filePath string) (string, error) {
 	ext := strings.ToLower(filepath.Ext(filePath))
 
-	extensionToLanguage := map[string]string{
-		".py":   "python",
-		".js":   "javascript",
-		".jsx":  "javascript",
-		".mjs":  "javascript",
-		".ts":   "typescript",
-		".tsx":  "typescript",
-		".java": "java",
-		".cpp":  "cpp",
-		".cc":   "cpp",
-		".cxx":  "cpp",
-		".c":    "c",
-		".h":    "cpp",
-		".hpp":  "cpp",
-		".cs":   "csharp",
+	switch ext {
+	case ".py":
+		return "python", nil
+	case ".js", ".jsx", ".mjs":
+		return "javascript", nil
+	case ".ts", ".tsx":
+		return "typescript", nil
+	case ".java":
+		return "java", nil
+	case ".cpp", ".cc", ".cxx", ".c", ".h", ".hpp":
+		return "cpp", nil
+	case ".cs":
+		return "csharp", nil
+	default:
+		return "", fmt.Errorf("unsupported file extension: %s", ext)
 	}
-
-	if lang, ok := extensionToLanguage[ext]; ok {
-		return lang, nil
-	}
-
-	return "", fmt.Errorf("unsupported file extension: %s", ext)
 }
 
 // convertToTreeSitterLanguage converts language string to tree-sitter Language type
 func (a *MultiLanguageAnalyzer) convertToTreeSitterLanguage(lang string) (treesitter.Language, error) {
-	languageMap := map[string]treesitter.Language{
-		"python":     treesitter.LanguagePython,
-		"javascript": treesitter.LanguageJavaScript,
-		"typescript": treesitter.LanguageTypeScript,
-		"java":       treesitter.LanguageJava,
-		"cpp":        treesitter.LanguageCpp,
-		"c":          treesitter.LanguageCpp, // Use C++ parser for C files
-		"csharp":     treesitter.LanguageCSharp,
+	switch lang {
+	case "python":
+		return treesitter.LanguagePython, nil
+	case "javascript":
+		return treesitter.LanguageJavaScript, nil
+	case "typescript":
+		return treesitter.LanguageTypeScript, nil
+	case "java":
+		return treesitter.LanguageJava, nil
+	case "cpp":
+		return treesitter.LanguageCpp, nil
+	case "csharp":
+		return treesitter.LanguageCSharp, nil
+	default:
+		return "", fmt.Errorf("unsupported language: %s", lang)
 	}
-
-	if tsLang, ok := languageMap[lang]; ok {
-		return tsLang, nil
-	}
-
-	return "", fmt.Errorf("unsupported language: %s", lang)
 }

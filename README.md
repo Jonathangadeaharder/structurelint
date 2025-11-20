@@ -169,6 +169,12 @@ rules:
 - ❌ **OLD**: Required Python 3 with tree-sitter packages
 - ✅ **NEW**: Pure Go implementation with embedded language parsers
 
+**Metrics granularity**:
+- ❌ **OLD**: Multi-language metrics provided function-level granularity
+- ✅ **NEW**: Multi-language metrics provide file-level granularity only
+- **Note**: Go-specific metrics (for `.go` files) still provide function-level granularity as before
+- **Reason**: Simplifies the pure Go implementation while maintaining file-level quality assessment
+
 ### 3. **Explicit Error Messages** 📣
 
 All errors now include:

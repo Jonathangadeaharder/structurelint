@@ -1,14 +1,23 @@
-# Multi-Language Extension Plan: C#, C++, and Java
+# [ARCHIVED] Multi-Language Extension Plan: C#, C++, and Java
 
-> **⚠️ STATUS: SUPERSEDED**
+> **🗄️ ARCHIVED DOCUMENT - FOR HISTORICAL REFERENCE ONLY**
 >
-> This document outlined a Python-based approach for multi-language metrics support.
-> **This plan has been completed using a pure Go implementation** instead.
+> This document described the **original Python-based plan** for multi-language metrics support.
+> **That plan was superseded by a pure Go implementation** as described below.
 >
-> ✅ **Implemented**: All metrics (cognitive complexity, Halstead) are now calculated using native Go tree-sitter bindings.
+> ✅ **Actual Implementation**: All metrics (cognitive complexity, Halstead) are now calculated using native Go tree-sitter bindings.
 > ✅ **No Python required**: The implementation uses `github.com/smacker/go-tree-sitter` with support for Python, JavaScript, TypeScript, Java, C++, and C#.
 >
-> See: `internal/parser/treesitter/` and `internal/metrics/multilang_analyzer.go`
+> **See current implementation at**:
+> - `internal/parser/treesitter/parser.go` - Tree-sitter language bindings
+> - `internal/parser/treesitter/metrics.go` - Native metrics calculator
+> - `internal/metrics/multilang_analyzer.go` - Multi-language analyzer using Go tree-sitter
+>
+> ---
+>
+> ## Original Python-Based Plan (Not Implemented)
+>
+> The content below describes the **original Python-based approach** that was considered but ultimately replaced with the pure Go implementation described above. This is preserved for historical context only.
 
 ## Executive Summary
 
