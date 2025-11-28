@@ -51,58 +51,65 @@ func (r *TestAdjacencyRule) checkAdjacentPattern(files []walker.FileInfo) []Viol
 
 	// Check each source file for corresponding test file
 	for _, file := range files {
-		if file.IsDir {
-			continue
-		}
-
-		// Check if this file matches any of our patterns
-		if !r.matchesFilePattern(file.Path) {
-			continue
-		}
-
-		// Skip if exempted
-		if r.isExempted(file.Path) {
-			continue
-		}
-
-		// Skip if this IS a test file
-		if r.isTestFile(file.Path) {
-			continue
-		}
-
-		// Check if file has directive to ignore this rule
-		hasIgnoreDirective, reason := ShouldIgnoreFile(file, r.Name())
-
-		// Look for corresponding test file
-		testFileName := r.getTestFileName(file.Path)
-		hasTest := false
-
-		for _, f := range filesByDir[file.ParentPath] {
-			if filepath.Base(f.Path) == testFileName {
-				hasTest = true
-				break
-			}
-		}
-
-		// Validate consistency
-		if hasIgnoreDirective && hasTest {
-			// File declares no test needed but has a test file - warn about inconsistency
-			violations = append(violations, Violation{
-				Rule:    r.Name(),
-				Path:    file.Path,
-				Message: fmt.Sprintf("declares @structurelint:no-test or @structurelint:ignore (%s) but test file '%s' exists - remove directive or test file", reason, testFileName),
-			})
-		} else if !hasIgnoreDirective && !hasTest {
-			// File should have a test but doesn't
-			violations = append(violations, Violation{
-				Rule:    r.Name(),
-				Path:    file.Path,
-				Message: fmt.Sprintf("missing adjacent test file '%s' (or add @structurelint:no-test/@structurelint:ignore directive with reason)", testFileName),
-			})
+		if v := r.checkAdjacentFile(file, filesByDir); v != nil {
+			violations = append(violations, *v)
 		}
 	}
 
 	return violations
+}
+
+func (r *TestAdjacencyRule) checkAdjacentFile(file walker.FileInfo, filesByDir map[string][]walker.FileInfo) *Violation {
+	if file.IsDir {
+		return nil
+	}
+
+	// Check if this file matches any of our patterns
+	if !r.matchesFilePattern(file.Path) {
+		return nil
+	}
+
+	// Skip if exempted
+	if r.isExempted(file.Path) {
+		return nil
+	}
+
+	// Skip if this IS a test file
+	if r.isTestFile(file.Path) {
+		return nil
+	}
+
+	// Check if file has directive to ignore this rule
+	hasIgnoreDirective, reason := ShouldIgnoreFile(file, r.Name())
+
+	// Look for corresponding test file
+	testFileName := r.getTestFileName(file.Path)
+	hasTest := false
+
+	for _, f := range filesByDir[file.ParentPath] {
+		if f.Path == testFileName {
+			hasTest = true
+			break
+		}
+	}
+
+	if !hasTest && !hasIgnoreDirective {
+		return &Violation{
+			Rule:    r.Name(),
+			Path:    file.Path,
+			Message: "missing adjacent test file",
+		}
+	}
+
+	if !hasTest && hasIgnoreDirective && reason != "" {
+		return &Violation{
+			Rule:    r.Name(),
+			Path:    file.Path,
+			Message: fmt.Sprintf("missing adjacent test file (exemption reason: %s)", reason),
+		}
+	}
+
+	return nil
 }
 
 // checkSeparatePattern validates that source files have tests in separate test directory
@@ -113,6 +120,19 @@ func (r *TestAdjacencyRule) checkSeparatePattern(files []walker.FileInfo) []Viol
 	sourceFiles := make(map[string]walker.FileInfo)
 	testFiles := make(map[string]bool)
 
+	r.categorizeFiles(files, sourceFiles, testFiles)
+
+	// Check each source file for corresponding test in test directory
+	for sourcePath, sourceFile := range sourceFiles {
+		if v := r.checkSeparateFile(sourcePath, sourceFile, testFiles); v != nil {
+			violations = append(violations, *v)
+		}
+	}
+
+	return violations
+}
+
+func (r *TestAdjacencyRule) categorizeFiles(files []walker.FileInfo, sourceFiles map[string]walker.FileInfo, testFiles map[string]bool) {
 	for _, file := range files {
 		if file.IsDir {
 			continue
@@ -124,33 +144,30 @@ func (r *TestAdjacencyRule) checkSeparatePattern(files []walker.FileInfo) []Viol
 
 		// Check if file is in test directory
 		if strings.HasPrefix(file.Path, r.TestDir+"/") {
-			// This is a test file
-			// Extract the source path it should correspond to
 			testFiles[file.Path] = true
 		} else if !r.isTestFile(file.Path) && !r.isExempted(file.Path) {
 			sourceFiles[file.Path] = file
 		}
 	}
+}
 
-	// Check each source file for corresponding test in test directory
-	for sourcePath, sourceFile := range sourceFiles {
-		// Check if file has directive to ignore this rule
-		if hasIgnore, _ := ShouldIgnoreFile(sourceFile, r.Name()); hasIgnore {
-			continue
-		}
+func (r *TestAdjacencyRule) checkSeparateFile(sourcePath string, sourceFile walker.FileInfo, testFiles map[string]bool) *Violation {
+	// Check if file has directive to ignore this rule
+	if hasIgnore, _ := ShouldIgnoreFile(sourceFile, r.Name()); hasIgnore {
+		return nil
+	}
 
-		expectedTestPath := r.getExpectedTestPath(sourcePath)
+	expectedTestPath := r.getExpectedTestPath(sourcePath)
 
-		if !testFiles[expectedTestPath] {
-			violations = append(violations, Violation{
-				Rule:    r.Name(),
-				Path:    sourcePath,
-				Message: fmt.Sprintf("missing test file '%s' in '%s/' directory (or add @structurelint:no-test/@structurelint:ignore directive)", filepath.Base(expectedTestPath), r.TestDir),
-			})
+	if !testFiles[expectedTestPath] {
+		return &Violation{
+			Rule:    r.Name(),
+			Path:    sourcePath,
+			Message: fmt.Sprintf("missing test file '%s' in '%s/' directory (or add @structurelint:no-test/@structurelint:ignore directive)", filepath.Base(expectedTestPath), r.TestDir),
 		}
 	}
 
-	return violations
+	return nil
 }
 
 // matchesFilePattern checks if a file matches any of the configured patterns

@@ -93,34 +93,18 @@ func detectLanguages(files []walker.FileInfo) []LanguageInfo {
 			continue
 		}
 
-		if _, exists := languageCounts[lang]; !exists {
-			languageCounts[lang] = &LanguageInfo{
+		info, exists := languageCounts[lang]
+		if !exists {
+			info = &LanguageInfo{
 				Language:         lang,
 				TestFilePatterns: make([]string, 0),
 				SourcePatterns:   make([]string, 0),
 			}
+			languageCounts[lang] = info
 		}
 
-		languageCounts[lang].FileCount++
-
-		// Detect if this is a test file
-		if isTestFile(file.Path, lang) {
-			// Analyze test pattern (adjacent vs separate)
-			if isAdjacentTest(file.Path, files, lang) {
-				languageCounts[lang].TestPattern = "adjacent"
-			} else if testDir := findTestDirectory(file.Path); testDir != "" {
-				languageCounts[lang].TestPattern = "separate"
-				if languageCounts[lang].TestDir == "" {
-					languageCounts[lang].TestDir = testDir
-				}
-			}
-
-			// Check for integration test directory
-			if isIntegrationTestDir(file.Path) {
-				languageCounts[lang].HasIntegrationDir = true
-				languageCounts[lang].IntegrationDir = extractIntegrationDir(file.Path)
-			}
-		}
+		info.FileCount++
+		analyzeTestFile(file, files, lang, info)
 	}
 
 	// Build source patterns and test file patterns
@@ -129,9 +113,34 @@ func detectLanguages(files []walker.FileInfo) []LanguageInfo {
 		info.TestFilePatterns = getTestFilePatterns(lang)
 	}
 
-	// Convert to sorted slice (by file count)
-	result := make([]LanguageInfo, 0, len(languageCounts))
-	for _, info := range languageCounts {
+	return sortLanguages(languageCounts)
+}
+
+func analyzeTestFile(file walker.FileInfo, files []walker.FileInfo, lang string, info *LanguageInfo) {
+	if !isTestFile(file.Path, lang) {
+		return
+	}
+
+	// Analyze test pattern (adjacent vs separate)
+	if isAdjacentTest(file.Path, files, lang) {
+		info.TestPattern = "adjacent"
+	} else if testDir := findTestDirectory(file.Path); testDir != "" {
+		info.TestPattern = "separate"
+		if info.TestDir == "" {
+			info.TestDir = testDir
+		}
+	}
+
+	// Check for integration test directory
+	if isIntegrationTestDir(file.Path) {
+		info.HasIntegrationDir = true
+		info.IntegrationDir = extractIntegrationDir(file.Path)
+	}
+}
+
+func sortLanguages(counts map[string]*LanguageInfo) []LanguageInfo {
+	result := make([]LanguageInfo, 0, len(counts))
+	for _, info := range counts {
 		result = append(result, *info)
 	}
 
@@ -143,31 +152,12 @@ func detectLanguages(files []walker.FileInfo) []LanguageInfo {
 			}
 		}
 	}
-
 	return result
 }
 
 // extensionToLanguage maps file extensions to language names
 func extensionToLanguage(ext string) string {
-	mapping := map[string]string{
-		".go":   "go",
-		".py":   "python",
-		".ts":   "typescript",
-		".tsx":  "typescript",
-		".js":   "javascript",
-		".jsx":  "javascript",
-		".java": "java",
-		".rs":   "rust",
-		".rb":   "ruby",
-		".cpp":  "cpp",
-		".cc":   "cpp",
-		".cxx":  "cpp",
-		".c":    "c",
-		".h":    "c",
-		".hpp":  "cpp",
-		".cs":   "csharp",
-	}
-	return mapping[ext]
+	return ExtensionMap[ext]
 }
 
 // isTestFile checks if a file is a test file based on naming conventions
@@ -187,36 +177,18 @@ func isTestFile(path, lang string) bool {
 
 // getTestFilePatterns returns test file naming patterns for a language
 func getTestFilePatterns(lang string) []string {
-	patterns := map[string][]string{
-		"go":         {"_test"},
-		"python":     {"test_", "_test"},
-		"typescript": {".test", ".spec"},
-		"javascript": {".test", ".spec"},
-		"java":       {"Test", "IT"}, // TestSuffix, IntegrationTestSuffix
-		"rust":       {"_test"}, // Though Rust tests are often inline
-		"ruby":       {"_spec"},
-		"cpp":        {"test_", "_test"},
-		"c":          {"test_", "_test"},
-		"csharp":     {"Test", "Tests", ".test"},
+	if patterns, ok := LanguagePatterns[lang]; ok {
+		return patterns.Test
 	}
-	return patterns[lang]
+	return nil
 }
 
 // getSourcePatterns returns source file glob patterns for a language
 func getSourcePatterns(lang string) []string {
-	patterns := map[string][]string{
-		"go":         {"**/*.go"},
-		"python":     {"**/*.py"},
-		"typescript": {"**/*.ts", "**/*.tsx"},
-		"javascript": {"**/*.js", "**/*.jsx"},
-		"java":       {"src/main/java/**/*.java"},
-		"rust":       {"src/**/*.rs"},
-		"ruby":       {"**/*.rb"},
-		"cpp":        {"**/*.cpp", "**/*.cc", "**/*.cxx"},
-		"c":          {"**/*.c"},
-		"csharp":     {"**/*.cs"},
+	if patterns, ok := LanguagePatterns[lang]; ok {
+		return patterns.Source
 	}
-	return patterns[lang]
+	return nil
 }
 
 // isAdjacentTest checks if a test file is adjacent to its source

@@ -152,14 +152,30 @@ func (h *halsteadCounter) visit(n ast.Node) bool {
 		h.handleCaseClause(node)
 	case *ast.CommClause:
 		h.addOperator("case")
+	default:
+		h.visitStatements(node)
+	}
+
+	return true
+}
+
+func (h *halsteadCounter) visitStatements(node ast.Node) {
+	switch n := node.(type) {
 	case *ast.BranchStmt:
-		h.addOperator(node.Tok.String())
+		h.addOperator(n.Tok.String())
 	case *ast.ReturnStmt:
 		h.addOperator("return")
 	case *ast.DeferStmt:
 		h.addOperator("defer")
 	case *ast.GoStmt:
 		h.addOperator("go")
+	default:
+		h.visitExpressions(node)
+	}
+}
+
+func (h *halsteadCounter) visitExpressions(node ast.Node) {
+	switch n := node.(type) {
 	case *ast.CallExpr:
 		h.addOperator("()")
 	case *ast.IndexExpr:
@@ -173,12 +189,10 @@ func (h *halsteadCounter) visit(n ast.Node) bool {
 	case *ast.SendStmt:
 		h.addOperator("<-")
 	case *ast.Ident:
-		h.handleIdent(node)
+		h.handleIdent(n)
 	case *ast.BasicLit:
-		h.addOperand(node.Value)
+		h.addOperand(n.Value)
 	}
-
-	return true
 }
 
 func (h *halsteadCounter) addOperator(op string) {

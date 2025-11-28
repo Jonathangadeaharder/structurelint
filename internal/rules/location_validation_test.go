@@ -1,6 +1,7 @@
 package rules
 
 import (
+	"path/filepath"
 	"testing"
 
 	"github.com/structurelint/structurelint/internal/walker"
@@ -53,8 +54,8 @@ func TestTestLocationRule_Check(t *testing.T) {
 			allowAdjacent:      true,
 			filePatterns:       []string{"**/*_test.go"},
 			files: []walker.FileInfo{
-				{Path: "src/utils.go", IsDir: false},
-				{Path: "src/utils_test.go", IsDir: false},
+				{Path: filepath.Join("src", "utils.go"), IsDir: false},
+				{Path: filepath.Join("src", "utils_test.go"), IsDir: false},
 			},
 			wantViolCount: 0,
 		},

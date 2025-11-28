@@ -267,61 +267,79 @@ func (d *CycleDetector) getAllNodes() []string {
 // GetStronglyConnectedComponents finds all strongly connected components
 // (maximal sets of nodes where every node is reachable from every other)
 func (d *CycleDetector) GetStronglyConnectedComponents() [][]string {
-	// Tarjan's algorithm
-	index := 0
-	stack := make([]string, 0)
-	indices := make(map[string]int)
-	lowlinks := make(map[string]int)
-	onStack := make(map[string]bool)
-	var sccs [][]string
-
-	var strongConnect func(node string)
-	strongConnect = func(node string) {
-		indices[node] = index
-		lowlinks[node] = index
-		index++
-		stack = append(stack, node)
-		onStack[node] = true
-
-		for _, dep := range d.graph.GetDependencies(node) {
-			if _, visited := indices[dep]; !visited {
-				strongConnect(dep)
-				if lowlinks[dep] < lowlinks[node] {
-					lowlinks[node] = lowlinks[dep]
-				}
-			} else if onStack[dep] {
-				if indices[dep] < lowlinks[node] {
-					lowlinks[node] = indices[dep]
-				}
-			}
-		}
-
-		// If node is a root node, pop the stack to form SCC
-		if lowlinks[node] == indices[node] {
-			var scc []string
-			for {
-				w := stack[len(stack)-1]
-				stack = stack[:len(stack)-1]
-				onStack[w] = false
-				scc = append(scc, w)
-				if w == node {
-					break
-				}
-			}
-			if len(scc) > 1 || d.hasSelfLoop(scc[0]) {
-				sccs = append(sccs, scc)
-			}
-		}
+	state := &tarjanState{
+		indices: make(map[string]int),
+		lowlinks: make(map[string]int),
+		onStack: make(map[string]bool),
+		stack: make([]string, 0),
+		sccs: make([][]string, 0),
 	}
 
 	allNodes := d.getAllNodes()
 	for _, node := range allNodes {
-		if _, visited := indices[node]; !visited {
-			strongConnect(node)
+		if _, visited := state.indices[node]; !visited {
+			d.tarjanStrongConnect(node, state)
 		}
 	}
 
-	return sccs
+	return state.sccs
+}
+
+type tarjanState struct {
+	index    int
+	stack    []string
+	indices  map[string]int
+	lowlinks map[string]int
+	onStack  map[string]bool
+	sccs     [][]string
+}
+
+func (d *CycleDetector) tarjanStrongConnect(node string, state *tarjanState) {
+	// Initialize node
+	state.indices[node] = state.index
+	state.lowlinks[node] = state.index
+	state.index++
+	state.stack = append(state.stack, node)
+	state.onStack[node] = true
+
+	// Process dependencies
+	d.processTarjanDependencies(node, state)
+
+	// If node is a root node, pop the stack to form SCC
+	d.extractTarjanSCC(node, state)
+}
+
+func (d *CycleDetector) processTarjanDependencies(node string, state *tarjanState) {
+	for _, dep := range d.graph.GetDependencies(node) {
+		if _, visited := state.indices[dep]; !visited {
+			d.tarjanStrongConnect(dep, state)
+			if state.lowlinks[dep] < state.lowlinks[node] {
+				state.lowlinks[node] = state.lowlinks[dep]
+			}
+		} else if state.onStack[dep] {
+			if state.indices[dep] < state.lowlinks[node] {
+				state.lowlinks[node] = state.indices[dep]
+			}
+		}
+	}
+}
+
+func (d *CycleDetector) extractTarjanSCC(node string, state *tarjanState) {
+	if state.lowlinks[node] == state.indices[node] {
+		var scc []string
+		for {
+			w := state.stack[len(state.stack)-1]
+			state.stack = state.stack[:len(state.stack)-1]
+			state.onStack[w] = false
+			scc = append(scc, w)
+			if w == node {
+				break
+			}
+		}
+		if len(scc) > 1 || d.hasSelfLoop(scc[0]) {
+			state.sccs = append(state.sccs, scc)
+		}
+	}
 }
 
 // hasSelfLoop checks if a node has a dependency on itself

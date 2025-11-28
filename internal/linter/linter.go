@@ -80,68 +80,45 @@ func (l *Linter) Lint(path string) ([]Violation, error) {
 func (l *Linter) createRules(files []walker.FileInfo, importGraph *graph.ImportGraph) []rules.Rule {
 	var rulesList []rules.Rule
 
-	// Simple rules that take a single integer "max" parameter
-	simpleIntRules := map[string]func(int) rules.Rule{
-		"max-depth":        func(max int) rules.Rule { return rules.NewMaxDepthRule(max) },
-		"max-files-in-dir": func(max int) rules.Rule { return rules.NewMaxFilesRule(max) },
-		"max-subdirs":      func(max int) rules.Rule { return rules.NewMaxSubdirsRule(max) },
-	}
+	for ruleName, ruleConfig := range l.config.Rules {
+		// Skip disabled rules
+		if !l.isRuleEnabled(ruleName) {
+			continue
+		}
 
-	for ruleName, factory := range simpleIntRules {
-		if max, ok := l.getIntConfig(ruleName, "max"); ok {
-			rulesList = append(rulesList, factory(max))
+		factory, ok := rules.GetFactory(ruleName)
+		if !ok {
+			// Fallback for rules not yet in registry or handled specially
+			continue
+		}
+
+		// Prepare context
+		ctx := &rules.RuleContext{
+			RootDir:     l.rootDir,
+			ImportGraph: importGraph,
+			Config:      l.normalizeConfig(ruleConfig),
+		}
+
+		rule, err := factory(ctx)
+		if err == nil && rule != nil {
+			rulesList = append(rulesList, rule)
 		}
 	}
 
-	// String map rules (file-existence, regex-match)
-	stringMapRules := map[string]func(map[string]string) rules.Rule{
-		"file-existence":    func(requirements map[string]string) rules.Rule { return rules.NewFileExistenceRule(requirements) },
-		"regex-match":       func(patterns map[string]string) rules.Rule { return rules.NewRegexMatchRule(patterns) },
-	}
-
-	for ruleName, factory := range stringMapRules {
-		if config, ok := l.getStringMapConfig(ruleName); ok {
-			rulesList = append(rulesList, factory(config))
-		}
-	}
-
-	// Naming convention rule - with language-aware defaults (Priority 2 feature)
-	if _, ok := l.getRuleConfig("naming-convention"); ok {
-		userPatterns, _ := l.getStringMapConfig("naming-convention")
-
-		// Check if auto-language-naming is enabled (default: true)
-		autoLanguageNaming := true
-		if l.config.AutoLanguageNaming != nil {
-			autoLanguageNaming = *l.config.AutoLanguageNaming
-		}
-
-		if autoLanguageNaming {
-			// Use language-aware naming with user overrides
-			if rule, err := rules.NewLanguageAwareNamingConventionRule(l.rootDir, userPatterns); err == nil {
-				rulesList = append(rulesList, rule)
-			}
-		} else {
-			// Traditional behavior - only use user patterns
-			if len(userPatterns) > 0 {
-				rulesList = append(rulesList, rules.NewNamingConventionRule(userPatterns))
-			}
-		}
-	}
-
-	// String slice rules
-	if patterns, ok := l.getStringSliceConfig("disallowed-patterns"); ok {
-		rulesList = append(rulesList, rules.NewDisallowedPatternsRule(patterns))
-	}
-
-	// Uniqueness constraints rule (Priority 2 feature)
-	if constraints, ok := l.getStringMapConfig("uniqueness-constraints"); ok {
-		rulesList = append(rulesList, rules.NewUniquenessConstraintsRule(constraints))
-	}
-
-	// Complex rules that need custom handling
+	// Legacy handling for rules not yet fully migrated or needing special logic
 	l.addComplexRules(&rulesList, importGraph)
 
 	return rulesList
+}
+
+func (l *Linter) normalizeConfig(config interface{}) map[string]interface{} {
+	if m, ok := config.(map[string]interface{}); ok {
+		return m
+	}
+	// Handle cases where config is a list or primitive
+	return map[string]interface{}{
+		"": config,
+	}
 }
 
 // addComplexRules adds rules that require more complex configuration

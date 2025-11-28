@@ -85,9 +85,19 @@ func (r *FileContentRule) validateFileContent(file walker.FileInfo, template Tem
 
 	contentStr := string(content)
 
-	// Check required sections
+	// Validate different aspects
+	violations = append(violations, r.checkRequiredSections(file, template, contentStr)...)
+	violations = append(violations, r.checkPatterns(file, template.RequiredPatterns, contentStr, "missing")...)
+	violations = append(violations, r.checkPatterns(file, template.ForbiddenPatterns, contentStr, "contains forbidden")...)
+	violations = append(violations, r.checkStartEnd(file, template, contentStr)...)
+
+	return violations
+}
+
+func (r *FileContentRule) checkRequiredSections(file walker.FileInfo, template Template, content string) []Violation {
+	var violations []Violation
 	for _, section := range template.RequiredSections {
-		if !strings.Contains(contentStr, section) {
+		if !strings.Contains(content, section) {
 			violations = append(violations, Violation{
 				Rule:    r.Name(),
 				Path:    file.Path,
@@ -95,64 +105,54 @@ func (r *FileContentRule) validateFileContent(file walker.FileInfo, template Tem
 			})
 		}
 	}
+	return violations
+}
 
-	// Check required patterns
-	for _, pattern := range template.RequiredPatterns {
+func (r *FileContentRule) checkPatterns(file walker.FileInfo, patterns []string, content string, violation_type string) []Violation {
+	var violations []Violation
+	for _, pattern := range patterns {
 		re, err := regexp.Compile(pattern)
 		if err != nil {
-			continue // Skip invalid regex
+			continue
 		}
 
-		if !re.MatchString(contentStr) {
+		matches := re.MatchString(content)
+		shouldViolate := (violation_type == "missing" && !matches) || (violation_type == "contains forbidden" && matches)
+
+		if shouldViolate {
 			violations = append(violations, Violation{
 				Rule:    r.Name(),
 				Path:    file.Path,
-				Message: fmt.Sprintf("missing required pattern: '%s'", pattern),
+				Message: fmt.Sprintf("%s required pattern: '%s'", violation_type, pattern),
 			})
 		}
 	}
+	return violations
+}
 
-	// Check forbidden patterns
-	for _, pattern := range template.ForbiddenPatterns {
-		re, err := regexp.Compile(pattern)
-		if err != nil {
-			continue // Skip invalid regex
-		}
+func (r *FileContentRule) checkStartEnd(file walker.FileInfo, template Template, content string) []Violation {
+	var violations []Violation
+	trimmed := strings.TrimSpace(content)
 
-		if re.MatchString(contentStr) {
-			violations = append(violations, Violation{
-				Rule:    r.Name(),
-				Path:    file.Path,
-				Message: fmt.Sprintf("contains forbidden pattern: '%s'", pattern),
-			})
-		}
-	}
-
-	// Check must start with
 	if template.MustStartWith != "" {
 		re, err := regexp.Compile(template.MustStartWith)
-		if err == nil {
-			if !re.MatchString(strings.TrimSpace(contentStr)) {
-				violations = append(violations, Violation{
-					Rule:    r.Name(),
-					Path:    file.Path,
-					Message: fmt.Sprintf("must start with pattern: '%s'", template.MustStartWith),
-				})
-			}
+		if err == nil && !re.MatchString(trimmed) {
+			violations = append(violations, Violation{
+				Rule:    r.Name(),
+				Path:    file.Path,
+				Message: fmt.Sprintf("must start with pattern: '%s'", template.MustStartWith),
+			})
 		}
 	}
 
-	// Check must end with
 	if template.MustEndWith != "" {
 		re, err := regexp.Compile(template.MustEndWith)
-		if err == nil {
-			if !re.MatchString(strings.TrimSpace(contentStr)) {
-				violations = append(violations, Violation{
-					Rule:    r.Name(),
-					Path:    file.Path,
-					Message: fmt.Sprintf("must end with pattern: '%s'", template.MustEndWith),
-				})
-			}
+		if err == nil && !re.MatchString(trimmed) {
+			violations = append(violations, Violation{
+				Rule:    r.Name(),
+				Path:    file.Path,
+				Message: fmt.Sprintf("must end with pattern: '%s'", template.MustEndWith),
+			})
 		}
 	}
 
@@ -177,14 +177,14 @@ func (r *FileContentRule) loadTemplates() map[string]Template {
 	}
 
 	for _, entry := range entries {
-		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".yml") && !strings.HasSuffix(entry.Name(), ".yaml") {
+		if entry.IsDir() || !r.isTemplateFile(entry.Name()) {
 			continue
 		}
 
 		templatePath := filepath.Join(templateDirPath, entry.Name())
-		template, err := r.loadTemplate(templatePath)
-		if err == nil {
+		if template, err := r.parseTemplateFile(templatePath); err == nil {
 			templateName := strings.TrimSuffix(entry.Name(), filepath.Ext(entry.Name()))
+			template.Name = templateName
 			templates[templateName] = template
 		}
 	}
@@ -192,71 +192,78 @@ func (r *FileContentRule) loadTemplates() map[string]Template {
 	return templates
 }
 
-// loadTemplate loads a single template from a file
-func (r *FileContentRule) loadTemplate(path string) (Template, error) {
-	// For now, we'll use a simple format parser
-	// In production, you'd want to use a proper YAML parser
+func (r *FileContentRule) isTemplateFile(name string) bool {
+	return strings.HasSuffix(name, ".yml") || strings.HasSuffix(name, ".yaml")
+}
 
+// parseTemplateFile parses a template file
+func (r *FileContentRule) parseTemplateFile(path string) (Template, error) {
 	content, err := os.ReadFile(path)
 	if err != nil {
 		return Template{}, err
 	}
 
-	template := Template{
-		Name: filepath.Base(path),
-	}
+	return r.parseTemplateContent(string(content)), nil
+}
 
-	// Simple line-by-line parsing
-	lines := strings.Split(string(content), "\n")
+func (r *FileContentRule) parseTemplateContent(content string) Template {
+	template := Template{}
+	lines := strings.Split(content, "\n")
 	currentSection := ""
 
 	for _, line := range lines {
 		line = strings.TrimSpace(line)
-		if line == "" || strings.HasPrefix(line, "#") {
+		if r.shouldSkipLine(line) {
 			continue
 		}
 
-		if strings.HasPrefix(line, "required-sections:") {
-			currentSection = "required-sections"
-			continue
-		}
-		if strings.HasPrefix(line, "required-patterns:") {
-			currentSection = "required-patterns"
-			continue
-		}
-		if strings.HasPrefix(line, "forbidden-patterns:") {
-			currentSection = "forbidden-patterns"
-			continue
-		}
-		if strings.HasPrefix(line, "must-start-with:") {
-			currentSection = "must-start-with"
-			template.MustStartWith = strings.TrimSpace(strings.TrimPrefix(line, "must-start-with:"))
-			continue
-		}
-		if strings.HasPrefix(line, "must-end-with:") {
-			currentSection = "must-end-with"
-			template.MustEndWith = strings.TrimSpace(strings.TrimPrefix(line, "must-end-with:"))
-			continue
-		}
+		currentSection = r.updateSection(line, currentSection, &template)
 
 		// Parse list items
 		if strings.HasPrefix(line, "- ") {
 			value := strings.TrimSpace(strings.TrimPrefix(line, "- "))
 			value = strings.Trim(value, `"'`)
-
-			switch currentSection {
-			case "required-sections":
-				template.RequiredSections = append(template.RequiredSections, value)
-			case "required-patterns":
-				template.RequiredPatterns = append(template.RequiredPatterns, value)
-			case "forbidden-patterns":
-				template.ForbiddenPatterns = append(template.ForbiddenPatterns, value)
-			}
+			r.addToTemplateSection(&template, currentSection, value)
 		}
 	}
 
-	return template, nil
+	return template
 }
+
+func (r *FileContentRule) shouldSkipLine(line string) bool {
+	return line == "" || strings.HasPrefix(line, "#")
+}
+
+func (r *FileContentRule) updateSection(line, currentSection string, template *Template) string {
+	switch {
+	case strings.HasPrefix(line, "required-sections:"):
+		return "required-sections"
+	case strings.HasPrefix(line, "required-patterns:"):
+		return "required-patterns"
+	case strings.HasPrefix(line, "forbidden-patterns:"):
+		return "forbidden-patterns"
+	case strings.HasPrefix(line, "must-start-with:"):
+		template.MustStartWith = strings.TrimSpace(strings.TrimPrefix(line, "must-start-with:"))
+		return "must-start-with"
+	case strings.HasPrefix(line, "must-end-with:"):
+		template.MustEndWith = strings.TrimSpace(strings.TrimPrefix(line, "must-end-with:"))
+		return "must-end-with"
+	default:
+		return currentSection
+	}
+}
+
+func (r *FileContentRule) addToTemplateSection(template *Template, section, value string) {
+	switch section {
+	case "required-sections":
+		template.RequiredSections = append(template.RequiredSections, value)
+	case "required-patterns":
+		template.RequiredPatterns = append(template.RequiredPatterns, value)
+	case "forbidden-patterns":
+		template.ForbiddenPatterns = append(template.ForbiddenPatterns, value)
+	}
+}
+
 
 // NewFileContentRule creates a new FileContentRule
 func NewFileContentRule(templates map[string]string, templateDir, rootPath string) *FileContentRule {

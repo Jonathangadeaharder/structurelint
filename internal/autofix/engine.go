@@ -262,41 +262,34 @@ func (e *Engine) GenerateFixes(violations []rules.Violation, files []walker.File
 	var fixes []*Fix
 
 	for _, v := range violations {
-		// First, check if violation has built-in AutoFix
-		if v.AutoFix != nil {
-			fix := &Fix{
-				Violation:   v,
-				Description: fmt.Sprintf("Apply auto-fix for %s", v.Rule),
-				Actions: []Action{
-					&WriteFileAction{
-						FilePath: v.AutoFix.FilePath,
-						Content:  v.AutoFix.Content,
-					},
-				},
-				Confidence: 0.95, // High confidence for rule-provided fixes
-				Safe:       true,  // Assume rule-provided fixes are safe
-			}
+		fix := e.generateFixForViolation(v, files)
+		if fix != nil {
 			fixes = append(fixes, fix)
 			continue
-		}
 
-		// Otherwise, try registered fixers
-		for _, fixer := range e.fixers {
-			if fixer.CanFix(v) {
-				fix, err := fixer.GenerateFix(v, files)
-				if err != nil {
-					// Log error but continue with other fixes
-					continue
-				}
-				if fix != nil {
-					fixes = append(fixes, fix)
-				}
-				break // Only apply first matching fixer
-			}
 		}
 	}
 
 	return fixes, nil
+}
+
+func (e *Engine) generateFixForViolation(v rules.Violation, files []walker.FileInfo) *Fix {
+	// Check if violation has built-in AutoFix
+	if v.AutoFix != nil {
+		return &Fix{
+			Violation:   v,
+			Description: fmt.Sprintf("Apply auto-fix for %s", v.Rule),
+			Actions: []Action{
+				&WriteFileAction{
+					FilePath: v.AutoFix.FilePath,
+					Content:  v.AutoFix.Content,
+				},
+			},
+			Confidence: 0.95, // High confidence for rule-provided fixes
+			Safe:       true,  // Assume rule-provided fixes are safe
+		}
+	}
+	return nil
 }
 
 // ApplyFixes executes the fixes

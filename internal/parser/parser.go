@@ -139,54 +139,55 @@ func (p *Parser) parseGo(filePath string) ([]Import, error) {
 	var imports []Import
 	scanner := bufio.NewScanner(file)
 
-	// Track if we're in an import block
-	inImportBlock := false
-
-	// Single import: import "path"
+	// Define regex patterns
 	singleImportRegex := regexp.MustCompile(`^\s*import\s+"([^"]+)"`)
-	// Import block start: import (
 	importBlockStartRegex := regexp.MustCompile(`^\s*import\s+\(`)
-	// Import in block: "path" or alias "path"
 	importInBlockRegex := regexp.MustCompile(`^\s*(?:\w+\s+)?"([^"]+)"`)
+
+	inImportBlock := false
 
 	for scanner.Scan() {
 		line := scanner.Text()
+		
+		inImportBlock = p.processGoImportLine(line, filePath, singleImportRegex, importBlockStartRegex, importInBlockRegex, inImportBlock, &imports)
+	}
 
-		// Check for single-line import
-		if match := singleImportRegex.FindStringSubmatch(line); match != nil {
-			imports = append(imports, Import{
+	return imports, scanner.Err()
+}
+
+func (p *Parser) processGoImportLine(line, filePath string, singleImportRegex, importBlockStartRegex, importInBlockRegex *regexp.Regexp, inImportBlock bool, imports *[]Import) bool {
+	// Check for single-line import
+	if match := singleImportRegex.FindStringSubmatch(line); match != nil {
+		*imports = append(*imports, Import{
+			SourceFile: filePath,
+			ImportPath: match[1],
+			IsRelative: strings.HasPrefix(match[1], "."),
+		})
+		return inImportBlock
+	}
+
+	// Check for import block start
+	if importBlockStartRegex.MatchString(line) {
+		return true
+	}
+
+	// Check for end of import block
+	if inImportBlock && strings.TrimSpace(line) == ")" {
+		return false
+	}
+
+	// Parse imports within block
+	if inImportBlock {
+		if match := importInBlockRegex.FindStringSubmatch(line); match != nil {
+			*imports = append(*imports, Import{
 				SourceFile: filePath,
 				ImportPath: match[1],
 				IsRelative: strings.HasPrefix(match[1], "."),
 			})
-			continue
-		}
-
-		// Check for import block start
-		if importBlockStartRegex.MatchString(line) {
-			inImportBlock = true
-			continue
-		}
-
-		// Check for end of import block
-		if inImportBlock && strings.TrimSpace(line) == ")" {
-			inImportBlock = false
-			continue
-		}
-
-		// Parse imports within block
-		if inImportBlock {
-			if match := importInBlockRegex.FindStringSubmatch(line); match != nil {
-				imports = append(imports, Import{
-					SourceFile: filePath,
-					ImportPath: match[1],
-					IsRelative: strings.HasPrefix(match[1], "."),
-				})
-			}
 		}
 	}
 
-	return imports, scanner.Err()
+	return inImportBlock
 }
 
 // parsePython extracts imports from Python files
@@ -384,10 +385,6 @@ func (p *Parser) parseCppExports(filePath string) ([]Export, error) {
 	var exports []Export
 	scanner := bufio.NewScanner(file)
 
-	// Regex patterns for C++ declarations
-	// class ClassName
-	// struct StructName
-	// namespace NamespaceName
 	classRegex := regexp.MustCompile(`^\s*(?:class|struct)\s+(\w+)`)
 	namespaceRegex := regexp.MustCompile(`^\s*namespace\s+(\w+)`)
 
@@ -398,46 +395,14 @@ func (p *Parser) parseCppExports(filePath string) ([]Export, error) {
 		line := scanner.Text()
 		trimmed := strings.TrimSpace(line)
 
-		// Skip single-line comments
-		if strings.HasPrefix(trimmed, "//") {
+		// Process comment state
+		inComment = p.processCppComment(trimmed, inComment)
+		if inComment || trimmed == "" {
 			continue
 		}
 
-		// Track multi-line comments
-		// Handle inline block comments like: struct Foo { /* comment */ };
-		if strings.Contains(trimmed, "/*") && strings.Contains(trimmed, "*/") {
-			// Inline block comment - remove it and process the rest
-			start := strings.Index(trimmed, "/*")
-			end := strings.Index(trimmed, "*/") + 2
-			trimmed = trimmed[:start] + trimmed[end:]
-			trimmed = strings.TrimSpace(trimmed)
-			if trimmed == "" {
-				continue
-			}
-			// Fall through to process the rest of the line
-		} else if strings.Contains(trimmed, "/*") {
-			// Start of multi-line comment
-			inComment = true
-			continue
-		} else if strings.Contains(trimmed, "*/") {
-			// End of multi-line comment
-			inComment = false
-			continue
-		}
-
-		if inComment {
-			continue
-		}
-
-		// Extract class/struct declarations
-		if match := classRegex.FindStringSubmatch(line); match != nil {
-			exportNames = append(exportNames, match[1])
-		}
-
-		// Extract namespace declarations
-		if match := namespaceRegex.FindStringSubmatch(line); match != nil {
-			exportNames = append(exportNames, match[1])
-		}
+		// Extract declarations
+		p.extractCppDeclarations(trimmed, classRegex, namespaceRegex, &exportNames)
 	}
 
 	if len(exportNames) > 0 {
@@ -449,6 +414,42 @@ func (p *Parser) parseCppExports(filePath string) ([]Export, error) {
 	}
 
 	return exports, scanner.Err()
+}
+
+func (p *Parser) processCppComment(trimmed string, inComment bool) bool {
+	// Skip single-line comments
+	if strings.HasPrefix(trimmed, "//") {
+		return inComment
+	}
+
+	// Handle inline block comments
+	if strings.Contains(trimmed, "/*") && strings.Contains(trimmed, "*/") {
+		return inComment
+	}
+
+	// Start of multi-line comment
+	if strings.Contains(trimmed, "/*") {
+		return true
+	}
+
+	// End of multi-line comment
+	if strings.Contains(trimmed, "*/") {
+		return false
+	}
+
+	return inComment
+}
+
+func (p *Parser) extractCppDeclarations(trimmed string, classRegex, namespaceRegex *regexp.Regexp, exportNames *[]string) {
+	// Extract class/struct declarations
+	if match := classRegex.FindStringSubmatch(trimmed); match != nil {
+		*exportNames = append(*exportNames, match[1])
+	}
+
+	// Extract namespace declarations
+	if match := namespaceRegex.FindStringSubmatch(trimmed); match != nil {
+		*exportNames = append(*exportNames, match[1])
+	}
 }
 
 // parseCSharp extracts using statements from C# files

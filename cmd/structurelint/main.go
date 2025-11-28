@@ -24,40 +24,65 @@ func main() {
 func run() error {
 	// Check for subcommands
 	if len(os.Args) > 1 {
-		switch os.Args[1] {
-		case "graph":
-			return runGraph(os.Args[2:])
-		case "clones":
-			return runClones(os.Args[2:])
-		case "fix":
-			return runFix(os.Args[2:])
-		case "tui":
-			return runTUI(os.Args[2:])
-		case "scaffold":
-			return runScaffold(os.Args[2:])
-		case "help":
-			if len(os.Args) > 2 {
-				switch os.Args[2] {
-				case "graph":
-					printGraphHelp()
-					return nil
-				case "clones":
-					printClonesHelp()
-					return nil
-				case "fix":
-					printFixHelp()
-					return nil
-				case "tui":
-					printTUIHelp()
-					return nil
-				case "scaffold":
-					printScaffoldHelp()
-					return nil
-				}
-			}
+		if err := handleSubcommands(os.Args[1:]); err != nil {
+			return err
 		}
+		// If handleSubcommands returns nil but we processed a command, we should exit
+		// However, the current logic implies that if it returns nil, we might continue?
+		// Looking at the original code, runGraph etc return error.
+		// If we matched a subcommand, we should return the result of that subcommand.
+		// But wait, the original code had a switch and returned.
+		// I need to extract the switch into a function.
+		return nil
 	}
 
+	return runLinterWithArgs([]string{})
+}
+
+func handleSubcommands(args []string) error {
+	switch args[0] {
+	case "graph":
+		return runGraph(args[1:])
+	case "clones":
+		return runClones(args[1:])
+	case "fix":
+		return runFix(args[1:])
+	case "tui":
+		return runTUI(args[1:])
+	case "scaffold":
+		return runScaffold(args[1:])
+	case "help":
+		return handleHelpCommand(args)
+	}
+	// Not a subcommand, continue to linter
+	return runLinterWithArgs(args)
+}
+
+func handleHelpCommand(args []string) error {
+	if len(args) > 1 {
+		switch args[1] {
+		case "graph":
+			printGraphHelp()
+			return nil
+		case "clones":
+			printClonesHelp()
+			return nil
+		case "fix":
+			printFixHelp()
+			return nil
+		case "tui":
+			printTUIHelp()
+			return nil
+		case "scaffold":
+			printScaffoldHelp()
+			return nil
+		}
+	}
+	printHelp()
+	return nil
+}
+
+func runLinterWithArgs(args []string) error {
 	// Define flags
 	fs := flag.NewFlagSet("structurelint", flag.ContinueOnError)
 	formatFlag := fs.String("format", "text", "Output format: text, json, junit")
@@ -68,7 +93,7 @@ func run() error {
 	initFlag := fs.Bool("init", false, "Initialize configuration")
 
 	// Parse flags
-	if err := fs.Parse(os.Args[1:]); err != nil {
+	if err := fs.Parse(args); err != nil {
 		return err
 	}
 
@@ -95,8 +120,12 @@ func run() error {
 		return runInit(path)
 	}
 
+	return executeLinter(path, *formatFlag)
+}
+
+func executeLinter(path, format string) error {
 	// Get output formatter
-	formatter, err := output.GetFormatter(*formatFlag, Version)
+	formatter, err := output.GetFormatter(format, Version)
 	if err != nil {
 		return err
 	}
@@ -117,15 +146,14 @@ func run() error {
 		fmt.Print(formatted)
 
 		// For text format, print error message to stderr
-		// For JSON/JUnit, just exit with error code (violations are in formatted output)
-		if *formatFlag == "text" || *formatFlag == "" {
+		if format == "text" || format == "" {
 			fmt.Fprintf(os.Stderr, "Error: found %d violation(s)\n", len(violations))
 		}
 		os.Exit(1)
 	}
 
 	// Only print success message for text format
-	if *formatFlag == "text" || *formatFlag == "" {
+	if format == "text" || format == "" {
 		fmt.Println("✓ All checks passed")
 	} else {
 		// For JSON/JUnit, output empty success structure

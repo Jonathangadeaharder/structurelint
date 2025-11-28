@@ -380,8 +380,8 @@ func TestBuild_IncomingReferences(t *testing.T) {
 	builder := NewBuilder(tmpDir, []config.Layer{})
 
 	files := []walker.FileInfo{
-		{Path: "src/user.ts", AbsPath: userFile, IsDir: false},
-		{Path: "src/service.ts", AbsPath: serviceFile, IsDir: false},
+		{Path: filepath.Join("src", "user.ts"), AbsPath: userFile, IsDir: false},
+		{Path: filepath.Join("src", "service.ts"), AbsPath: serviceFile, IsDir: false},
 	}
 
 	graph, err := builder.Build(files)
@@ -390,13 +390,13 @@ func TestBuild_IncomingReferences(t *testing.T) {
 	}
 
 	// service.ts should have imported user
-	deps := graph.GetDependencies("src/service.ts")
+	deps := graph.GetDependencies(filepath.Join("src", "service.ts"))
 	if len(deps) == 0 {
 		t.Error("Expected service.ts to have dependencies")
 	}
 
 	// user.ts should have incoming references
-	if graph.IncomingRefs["src/user.ts"] < 1 {
+	if graph.IncomingRefs[filepath.Join("src", "user.ts")] < 1 {
 		t.Error("Expected user.ts to have at least 1 incoming reference")
 	}
 }

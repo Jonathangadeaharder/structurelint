@@ -58,117 +58,10 @@ func (n *Normalizer) extractTokens(file *ast.File, src []byte) []types.Token {
 		}
 
 		pos := n.fset.Position(node.Pos())
-
-		switch n := node.(type) {
-		case *ast.Ident:
-			// Normalize identifiers to _ID_ (except keywords)
-			if token.Lookup(n.Name).IsKeyword() {
-				// It's a keyword, keep as-is
-				tokens = append(tokens, types.Token{
-					Type:     types.TokenKeyword,
-					Value:    n.Name,
-					Line:     pos.Line,
-					Column:   pos.Column,
-					Position: position,
-				})
-			} else {
-				// It's an identifier, normalize
-				tokens = append(tokens, types.Token{
-					Type:     types.TokenIdentifier,
-					Value:    "_ID_",
-					Line:     pos.Line,
-					Column:   pos.Column,
-					Position: position,
-				})
-			}
-			position++
-
-		case *ast.BasicLit:
-			// Normalize literals (strings, numbers, etc.) to _LIT_
-			tokens = append(tokens, types.Token{
-				Type:     types.TokenLiteral,
-				Value:    "_LIT_",
-				Line:     pos.Line,
-				Column:   pos.Column,
-				Position: position,
-			})
-			position++
-
-		case *ast.BinaryExpr:
-			// Add operator tokens
-			tokens = append(tokens, types.Token{
-				Type:     types.TokenOperator,
-				Value:    n.Op.String(),
-				Line:     pos.Line,
-				Column:   pos.Column,
-				Position: position,
-			})
-			position++
-
-		case *ast.UnaryExpr:
-			// Add unary operator tokens
-			tokens = append(tokens, types.Token{
-				Type:     types.TokenOperator,
-				Value:    n.Op.String(),
-				Line:     pos.Line,
-				Column:   pos.Column,
-				Position: position,
-			})
-			position++
-
-		case *ast.AssignStmt:
-			// Add assignment operator
-			tokens = append(tokens, types.Token{
-				Type:     types.TokenOperator,
-				Value:    n.Tok.String(),
-				Line:     pos.Line,
-				Column:   pos.Column,
-				Position: position,
-			})
-			position++
-
-		case *ast.IfStmt:
-			// Add 'if' keyword
-			tokens = append(tokens, types.Token{
-				Type:     types.TokenKeyword,
-				Value:    "if",
-				Line:     pos.Line,
-				Column:   pos.Column,
-				Position: position,
-			})
-			position++
-
-		case *ast.ForStmt, *ast.RangeStmt:
-			// Add 'for' keyword
-			tokens = append(tokens, types.Token{
-				Type:     types.TokenKeyword,
-				Value:    "for",
-				Line:     pos.Line,
-				Column:   pos.Column,
-				Position: position,
-			})
-			position++
-
-		case *ast.ReturnStmt:
-			// Add 'return' keyword
-			tokens = append(tokens, types.Token{
-				Type:     types.TokenKeyword,
-				Value:    "return",
-				Line:     pos.Line,
-				Column:   pos.Column,
-				Position: position,
-			})
-			position++
-
-		case *ast.FuncDecl:
-			// Add 'func' keyword
-			tokens = append(tokens, types.Token{
-				Type:     types.TokenKeyword,
-				Value:    "func",
-				Line:     pos.Line,
-				Column:   pos.Column,
-				Position: position,
-			})
+		token := n.processNode(node, pos, position)
+		
+		if token != nil {
+			tokens = append(tokens, *token)
 			position++
 		}
 
@@ -176,6 +69,91 @@ func (n *Normalizer) extractTokens(file *ast.File, src []byte) []types.Token {
 	})
 
 	return tokens
+}
+
+func (n *Normalizer) processNode(node ast.Node, pos token.Position, position int) *types.Token {
+	switch node := node.(type) {
+	case *ast.Ident:
+		return n.processIdent(node, pos, position)
+	case *ast.BasicLit:
+		return &types.Token{
+			Type:     types.TokenLiteral,
+			Value:    "_LIT_",
+			Line:     pos.Line,
+			Column:   pos.Column,
+			Position: position,
+		}
+	case *ast.BinaryExpr:
+		return &types.Token{
+			Type:     types.TokenOperator,
+			Value:    node.Op.String(),
+			Line:     pos.Line,
+			Column:   pos.Column,
+			Position: position,
+		}
+	case *ast.UnaryExpr:
+		return &types.Token{
+			Type:     types.TokenOperator,
+			Value:    node.Op.String(),
+			Line:     pos.Line,
+			Column:   pos.Column,
+			Position: position,
+		}
+	case *ast.AssignStmt:
+		return &types.Token{
+			Type:     types.TokenOperator,
+			Value:    node.Tok.String(),
+			Line:     pos.Line,
+			Column:   pos.Column,
+			Position: position,
+		}
+	default:
+		return n.processKeywords(node, pos, position)
+	}
+}
+
+func (n *Normalizer) processIdent(ident *ast.Ident, pos token.Position, position int) *types.Token {
+	if token.Lookup(ident.Name).IsKeyword() {
+		return &types.Token{
+			Type:     types.TokenKeyword,
+			Value:    ident.Name,
+			Line:     pos.Line,
+			Column:   pos.Column,
+			Position: position,
+		}
+	}
+	return &types.Token{
+		Type:     types.TokenIdentifier,
+		Value:    "_ID_",
+		Line:     pos.Line,
+		Column:   pos.Column,
+		Position: position,
+	}
+}
+
+func (n *Normalizer) processKeywords(node ast.Node, pos token.Position, position int) *types.Token {
+	var value string
+	
+	switch node.(type) {
+	case *ast.IfStmt:
+		value = "if"
+	case *ast.ForStmt, *ast.RangeStmt:
+		value = "for"
+	case *ast.ReturnStmt:
+		value = "return"
+	case *ast.FuncDecl:
+		value = "func"
+	default:
+		return nil
+	}
+
+	return &types.Token{
+		Type:     types.TokenKeyword,
+		Value:    value,
+		Line:     pos.Line,
+		Column:   pos.Column,
+		Position: position,
+	}
 }
 
 // TokenStreamToString converts a token stream to a string for debugging

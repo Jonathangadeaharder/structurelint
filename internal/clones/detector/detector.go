@@ -161,45 +161,46 @@ func (d *Detector) findGoFiles(rootPath string) ([]string, error) {
 
 // matchesPattern checks if a path matches a pattern with ** wildcards
 func matchesPattern(path, pattern string) bool {
-	// Handle ** wildcard patterns
-	if strings.Contains(pattern, "**") {
-		// Convert ** pattern to regular path matching
-		parts := strings.Split(pattern, "**")
-		if len(parts) == 1 {
-			matched, _ := filepath.Match(pattern, path)
-			return matched
-		}
-		
-		// Check if path contains the pattern parts in order
-		for i, part := range parts {
-			part = strings.Trim(part, "/")
-			if part == "" {
-				continue
-			}
-			
-			if i == 0 {
-				// First part: check if path starts with it
-				if !strings.HasPrefix(path, part) && !strings.Contains(path, "/"+part+"/") && !strings.Contains(path, "/"+part) {
-					return false
-				}
-			} else if i == len(parts)-1 {
-				// Last part: check if path ends with it or contains it
-				if !strings.HasSuffix(path, part) && !strings.Contains(path, "/"+part+"/") && !strings.Contains(path, "/"+part) {
-					return false
-				}
-			} else {
-				// Middle parts: check if path contains it
-				if !strings.Contains(path, "/"+part+"/") && !strings.Contains(path, "/"+part) {
-					return false
-				}
-			}
-		}
-		return true
+	if !strings.Contains(pattern, "**") {
+		matched, _ := filepath.Match(pattern, path)
+		return matched
 	}
 	
-	// Simple pattern matching against full path
-	matched, _ := filepath.Match(pattern, path)
-	return matched
+	parts := strings.Split(pattern, "**")
+	if len(parts) == 1 {
+		matched, _ := filepath.Match(pattern, path)
+		return matched
+	}
+
+	return checkPatternParts(path, parts)
+}
+
+func checkPatternParts(path string, parts []string) bool {
+	for i, part := range parts {
+		part = strings.Trim(part, "/")
+		if part == "" {
+			continue
+		}
+
+		if !checkPatternPart(path, part, i, len(parts)) {
+			return false
+		}
+	}
+	return true
+}
+
+func checkPatternPart(path, part string, index, totalParts int) bool {
+	switch {
+	case index == 0:
+		// First part: check if path starts with it
+		return strings.HasPrefix(path, part) || strings.Contains(path, "/"+part+"/") || strings.Contains(path, "/"+part)
+	case index == totalParts-1:
+		// Last part: check if path ends with it or contains it
+		return strings.HasSuffix(path, part) || strings.Contains(path, "/"+part+"/") || strings.Contains(path, "/"+part)
+	default:
+		// Middle parts: check if path contains it
+		return strings.Contains(path, "/"+part+"/") || strings.Contains(path, "/"+part)
+	}
 }
 
 // normalizeFiles processes all files in parallel

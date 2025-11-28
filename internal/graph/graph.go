@@ -57,12 +57,24 @@ func (b *Builder) Build(files []walker.FileInfo) (*ImportGraph, error) {
 		FileLayers:   make(map[string]*config.Layer),
 		AllImports:   []parser.Import{},
 		Layers:       b.layers,
-		Exports:      make(map[string][]parser.Export), // Phase 2
-		IncomingRefs: make(map[string]int),             // Phase 2
-		AllFiles:     []string{},                       // Phase 2
+		Exports:      make(map[string][]parser.Export),
+		IncomingRefs: make(map[string]int),
+		AllFiles:     []string{},
 	}
 
 	// First pass: collect all imports and exports
+	b.collectImportsAndExports(files, graph)
+
+	// Second pass: assign files to layers
+	b.assignFilesToLayers(files, graph)
+
+	// Phase 2: Build incoming reference count
+	b.buildIncomingReferences(graph)
+
+	return graph, nil
+}
+
+func (b *Builder) collectImportsAndExports(files []walker.FileInfo, graph *ImportGraph) {
 	for _, file := range files {
 		if file.IsDir {
 			continue
@@ -73,31 +85,31 @@ func (b *Builder) Build(files []walker.FileInfo) (*ImportGraph, error) {
 		// Parse imports
 		imports, err := b.parser.ParseFile(file.AbsPath)
 		if err != nil {
-			// Skip files we can't parse
 			continue
 		}
 
 		graph.AllImports = append(graph.AllImports, imports...)
+		b.recordDependencies(file.Path, imports, graph)
 
-		// Build dependency map
-		for _, imp := range imports {
-			// Resolve relative imports to absolute paths
-			resolvedPath := imp.ImportPath
-			if imp.IsRelative {
-				resolvedPath = b.parser.ResolveImportPath(file.Path, imp.ImportPath)
-			}
-
-			graph.Dependencies[file.Path] = append(graph.Dependencies[file.Path], resolvedPath)
-		}
-
-		// Phase 2: Parse exports
+		// Parse exports
 		exports, err := b.parser.ParseExports(file.AbsPath)
 		if err == nil && len(exports) > 0 {
 			graph.Exports[file.Path] = exports
 		}
 	}
+}
 
-	// Second pass: assign files to layers
+func (b *Builder) recordDependencies(filePath string, imports []parser.Import, graph *ImportGraph) {
+	for _, imp := range imports {
+		resolvedPath := imp.ImportPath
+		if imp.IsRelative {
+			resolvedPath = b.parser.ResolveImportPath(filePath, imp.ImportPath)
+		}
+		graph.Dependencies[filePath] = append(graph.Dependencies[filePath], resolvedPath)
+	}
+}
+
+func (b *Builder) assignFilesToLayers(files []walker.FileInfo, graph *ImportGraph) {
 	for _, file := range files {
 		if file.IsDir {
 			continue
@@ -108,11 +120,11 @@ func (b *Builder) Build(files []walker.FileInfo) (*ImportGraph, error) {
 			graph.FileLayers[file.Path] = layer
 		}
 	}
+}
 
-	// Phase 2: Build incoming reference count
+func (b *Builder) buildIncomingReferences(graph *ImportGraph) {
 	for _, dependencies := range graph.Dependencies {
 		for _, dep := range dependencies {
-			// Try to resolve the dependency to an actual file
 			for _, file := range graph.AllFiles {
 				if strings.HasPrefix(file, dep) || file == dep {
 					graph.IncomingRefs[file]++
@@ -121,8 +133,6 @@ func (b *Builder) Build(files []walker.FileInfo) (*ImportGraph, error) {
 			}
 		}
 	}
-
-	return graph, nil
 }
 
 // findLayerForFile determines which layer a file belongs to
@@ -138,6 +148,10 @@ func (b *Builder) findLayerForFile(filePath string) *config.Layer {
 
 // matchesLayerPath checks if a file path matches a layer's path pattern
 func (b *Builder) matchesLayerPath(filePath, layerPath string) bool {
+	// Normalize paths to use forward slashes for consistent matching
+	filePath = filepath.ToSlash(filePath)
+	layerPath = filepath.ToSlash(layerPath)
+
 	// Handle glob patterns
 	if strings.Contains(layerPath, "**") {
 		parts := strings.Split(layerPath, "**")

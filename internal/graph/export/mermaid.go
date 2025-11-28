@@ -234,7 +234,20 @@ func (e *MermaidExporter) writeStyles(w io.Writer, nodeIDs map[string]string, no
 		return fmt.Errorf("failed to write style comment: %w", err)
 	}
 
-	// Color scheme for different layers (Mermaid uses fill and stroke)
+	// Apply layer styles
+	if err := e.applyLayerStyles(w, nodeIDs, nodes); err != nil {
+		return err
+	}
+
+	// Apply violation and cycle styles
+	if err := e.applySpecialStyles(w); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (e *MermaidExporter) applyLayerStyles(w io.Writer, nodeIDs map[string]string, nodes []string) error {
 	layerStyles := map[string]string{
 		"domain":         "fill:#C8E6C9,stroke:#2E7D32,stroke-width:2px",
 		"application":    "fill:#BBDEFB,stroke:#1565C0,stroke-width:2px",
@@ -269,14 +282,16 @@ func (e *MermaidExporter) writeStyles(w io.Writer, nodeIDs map[string]string, no
 		}
 	}
 
-	// Style for violations (if enabled)
+	return nil
+}
+
+func (e *MermaidExporter) applySpecialStyles(w io.Writer) error {
 	if e.options.HighlightViolations {
 		if _, err := fmt.Fprintf(w, "  linkStyle default stroke:#333,stroke-width:1px\n"); err != nil {
 			return fmt.Errorf("failed to write violation link style: %w", err)
 		}
 	}
 
-	// Style for cycles (if enabled)
 	if e.options.ShowCycles {
 		if _, err := fmt.Fprintf(w, "  linkStyle default stroke:#333,stroke-width:1px\n"); err != nil {
 			return fmt.Errorf("failed to write cycle link style: %w", err)

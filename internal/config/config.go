@@ -271,33 +271,17 @@ func findConfigsWithRoot(startPath string) ([]*Config, string, error) {
 	rootDir = absPath // Default root to the start path
 
 	for {
-		configPath := filepath.Join(currentPath, ".structurelint.yml")
-		if _, err := os.Stat(configPath); err == nil {
-			config, err := Load(configPath)
-			if err != nil {
-				return nil, "", err
-			}
-			configs = append([]*Config{config}, configs...) // Prepend to maintain order
-			if config.Root {
-				rootDir = currentPath // Found the root config, use its directory
-				break
-			}
+		rootDir, configs, err = checkAndLoadConfig(currentPath, configs)
+		if err != nil {
+			return nil, "", err
 		}
 
-		// Try .yaml extension
-		configPath = filepath.Join(currentPath, ".structurelint.yaml")
-		if _, err := os.Stat(configPath); err == nil && len(configs) == 0 {
-			config, err := Load(configPath)
-			if err != nil {
-				return nil, "", err
-			}
-			configs = append([]*Config{config}, configs...)
-			if config.Root {
-				rootDir = currentPath
-				break
-			}
+		// If we found a root config, stop searching
+		if rootDir != "" {
+			break
 		}
 
+		// Check if we've reached the root directory
 		parent := filepath.Dir(currentPath)
 		if parent == currentPath {
 			break
@@ -307,10 +291,43 @@ func findConfigsWithRoot(startPath string) ([]*Config, string, error) {
 
 	// If no config found, return a default config
 	if len(configs) == 0 {
-		return []*Config{{Rules: make(map[string]interface{})}}, rootDir, nil
+		return []*Config{{Rules: make(map[string]interface{})}}, absPath, nil
 	}
 
 	return configs, rootDir, nil
+}
+
+func checkAndLoadConfig(currentPath string, configs []*Config) (string, []*Config, error) {
+	rootDir := ""
+	
+	configPath := filepath.Join(currentPath, ".structurelint.yml")
+	if _, err := os.Stat(configPath); err == nil {
+		config, err := Load(configPath)
+		if err != nil {
+			return "", nil, err
+		}
+		configs = append([]*Config{config}, configs...) // Prepend to maintain order
+
+		// Check if this config has Root: true, which means stop searching upwards
+		if config.Root {
+			return currentPath, configs, nil
+		}
+	}
+
+	// Try .yaml extension
+	configPath = filepath.Join(currentPath, ".structurelint.yaml")
+	if _, err := os.Stat(configPath); err == nil && len(configs) == 0 {
+		config, err := Load(configPath)
+		if err != nil {
+			return "", nil, err
+		}
+		configs = append([]*Config{config}, configs...)
+		if config.Root {
+			return currentPath, configs, nil
+		}
+	}
+
+	return rootDir, configs, nil
 }
 
 // Merge merges multiple configs into a single config

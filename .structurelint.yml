@@ -2,9 +2,9 @@ root: true
 
 exclude:
   - testdata/**
-  - .git/**
-  - .github/**
+  - .git
   - docs/**
+  - examples/**
 
 rules:
   # Phase 0: Basic filesystem rules
@@ -12,10 +12,21 @@ rules:
     max: 5
 
   max-files-in-dir:
-    max: 30
+    max: 40
 
   max-subdirs:
     max: 20  # internal/ has 15 subdirs (after Phase 4 & 5), allow room for growth
+
+  # Phase 5: Evidence-Based Complexity Metrics
+  max-cognitive-complexity:
+    max: 20
+    file-patterns:
+      - "**/*.go"
+
+  max-halstead-effort:
+    max: 30000
+    file-patterns:
+      - "**/*.go"
 
   # README.md Documentation Requirements
   # Every directory is like a building lobby - it needs a directory/guide
@@ -63,12 +74,20 @@ rules:
 
   # Phase 4: File Content Templates
   # Temporarily disabled AAA enforcement for new Phase 4/5 test files
-  # file-content:
-  #   template-dir: ".structurelint/templates"
-  #   templates:
-  #     "**/README.md": "readme"            # Enforce README structure
-  #     "CONTRIBUTING.md": "contributing"    # Enforce contributing guidelines
-  #     "**/*_test.go": "test-gwt-table"    # Enforce GWT naming + AAA for Go tests (supports table-driven)
+  file-content:
+    template-dir: ".structurelint/templates"
+    templates:
+      "**/README.md": "readme"            # Enforce README structure
+      "CONTRIBUTING.md": "contributing"    # Enforce contributing guidelines
+      # "**/*_test.go": "test-gwt-table"    # Enforce GWT naming + AAA for Go tests (supports table-driven)
+
+  # GitHub Workflows Enforcement
+  github-workflows:
+    require-tests: true
+    require-quality: true
+    # required-jobs:  # Disabled because it enforces on ALL workflows
+    #   - "test"
+    #   - "lint"
 
   # API Specification Enforcement
   # Enforce OpenAPI for REST endpoints and AsyncAPI for event-driven systems

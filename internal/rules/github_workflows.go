@@ -73,6 +73,8 @@ func (r *GitHubWorkflowsRule) Check(files []walker.FileInfo, dirs map[string]*wa
 	workflowsDir := filepath.Join(rootDir, ".github", "workflows")
 	workflowFiles := r.findWorkflowFiles(files, workflowsDir)
 
+	fmt.Printf("DEBUG: RootDir: %s, Total Files: %d, Workflow Files: %d\n", rootDir, len(files), len(workflowFiles))
+
 	if len(workflowFiles) == 0 {
 		violations = append(violations, Violation{
 			Rule:    r.Name(),

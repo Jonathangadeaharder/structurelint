@@ -30,6 +30,19 @@ func (r *TestLocationRule) Check(files []walker.FileInfo, dirs map[string]*walke
 	var violations []Violation
 
 	// Build a map of source files (non-test files)
+	sourceFiles := r.collectSourceFiles(files)
+
+	// Check each test file
+	for _, file := range files {
+		if violation := r.checkFile(file, sourceFiles); violation != nil {
+			violations = append(violations, *violation)
+		}
+	}
+
+	return violations
+}
+
+func (r *TestLocationRule) collectSourceFiles(files []walker.FileInfo) map[string]bool {
 	sourceFiles := make(map[string]bool)
 	for _, file := range files {
 		if file.IsDir {
@@ -48,54 +61,48 @@ func (r *TestLocationRule) Check(files []walker.FileInfo, dirs map[string]*walke
 			sourceFiles[filepath.Join(dir, nameWithoutExt)] = true
 		}
 	}
+	return sourceFiles
+}
 
-	// Check each test file
-	for _, file := range files {
-		if file.IsDir {
-			continue
-		}
-
-		if !r.isTestFile(file.Path) {
-			continue
-		}
-
-		// Skip files that don't match configured patterns
-		if !r.matchesFilePattern(file.Path) {
-			continue
-		}
-
-		if r.isExempted(file.Path) {
-			continue
-		}
-
-		// Check if test file is in integration test directory
-		inIntegrationDir := r.IntegrationTestDir != "" && strings.HasPrefix(file.Path, r.IntegrationTestDir+"/")
-
-		if inIntegrationDir {
-			// Test is in integration test directory - this is allowed
-			continue
-		}
-
-		// Check if test is adjacent to source code
-		if r.AllowAdjacent && r.hasAdjacentSource(file.Path, sourceFiles) {
-			// Test is adjacent to its source - this is allowed
-			continue
-		}
-
-		// Test file is misplaced
-		message := "test file not adjacent to source code"
-		if r.IntegrationTestDir != "" {
-			message += fmt.Sprintf(" and not in integration test directory '%s/'", r.IntegrationTestDir)
-		}
-
-		violations = append(violations, Violation{
-			Rule:    r.Name(),
-			Path:    file.Path,
-			Message: message,
-		})
+func (r *TestLocationRule) checkFile(file walker.FileInfo, sourceFiles map[string]bool) *Violation {
+	if file.IsDir || !r.isTestFile(file.Path) {
+		return nil
 	}
 
-	return violations
+	// Skip files that don't match configured patterns
+	if !r.matchesFilePattern(file.Path) {
+		return nil
+	}
+
+	if r.isExempted(file.Path) {
+		return nil
+	}
+
+	// Check if test file is in integration test directory
+	inIntegrationDir := r.IntegrationTestDir != "" && strings.HasPrefix(file.Path, r.IntegrationTestDir+"/")
+
+	if inIntegrationDir {
+		// Test is in integration test directory - this is allowed
+		return nil
+	}
+
+	// Check if test is adjacent to source code
+	if r.AllowAdjacent && r.hasAdjacentSource(file.Path, sourceFiles) {
+		// Test is adjacent to its source - this is allowed
+		return nil
+	}
+
+	// Test file is misplaced
+	message := "test file not adjacent to source code"
+	if r.IntegrationTestDir != "" {
+		message += fmt.Sprintf(" and not in integration test directory '%s/'", r.IntegrationTestDir)
+	}
+
+	return &Violation{
+		Rule:    r.Name(),
+		Path:    file.Path,
+		Message: message,
+	}
 }
 
 // isTestFile checks if a file is a test file

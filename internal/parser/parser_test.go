@@ -259,8 +259,8 @@ func TestResolveImportPath(t *testing.T) {
 		importPath string
 		expected   string
 	}{
-		{"src/app.ts", "./utils", "src/utils"},
-		{"src/components/Button.tsx", "../hooks/useButton", "src/hooks/useButton"},
+		{"src/app.ts", "./utils", filepath.Join("src", "utils")},
+		{"src/components/Button.tsx", "../hooks/useButton", filepath.Join("src", "hooks", "useButton")},
 		{"src/app.ts", "react", "react"}, // External import
 	}
 
