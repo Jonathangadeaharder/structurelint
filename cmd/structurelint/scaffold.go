@@ -6,7 +6,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/structurelint/structurelint/internal/scaffold"
+	"github.com/Jonathangadeaharder/structurelint/internal/scaffold"
 )
 
 func runScaffold(args []string) error {
@@ -284,5 +284,5 @@ Integration with Linter:
   - Test file co-location
 
 Documentation:
-  https://github.com/structurelint/structurelint/docs/scaffold`)
+  https://github.com/Jonathangadeaharder/structurelint/docs/scaffold`)
 }

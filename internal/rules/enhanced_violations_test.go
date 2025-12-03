@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/structurelint/structurelint/internal/walker"
+	"github.com/Jonathangadeaharder/structurelint/internal/walker"
 )
 
 func TestViolation_FormatDetailed_WithAllFields(t *testing.T) {

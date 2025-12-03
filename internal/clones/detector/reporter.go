@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/structurelint/structurelint/internal/clones/types"
+	"github.com/Jonathangadeaharder/structurelint/internal/clones/types"
 )
 
 // Reporter formats and outputs clone detection results

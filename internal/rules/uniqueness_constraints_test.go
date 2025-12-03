@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/structurelint/structurelint/internal/walker"
+	"github.com/Jonathangadeaharder/structurelint/internal/walker"
 )
 
 func TestUniquenessConstraintsRule_GivenSingletonConstraint_WhenMultipleMatches_ThenViolation(t *testing.T) {

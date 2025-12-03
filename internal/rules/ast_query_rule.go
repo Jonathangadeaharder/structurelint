@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/structurelint/structurelint/internal/parser/treesitter"
-	"github.com/structurelint/structurelint/internal/walker"
+	"github.com/Jonathangadeaharder/structurelint/internal/parser/treesitter"
+	"github.com/Jonathangadeaharder/structurelint/internal/walker"
 )
 
 // ASTQueryRule checks files using tree-sitter AST queries

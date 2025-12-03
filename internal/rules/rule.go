@@ -4,8 +4,8 @@
 package rules
 
 import (
-	"github.com/structurelint/structurelint/internal/parser"
-	"github.com/structurelint/structurelint/internal/walker"
+	"github.com/Jonathangadeaharder/structurelint/internal/parser"
+	"github.com/Jonathangadeaharder/structurelint/internal/walker"
 )
 
 // AutoFix contains information about an automatic fix for a violation

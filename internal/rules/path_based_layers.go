@@ -5,7 +5,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/structurelint/structurelint/internal/walker"
+	"github.com/Jonathangadeaharder/structurelint/internal/walker"
 )
 
 // PathBasedLayerRule enforces layer boundaries using only directory structure

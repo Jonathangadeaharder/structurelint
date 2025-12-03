@@ -3,7 +3,7 @@ package rules
 import (
 	"testing"
 
-	"github.com/structurelint/structurelint/internal/graph"
+	"github.com/Jonathangadeaharder/structurelint/internal/graph"
 )
 
 func TestOrphanedFilesRule_GivenOrphanedFile_WhenChecking_ThenDetectsOrphan(t *testing.T) {

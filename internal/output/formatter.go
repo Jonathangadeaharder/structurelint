@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/structurelint/structurelint/internal/rules"
+	"github.com/Jonathangadeaharder/structurelint/internal/rules"
 )
 
 // Formatter defines the interface for output formatters
@@ -193,7 +193,7 @@ func (f *JUnitFormatter) Format(violations []rules.Violation) (string, error) {
 	}
 
 	output := JUnitTestSuites{
-		XMLNS:      "https://github.com/structurelint/structurelint",
+		XMLNS:      "https://github.com/Jonathangadeaharder/structurelint",
 		Name:       "structurelint",
 		Tests:      totalTests,
 		Failures:   totalFailures,

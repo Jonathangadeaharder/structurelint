@@ -7,8 +7,8 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/structurelint/structurelint/internal/graph"
-	"github.com/structurelint/structurelint/internal/walker"
+	"github.com/Jonathangadeaharder/structurelint/internal/graph"
+	"github.com/Jonathangadeaharder/structurelint/internal/walker"
 )
 
 // Predicate is a function that evaluates to true or false for a given file

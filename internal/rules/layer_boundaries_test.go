@@ -3,9 +3,9 @@ package rules
 import (
 	"testing"
 
-	"github.com/structurelint/structurelint/internal/config"
-	"github.com/structurelint/structurelint/internal/graph"
-	"github.com/structurelint/structurelint/internal/walker"
+	"github.com/Jonathangadeaharder/structurelint/internal/config"
+	"github.com/Jonathangadeaharder/structurelint/internal/graph"
+	"github.com/Jonathangadeaharder/structurelint/internal/walker"
 )
 
 func TestLayerBoundariesRule_ValidDependencies(t *testing.T) {

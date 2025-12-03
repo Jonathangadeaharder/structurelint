@@ -5,7 +5,7 @@ package parser
 import (
 	"path/filepath"
 
-	"github.com/structurelint/structurelint/internal/parser/treesitter"
+	"github.com/Jonathangadeaharder/structurelint/internal/parser/treesitter"
 )
 
 // ParserV2 is the new tree-sitter based parser

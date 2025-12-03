@@ -6,8 +6,8 @@ import (
 	"os"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/structurelint/structurelint/internal/linter"
-	"github.com/structurelint/structurelint/internal/tui"
+	"github.com/Jonathangadeaharder/structurelint/internal/linter"
+	"github.com/Jonathangadeaharder/structurelint/internal/tui"
 )
 
 func runTUI(args []string) error {
@@ -148,5 +148,5 @@ Tips:
   - Unsafe fixes will show a warning before application
 
 Documentation:
-  https://github.com/structurelint/structurelint`)
+  https://github.com/Jonathangadeaharder/structurelint`)
 }

@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/structurelint/structurelint/internal/graph"
-	"github.com/structurelint/structurelint/internal/walker"
+	"github.com/Jonathangadeaharder/structurelint/internal/graph"
+	"github.com/Jonathangadeaharder/structurelint/internal/walker"
 )
 
 // UnusedExportsRule detects exported symbols that are never imported

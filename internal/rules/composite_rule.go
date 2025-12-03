@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/structurelint/structurelint/internal/walker"
+	"github.com/Jonathangadeaharder/structurelint/internal/walker"
 )
 
 // CompositeRule combines multiple rules with logical operators

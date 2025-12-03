@@ -3,7 +3,7 @@ package syntactic
 import (
 	"strconv"
 
-	"github.com/structurelint/structurelint/internal/clones/types"
+	"github.com/Jonathangadeaharder/structurelint/internal/clones/types"
 )
 
 // Expander implements greedy match expansion for clone detection

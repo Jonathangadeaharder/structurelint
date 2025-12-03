@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/structurelint/structurelint/internal/graph"
+	"github.com/Jonathangadeaharder/structurelint/internal/graph"
 )
 
 // Cycle represents a circular dependency

@@ -6,9 +6,9 @@ import (
 	"os"
 	"path/filepath"
 
-	init_pkg "github.com/structurelint/structurelint/internal/init"
-	"github.com/structurelint/structurelint/internal/linter"
-	"github.com/structurelint/structurelint/internal/output"
+	init_pkg "github.com/Jonathangadeaharder/structurelint/internal/init"
+	"github.com/Jonathangadeaharder/structurelint/internal/linter"
+	"github.com/Jonathangadeaharder/structurelint/internal/output"
 )
 
 // Version is set during build via ldflags
@@ -266,5 +266,5 @@ Initialization:
   with smart defaults based on detected patterns.
 
 Documentation:
-  https://github.com/structurelint/structurelint`)
+  https://github.com/Jonathangadeaharder/structurelint`)
 }

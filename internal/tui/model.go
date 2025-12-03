@@ -7,8 +7,8 @@ import (
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/structurelint/structurelint/internal/autofix"
-	"github.com/structurelint/structurelint/internal/linter"
+	"github.com/Jonathangadeaharder/structurelint/internal/autofix"
+	"github.com/Jonathangadeaharder/structurelint/internal/linter"
 )
 
 // View modes

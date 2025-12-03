@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/structurelint/structurelint/internal/walker"
+	"github.com/Jonathangadeaharder/structurelint/internal/walker"
 )
 
 // ExternalRuleAdapter adapts a RulePlugin to the Rule interface

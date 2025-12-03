@@ -3,8 +3,8 @@ package rules
 import (
 	"testing"
 
-	"github.com/structurelint/structurelint/internal/graph"
-	"github.com/structurelint/structurelint/internal/parser"
+	"github.com/Jonathangadeaharder/structurelint/internal/graph"
+	"github.com/Jonathangadeaharder/structurelint/internal/parser"
 )
 
 func TestUnusedExportsRule_DetectsUnusedExports(t *testing.T) {

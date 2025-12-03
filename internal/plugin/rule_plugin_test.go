@@ -7,8 +7,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/structurelint/structurelint/internal/rules"
-	"github.com/structurelint/structurelint/internal/walker"
+	"github.com/Jonathangadeaharder/structurelint/internal/rules"
+	"github.com/Jonathangadeaharder/structurelint/internal/walker"
 )
 
 // TestHelperProcess isn't a real test; it's a helper process invoked by tests.

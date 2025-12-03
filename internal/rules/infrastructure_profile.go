@@ -1,7 +1,7 @@
 package rules
 
 import (
-	"github.com/structurelint/structurelint/internal/walker"
+	"github.com/Jonathangadeaharder/structurelint/internal/walker"
 )
 
 // InfrastructureProfile identifies infrastructure code directories

@@ -3,9 +3,9 @@ package rules
 import (
 	"fmt"
 
-	"github.com/structurelint/structurelint/internal/graph"
-	"github.com/structurelint/structurelint/internal/rules/predicate"
-	"github.com/structurelint/structurelint/internal/walker"
+	"github.com/Jonathangadeaharder/structurelint/internal/graph"
+	"github.com/Jonathangadeaharder/structurelint/internal/rules/predicate"
+	"github.com/Jonathangadeaharder/structurelint/internal/walker"
 )
 
 // PredicateRule is a rule based on predicate logic

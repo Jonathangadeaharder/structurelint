@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/structurelint/structurelint/internal/parser/treesitter"
+	"github.com/Jonathangadeaharder/structurelint/internal/parser/treesitter"
 )
 
 const (
