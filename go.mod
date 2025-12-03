@@ -1,5 +1,4 @@
-module github.com/structurelint/structurelint
-
+module github.com/Jonathangadeaharder/structurelint
 go 1.24.7
 
 require (
