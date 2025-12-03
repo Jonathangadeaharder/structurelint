@@ -3,10 +3,10 @@ package linter
 import (
 	"fmt"
 
-	"github.com/structurelint/structurelint/internal/config"
-	"github.com/structurelint/structurelint/internal/graph"
-	"github.com/structurelint/structurelint/internal/rules"
-	"github.com/structurelint/structurelint/internal/walker"
+	"github.com/Jonathangadeaharder/structurelint/internal/config"
+	"github.com/Jonathangadeaharder/structurelint/internal/graph"
+	"github.com/Jonathangadeaharder/structurelint/internal/rules"
+	"github.com/Jonathangadeaharder/structurelint/internal/walker"
 )
 
 // Linter is the main linter orchestrator
@@ -138,7 +138,7 @@ func (l *Linter) checkBreakingChanges() {
 	if _, ok := l.getRuleConfig("max-cyclomatic-complexity"); ok {
 		panic("BREAKING CHANGE: 'max-cyclomatic-complexity' rule has been removed.\n" +
 			"Use 'max-cognitive-complexity' instead - it's scientifically superior (r=0.54 vs cyclomatic's weak correlation).\n" +
-			"See: https://github.com/structurelint/structurelint#phase-5-evidence-based-metrics")
+			"See: https://github.com/Jonathangadeaharder/structurelint#phase-5-evidence-based-metrics")
 	}
 }
 

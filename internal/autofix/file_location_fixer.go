@@ -5,8 +5,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/structurelint/structurelint/internal/rules"
-	"github.com/structurelint/structurelint/internal/walker"
+	"github.com/Jonathangadeaharder/structurelint/internal/rules"
+	"github.com/Jonathangadeaharder/structurelint/internal/walker"
 )
 
 // FileLocationFixer generates fixes for file location violations

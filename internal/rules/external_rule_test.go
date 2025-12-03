@@ -5,7 +5,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/structurelint/structurelint/internal/walker"
+	"github.com/Jonathangadeaharder/structurelint/internal/walker"
 )
 
 type mockPlugin struct {

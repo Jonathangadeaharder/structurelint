@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/structurelint/structurelint/internal/walker"
+	"github.com/Jonathangadeaharder/structurelint/internal/walker"
 )
 
 // TestContractFrameworkRule_Python tests Python contract framework enforcement

@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/structurelint/structurelint/internal/parser"
+	"github.com/Jonathangadeaharder/structurelint/internal/parser"
 )
 
 // FileInfo represents information about a file or directory

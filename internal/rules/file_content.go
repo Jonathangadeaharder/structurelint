@@ -8,7 +8,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/structurelint/structurelint/internal/walker"
+	"github.com/Jonathangadeaharder/structurelint/internal/walker"
 )
 
 // FileContentRule validates file content against templates or patterns

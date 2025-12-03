@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/structurelint/structurelint/internal/graph"
+	"github.com/Jonathangadeaharder/structurelint/internal/graph"
 )
 
 // MermaidExporter exports dependency graphs in Mermaid format

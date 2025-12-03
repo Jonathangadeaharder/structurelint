@@ -8,8 +8,8 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/structurelint/structurelint/internal/clones/detector"
-	"github.com/structurelint/structurelint/internal/plugin"
+	"github.com/Jonathangadeaharder/structurelint/internal/clones/detector"
+	"github.com/Jonathangadeaharder/structurelint/internal/plugin"
 )
 
 // runClones handles the 'clones' subcommand

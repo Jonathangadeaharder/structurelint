@@ -7,11 +7,11 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/structurelint/structurelint/internal/config"
-	"github.com/structurelint/structurelint/internal/graph"
-	"github.com/structurelint/structurelint/internal/graph/analysis"
-	"github.com/structurelint/structurelint/internal/graph/export"
-	"github.com/structurelint/structurelint/internal/walker"
+	"github.com/Jonathangadeaharder/structurelint/internal/config"
+	"github.com/Jonathangadeaharder/structurelint/internal/graph"
+	"github.com/Jonathangadeaharder/structurelint/internal/graph/analysis"
+	"github.com/Jonathangadeaharder/structurelint/internal/graph/export"
+	"github.com/Jonathangadeaharder/structurelint/internal/walker"
 )
 
 func runGraph(args []string) (err error) {
@@ -291,5 +291,5 @@ Cycle Detection:
   - Exit code 1 if cycles found, 0 otherwise
 
 Documentation:
-  https://github.com/structurelint/structurelint`)
+  https://github.com/Jonathangadeaharder/structurelint`)
 }

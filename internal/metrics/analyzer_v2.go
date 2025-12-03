@@ -3,7 +3,7 @@ package metrics
 import (
 	"path/filepath"
 
-	"github.com/structurelint/structurelint/internal/parser/treesitter"
+	"github.com/Jonathangadeaharder/structurelint/internal/parser/treesitter"
 )
 
 // AnalyzerV2 provides native tree-sitter based metrics analysis for all languages

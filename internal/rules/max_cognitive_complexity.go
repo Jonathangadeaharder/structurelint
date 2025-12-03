@@ -12,8 +12,8 @@ import (
 	"go/parser"
 	"go/token"
 
-	"github.com/structurelint/structurelint/internal/metrics"
-	"github.com/structurelint/structurelint/internal/walker"
+	"github.com/Jonathangadeaharder/structurelint/internal/metrics"
+	"github.com/Jonathangadeaharder/structurelint/internal/walker"
 )
 
 // MaxCognitiveComplexityRule checks that functions don't exceed maximum cognitive complexity

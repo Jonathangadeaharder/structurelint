@@ -4,7 +4,7 @@ package rules
 import (
 	"fmt"
 
-	"github.com/structurelint/structurelint/internal/walker"
+	"github.com/Jonathangadeaharder/structurelint/internal/walker"
 )
 
 // MaxDepthRule enforces a maximum directory nesting depth

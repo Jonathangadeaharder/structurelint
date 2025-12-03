@@ -6,7 +6,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/structurelint/structurelint/internal/walker"
+	"github.com/Jonathangadeaharder/structurelint/internal/walker"
 )
 
 // RegexMatchRule validates files against regex patterns

@@ -7,8 +7,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/structurelint/structurelint/internal/autofix"
-	"github.com/structurelint/structurelint/internal/linter"
+	"github.com/Jonathangadeaharder/structurelint/internal/autofix"
+	"github.com/Jonathangadeaharder/structurelint/internal/linter"
 )
 
 func runFix(args []string) error {
@@ -322,5 +322,5 @@ Workflow:
   5. Run 'structurelint' to verify fixes resolved violations
 
 Documentation:
-  https://github.com/structurelint/structurelint`)
+  https://github.com/Jonathangadeaharder/structurelint`)
 }

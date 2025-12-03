@@ -8,7 +8,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/structurelint/structurelint/internal/clones/types"
+	"github.com/Jonathangadeaharder/structurelint/internal/clones/types"
 )
 
 // Normalizer converts source code into normalized token streams

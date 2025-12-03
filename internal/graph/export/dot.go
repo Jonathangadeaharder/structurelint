@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/structurelint/structurelint/internal/config"
-	"github.com/structurelint/structurelint/internal/graph"
+	"github.com/Jonathangadeaharder/structurelint/internal/config"
+	"github.com/Jonathangadeaharder/structurelint/internal/graph"
 )
 
 // DOTExporter exports dependency graphs in GraphViz DOT format

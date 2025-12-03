@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/structurelint/structurelint/internal/walker"
+	"github.com/Jonathangadeaharder/structurelint/internal/walker"
 )
 
 // FileExistenceRule validates file existence requirements

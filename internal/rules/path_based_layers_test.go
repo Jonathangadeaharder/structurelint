@@ -4,7 +4,7 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/structurelint/structurelint/internal/walker"
+	"github.com/Jonathangadeaharder/structurelint/internal/walker"
 )
 
 func TestPathBasedLayerRule_ThreeLayerArchitecture(t *testing.T) {

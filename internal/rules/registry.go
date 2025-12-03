@@ -1,7 +1,7 @@
 package rules
 
 import (
-	"github.com/structurelint/structurelint/internal/graph"
+	"github.com/Jonathangadeaharder/structurelint/internal/graph"
 )
 
 // RuleContext contains context available to rules during instantiation

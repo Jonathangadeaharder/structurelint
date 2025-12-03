@@ -3,7 +3,7 @@ package rules
 import (
 	"testing"
 
-	"github.com/structurelint/structurelint/internal/walker"
+	"github.com/Jonathangadeaharder/structurelint/internal/walker"
 )
 
 func TestLanguageAwareNamingConvention_Python_UsesSnakeCase(t *testing.T) {

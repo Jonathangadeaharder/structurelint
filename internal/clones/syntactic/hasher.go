@@ -3,7 +3,7 @@ package syntactic
 import (
 	"hash/fnv"
 
-	"github.com/structurelint/structurelint/internal/clones/types"
+	"github.com/Jonathangadeaharder/structurelint/internal/clones/types"
 )
 
 const (

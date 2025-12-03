@@ -8,8 +8,8 @@ import (
 	"os/exec"
 	"time"
 
-	"github.com/structurelint/structurelint/internal/rules"
-	"github.com/structurelint/structurelint/internal/walker"
+	"github.com/Jonathangadeaharder/structurelint/internal/rules"
+	"github.com/Jonathangadeaharder/structurelint/internal/walker"
 )
 
 // RulePlugin defines the interface for external rule plugins

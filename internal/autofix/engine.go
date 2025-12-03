@@ -6,8 +6,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/structurelint/structurelint/internal/rules"
-	"github.com/structurelint/structurelint/internal/walker"
+	"github.com/Jonathangadeaharder/structurelint/internal/rules"
+	"github.com/Jonathangadeaharder/structurelint/internal/walker"
 )
 
 // Fix represents a proposed fix for a violation

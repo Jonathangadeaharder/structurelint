@@ -7,9 +7,9 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/structurelint/structurelint/internal/clones/parser"
-	"github.com/structurelint/structurelint/internal/clones/syntactic"
-	"github.com/structurelint/structurelint/internal/clones/types"
+	"github.com/Jonathangadeaharder/structurelint/internal/clones/parser"
+	"github.com/Jonathangadeaharder/structurelint/internal/clones/syntactic"
+	"github.com/Jonathangadeaharder/structurelint/internal/clones/types"
 )
 
 // Detector orchestrates the clone detection process

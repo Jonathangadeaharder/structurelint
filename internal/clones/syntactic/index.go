@@ -3,7 +3,7 @@ package syntactic
 import (
 	"sync"
 
-	"github.com/structurelint/structurelint/internal/clones/types"
+	"github.com/Jonathangadeaharder/structurelint/internal/clones/types"
 )
 
 // Index is an inverted index mapping hash values to shingle locations

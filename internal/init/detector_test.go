@@ -3,7 +3,7 @@ package init
 import (
 	"testing"
 
-	"github.com/structurelint/structurelint/internal/walker"
+	"github.com/Jonathangadeaharder/structurelint/internal/walker"
 )
 
 func Test_extensionToLanguage(t *testing.T) {

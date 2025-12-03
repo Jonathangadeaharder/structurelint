@@ -4,9 +4,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/structurelint/structurelint/internal/config"
-	"github.com/structurelint/structurelint/internal/parser"
-	"github.com/structurelint/structurelint/internal/walker"
+	"github.com/Jonathangadeaharder/structurelint/internal/config"
+	"github.com/Jonathangadeaharder/structurelint/internal/parser"
+	"github.com/Jonathangadeaharder/structurelint/internal/walker"
 )
 
 // ImportGraph represents the import dependency graph of the project
