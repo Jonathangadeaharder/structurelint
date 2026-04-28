@@ -1,5 +1,7 @@
 # Structure Rules
 
+## Overview
+
 Project structure and layout enforcement rules.
 
 Rules in this package:

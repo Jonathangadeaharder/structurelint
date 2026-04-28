@@ -1,5 +1,7 @@
 # Quality Rules
 
+## Overview
+
 Code quality and tooling enforcement rules.
 
 Rules in this package:

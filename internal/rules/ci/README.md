@@ -1,5 +1,7 @@
 # CI Rules
 
+## Overview
+
 CI/CD pipeline and workflow enforcement rules.
 
 Rules in this package:

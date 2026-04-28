@@ -1,5 +1,7 @@
 # Graph Rules
 
+## Overview
+
 Architecture enforcement rules that require import graph analysis.
 
 Rules in this package:
