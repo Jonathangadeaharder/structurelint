@@ -144,11 +144,11 @@ func Test_WhenMatchingGlobPattern(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Arrange & Act
-			got := matchesGlobPattern(tt.path, tt.pattern)
+			got := MatchesGlobPattern(tt.path, tt.pattern)
 
 			// Assert
 			if got != tt.want {
-				t.Errorf("matchesGlobPattern(%q, %q) = %v, want %v", tt.path, tt.pattern, got, tt.want)
+				t.Errorf("MatchesGlobPattern(%q, %q) = %v, want %v", tt.path, tt.pattern, got, tt.want)
 			}
 		})
 	}

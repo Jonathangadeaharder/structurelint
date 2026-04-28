@@ -138,7 +138,7 @@ forbidden-patterns:
 			}
 
 			rule := &FileContentRule{}
-			template, err := rule.loadTemplate(templatePath)
+			template, err := rule.parseTemplateFile(templatePath)
 			if err != nil {
 				t.Fatalf("loadTemplate() error = %v", err)
 			}

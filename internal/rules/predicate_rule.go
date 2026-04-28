@@ -49,7 +49,6 @@ func (r *PredicateRule) Check(files []walker.FileInfo, dirs map[string]*walker.D
 		AllDirs:    dirs,
 		CustomData: make(map[string]interface{}),
 	}
-	_ = ctx
 
 	// Check each file
 	for _, file := range files {
@@ -123,7 +122,6 @@ func (r *RequireFileRule) Check(files []walker.FileInfo, dirs map[string]*walker
 		AllDirs:    dirs,
 		CustomData: make(map[string]interface{}),
 	}
-	_ = ctx
 
 	// Check if at least one file matches
 	for _, file := range files {

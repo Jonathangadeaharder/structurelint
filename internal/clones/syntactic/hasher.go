@@ -84,9 +84,9 @@ func (h *Hasher) hashTokens(tokens []types.Token) uint64 {
 
 	for _, token := range tokens {
 		// Hash the normalized token value
-		_, _ = hash.Write([]byte(token.Value))
+		hash.Write([]byte(token.Value))
 		// Add separator to distinguish "ab" + "cd" from "abc" + "d"
-		_, _ = hash.Write([]byte{0})
+		hash.Write([]byte{0})
 	}
 
 	return hash.Sum64()
@@ -110,16 +110,16 @@ func (h *Hasher) rollingHash(prevHash uint64, removedToken, addedToken types.Tok
 	for i := 0; i < 8; i++ {
 		hashBytes[i] = byte(prevHash >> (8 * i))
 	}
-	_, _ = hash.Write(hashBytes)
+	hash.Write(hashBytes)
 
 	// XOR out the removed token's contribution (approximation)
 	removedHash := fnv.New64a()
-	_, _ = removedHash.Write([]byte(removedToken.Value))
+	removedHash.Write([]byte(removedToken.Value))
 	removedValue := removedHash.Sum64()
 
 	// XOR in the added token's contribution
 	addedHash := fnv.New64a()
-	_, _ = addedHash.Write([]byte(addedToken.Value))
+	addedHash.Write([]byte(addedToken.Value))
 	addedValue := addedHash.Sum64()
 
 	// Combine: prevHash XOR removedValue XOR addedValue

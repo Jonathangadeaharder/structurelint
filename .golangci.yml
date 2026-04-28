@@ -17,4 +17,4 @@ linters-settings:
     min-complexity: 85
 
 run:
-  tests: false
+  tests: true

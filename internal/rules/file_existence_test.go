@@ -124,9 +124,12 @@ func TestFileExistenceRule_WhenParsingCountSpec(t *testing.T) {
 			rule := &FileExistenceRule{}
 
 			// Act
-			gotMin, gotMax := rule.parseCountSpec(tt.spec)
+			gotMin, gotMax, err := rule.parseCountSpec(tt.spec)
 
 			// Assert
+			if err != nil {
+				t.Fatalf("parseCountSpec(%q) returned unexpected error: %v", tt.spec, err)
+			}
 			if gotMin != tt.wantMin || gotMax != tt.wantMax {
 				t.Errorf("parseCountSpec(%q) = (%d, %d), want (%d, %d)",
 					tt.spec, gotMin, gotMax, tt.wantMin, tt.wantMax)

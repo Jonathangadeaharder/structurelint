@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/Jonathangadeaharder/structurelint/internal/walker"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestNamingConventionRule_Check(t *testing.T) {
@@ -112,11 +113,9 @@ func TestNamingConventionRule_Check(t *testing.T) {
 			violations := rule.Check(tt.files, nil)
 
 			// Assert
-			if len(violations) != tt.wantViolCount {
-				t.Errorf("Check() got %d violations, want %d", len(violations), tt.wantViolCount)
-				for _, v := range violations {
-					t.Logf("  - %s: %s", v.Path, v.Message)
-				}
+			assert.Equal(t, tt.wantViolCount, len(violations), "Check() got %d violations, want %d", len(violations), tt.wantViolCount)
+			for _, v := range violations {
+				t.Logf("  - %s: %s", v.Path, v.Message)
 			}
 		})
 	}
@@ -139,9 +138,7 @@ func Test_isCamelCase(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.input, func(t *testing.T) {
-			if got := isCamelCase(tt.input); got != tt.want {
-				t.Errorf("isCamelCase(%q) = %v, want %v", tt.input, got, tt.want)
-			}
+			assert.Equal(t, tt.want, isCamelCase(tt.input), "isCamelCase(%q)", tt.input)
 		})
 	}
 }
@@ -163,9 +160,7 @@ func Test_isPascalCase(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.input, func(t *testing.T) {
-			if got := isPascalCase(tt.input); got != tt.want {
-				t.Errorf("isPascalCase(%q) = %v, want %v", tt.input, got, tt.want)
-			}
+			assert.Equal(t, tt.want, isPascalCase(tt.input), "isPascalCase(%q)", tt.input)
 		})
 	}
 }
@@ -186,9 +181,7 @@ func Test_isKebabCase(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.input, func(t *testing.T) {
-			if got := isKebabCase(tt.input); got != tt.want {
-				t.Errorf("isKebabCase(%q) = %v, want %v", tt.input, got, tt.want)
-			}
+			assert.Equal(t, tt.want, isKebabCase(tt.input), "isKebabCase(%q)", tt.input)
 		})
 	}
 }
@@ -209,16 +202,12 @@ func Test_isSnakeCase(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.input, func(t *testing.T) {
-			if got := isSnakeCase(tt.input); got != tt.want {
-				t.Errorf("isSnakeCase(%q) = %v, want %v", tt.input, got, tt.want)
-			}
+			assert.Equal(t, tt.want, isSnakeCase(tt.input), "isSnakeCase(%q)", tt.input)
 		})
 	}
 }
 
 func TestNamingConventionRule_Name(t *testing.T) {
 	rule := NewNamingConventionRule(map[string]string{"*.js": "camelCase"})
-	if got := rule.Name(); got != "naming-convention" {
-		t.Errorf("Name() = %v, want naming-convention", got)
-	}
+	assert.Equal(t, "naming-convention", rule.Name())
 }

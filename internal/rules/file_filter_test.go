@@ -23,11 +23,11 @@ func TestDetectFileType(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.path, func(t *testing.T) {
 			// Act
-			result := detectFileType(tt.path)
+			result := DetectFileType(tt.path)
 
 			// Assert
 			if result != tt.expected {
-				t.Errorf("detectFileType(%q) = %v, want %v", tt.path, result, tt.expected)
+				t.Errorf("DetectFileType(%q) = %v, want %v", tt.path, result, tt.expected)
 			}
 		})
 	}
@@ -71,11 +71,11 @@ func TestIsTestFile(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.path, func(t *testing.T) {
 			// Act
-			result := isTestFile(tt.path, tt.fileType)
+			result := IsTestFile(tt.path, tt.fileType)
 
 			// Assert
 			if result != tt.expected {
-				t.Errorf("isTestFile(%q, %v) = %v, want %v", tt.path, tt.fileType, result, tt.expected)
+				t.Errorf("IsTestFile(%q, %v) = %v, want %v", tt.path, tt.fileType, result, tt.expected)
 			}
 		})
 	}
@@ -124,11 +124,11 @@ func TestMatchesAnyGlob(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Act
-			result := matchesAnyGlob(tt.path, tt.patterns)
+			result := MatchesAnyGlob(tt.path, tt.patterns)
 
 			// Assert
 			if result != tt.expected {
-				t.Errorf("matchesAnyGlob(%q, %v) = %v, want %v", tt.path, tt.patterns, result, tt.expected)
+				t.Errorf("MatchesAnyGlob(%q, %v) = %v, want %v", tt.path, tt.patterns, result, tt.expected)
 			}
 		})
 	}
@@ -197,11 +197,11 @@ func TestShouldAnalyzeFile(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Act
-			result := shouldAnalyzeFile(tt.path, tt.fileType, tt.filePatterns)
+			result := ShouldAnalyzeFile(tt.path, tt.fileType, tt.filePatterns)
 
 			// Assert
 			if result != tt.expected {
-				t.Errorf("shouldAnalyzeFile(%q, %v, %v) = %v, want %v",
+				t.Errorf("ShouldAnalyzeFile(%q, %v, %v) = %v, want %v",
 					tt.path, tt.fileType, tt.filePatterns, result, tt.expected)
 			}
 		})

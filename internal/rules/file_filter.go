@@ -13,8 +13,8 @@ const (
 	FileTypeTypeScript
 )
 
-// detectFileType returns the type of a source code file
-func detectFileType(path string) FileType {
+// DetectFileType returns the type of a source code file
+func DetectFileType(path string) FileType {
 	if strings.HasSuffix(path, ".go") {
 		return FileTypeGo
 	}
@@ -30,8 +30,8 @@ func detectFileType(path string) FileType {
 	return FileTypeUnknown
 }
 
-// isTestFile returns true if the file is a test file
-func isTestFile(path string, fileType FileType) bool {
+// IsTestFile returns true if the file is a test file
+func IsTestFile(path string, fileType FileType) bool {
 	switch fileType {
 	case FileTypeGo:
 		return strings.HasSuffix(path, "_test.go")
@@ -52,28 +52,28 @@ func isTestFile(path string, fileType FileType) bool {
 	}
 }
 
-// matchesAnyGlob returns true if path matches any of the patterns
-func matchesAnyGlob(path string, patterns []string) bool {
+// MatchesAnyGlob returns true if path matches any of the patterns
+func MatchesAnyGlob(path string, patterns []string) bool {
 	for _, pattern := range patterns {
-		if matchesGlobPattern(path, pattern) {
+		if MatchesGlobPattern(path, pattern) {
 			return true
 		}
 	}
 	return false
 }
 
-// shouldAnalyzeFile returns true if the file should be analyzed
-func shouldAnalyzeFile(path string, fileType FileType, filePatterns []string) bool {
+// ShouldAnalyzeFile returns true if the file should be analyzed
+func ShouldAnalyzeFile(path string, fileType FileType, filePatterns []string) bool {
 	// Check file type is supported
 	if fileType == FileTypeUnknown {
 		return false
 	}
 
 	// Check if file matches any of the patterns (if specified)
-	if len(filePatterns) > 0 && !matchesAnyGlob(path, filePatterns) {
+	if len(filePatterns) > 0 && !MatchesAnyGlob(path, filePatterns) {
 		return false
 	}
 
 	// Skip test files
-	return !isTestFile(path, fileType)
+	return !IsTestFile(path, fileType)
 }

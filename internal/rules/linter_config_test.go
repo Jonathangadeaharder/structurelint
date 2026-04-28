@@ -6,23 +6,16 @@ import (
 	"testing"
 
 	"github.com/Jonathangadeaharder/structurelint/internal/walker"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestLinterConfigRule_Name(t *testing.T) {
-	// Arrange
 	rule := &LinterConfigRule{}
-
-	// Act
-	name := rule.Name()
-
-	// Assert
-	if name != "linter-config" {
-		t.Errorf("Expected rule name 'linter-config', got '%s'", name)
-	}
+	assert.Equal(t, "linter-config", rule.Name())
 }
 
 func TestLinterConfigRule_PythonWithPyprojectToml(t *testing.T) {
-	// Arrange
 	rule := &LinterConfigRule{
 		RequirePython: true,
 	}
@@ -31,17 +24,12 @@ func TestLinterConfigRule_PythonWithPyprojectToml(t *testing.T) {
 		{Path: "pyproject.toml", ParentPath: ".", IsDir: false},
 	}
 
-	// Act
 	violations := rule.Check(files, make(map[string]*walker.DirInfo))
 
-	// Assert
-	if len(violations) != 0 {
-		t.Errorf("Expected no violations with pyproject.toml, got %d violations: %v", len(violations), violations)
-	}
+	assert.Empty(t, violations)
 }
 
 func TestLinterConfigRule_PythonWithoutConfig(t *testing.T) {
-	// Arrange
 	rule := &LinterConfigRule{
 		RequirePython: true,
 	}
@@ -50,20 +38,13 @@ func TestLinterConfigRule_PythonWithoutConfig(t *testing.T) {
 		{Path: "README.md", ParentPath: ".", IsDir: false},
 	}
 
-	// Act
 	violations := rule.Check(files, make(map[string]*walker.DirInfo))
 
-	// Assert
-	if len(violations) == 0 {
-		t.Error("Expected violation for missing Python linter configuration")
-	}
-	if !containsMessage(violations, "No Python linter configuration found") {
-		t.Error("Expected violation message about missing Python linter configuration")
-	}
+	assert.NotEmpty(t, violations)
+	assert.True(t, containsMessage(violations, "No Python linter configuration found"))
 }
 
 func TestLinterConfigRule_PythonWithFlake8Config(t *testing.T) {
-	// Arrange
 	rule := &LinterConfigRule{
 		RequirePython: true,
 	}
@@ -72,17 +53,12 @@ func TestLinterConfigRule_PythonWithFlake8Config(t *testing.T) {
 		{Path: ".flake8", ParentPath: ".", IsDir: false},
 	}
 
-	// Act
 	violations := rule.Check(files, make(map[string]*walker.DirInfo))
 
-	// Assert
-	if len(violations) != 0 {
-		t.Errorf("Expected no violations with .flake8 config, got %d violations", len(violations))
-	}
+	assert.Empty(t, violations)
 }
 
 func TestLinterConfigRule_TypeScriptWithESLintConfig(t *testing.T) {
-	// Arrange
 	rule := &LinterConfigRule{
 		RequireTypeScript: true,
 	}
@@ -91,17 +67,12 @@ func TestLinterConfigRule_TypeScriptWithESLintConfig(t *testing.T) {
 		{Path: ".eslintrc.json", ParentPath: ".", IsDir: false},
 	}
 
-	// Act
 	violations := rule.Check(files, make(map[string]*walker.DirInfo))
 
-	// Assert
-	if len(violations) != 0 {
-		t.Errorf("Expected no violations with .eslintrc.json, got %d violations", len(violations))
-	}
+	assert.Empty(t, violations)
 }
 
 func TestLinterConfigRule_TypeScriptWithoutConfig(t *testing.T) {
-	// Arrange
 	rule := &LinterConfigRule{
 		RequireTypeScript: true,
 	}
@@ -110,20 +81,13 @@ func TestLinterConfigRule_TypeScriptWithoutConfig(t *testing.T) {
 		{Path: "package.json", ParentPath: ".", IsDir: false},
 	}
 
-	// Act
 	violations := rule.Check(files, make(map[string]*walker.DirInfo))
 
-	// Assert
-	if len(violations) == 0 {
-		t.Error("Expected violation for missing TypeScript linter configuration")
-	}
-	if !containsMessage(violations, "No TypeScript linter configuration found") {
-		t.Error("Expected violation message about missing TypeScript linter configuration")
-	}
+	assert.NotEmpty(t, violations)
+	assert.True(t, containsMessage(violations, "No TypeScript linter configuration found"))
 }
 
 func TestLinterConfigRule_GoWithGolangCIConfig(t *testing.T) {
-	// Arrange
 	rule := &LinterConfigRule{
 		RequireGo: true,
 	}
@@ -132,17 +96,12 @@ func TestLinterConfigRule_GoWithGolangCIConfig(t *testing.T) {
 		{Path: ".golangci.yml", ParentPath: ".", IsDir: false},
 	}
 
-	// Act
 	violations := rule.Check(files, make(map[string]*walker.DirInfo))
 
-	// Assert
-	if len(violations) != 0 {
-		t.Errorf("Expected no violations with .golangci.yml, got %d violations", len(violations))
-	}
+	assert.Empty(t, violations)
 }
 
 func TestLinterConfigRule_GoWithoutConfig(t *testing.T) {
-	// Arrange
 	rule := &LinterConfigRule{
 		RequireGo: true,
 	}
@@ -151,25 +110,16 @@ func TestLinterConfigRule_GoWithoutConfig(t *testing.T) {
 		{Path: "go.mod", ParentPath: ".", IsDir: false},
 	}
 
-	// Act
 	violations := rule.Check(files, make(map[string]*walker.DirInfo))
 
-	// Assert
-	if len(violations) == 0 {
-		t.Error("Expected violation for missing Go linter configuration")
-	}
-	if !containsMessage(violations, "No Go linter configuration found") {
-		t.Error("Expected violation message about missing Go linter configuration")
-	}
+	assert.NotEmpty(t, violations)
+	assert.True(t, containsMessage(violations, "No Go linter configuration found"))
 }
 
 func TestLinterConfigRule_PythonWithWorkflow(t *testing.T) {
-	// Arrange
 	tmpDir := t.TempDir()
 	workflowsDir := filepath.Join(tmpDir, ".github", "workflows")
-	if err := os.MkdirAll(workflowsDir, 0755); err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, os.MkdirAll(workflowsDir, 0755))
 
 	workflowContent := `
 name: Python Linting
@@ -185,9 +135,7 @@ jobs:
         run: mypy src/
 `
 	workflowPath := filepath.Join(workflowsDir, "python-lint.yml")
-	if err := os.WriteFile(workflowPath, []byte(workflowContent), 0644); err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, os.WriteFile(workflowPath, []byte(workflowContent), 0644))
 
 	rule := &LinterConfigRule{
 		RequirePython: true,
@@ -197,17 +145,12 @@ jobs:
 		{Path: workflowPath, ParentPath: workflowsDir, IsDir: false},
 	}
 
-	// Act
 	violations := rule.Check(files, make(map[string]*walker.DirInfo))
 
-	// Assert
-	if len(violations) != 0 {
-		t.Errorf("Expected no violations with workflow containing black and mypy, got %d violations: %v", len(violations), violations)
-	}
+	assert.Empty(t, violations)
 }
 
 func TestLinterConfigRule_NoPythonFiles(t *testing.T) {
-	// Arrange
 	rule := &LinterConfigRule{
 		RequirePython: true,
 	}
@@ -216,18 +159,12 @@ func TestLinterConfigRule_NoPythonFiles(t *testing.T) {
 		{Path: "README.md", ParentPath: ".", IsDir: false},
 	}
 
-	// Act
 	violations := rule.Check(files, make(map[string]*walker.DirInfo))
 
-	// Assert
-	// Should have no violations since there are no Python files
-	if len(violations) != 0 {
-		t.Errorf("Expected no violations when no Python files exist, got %d violations", len(violations))
-	}
+	assert.Empty(t, violations)
 }
 
 func TestLinterConfigRule_MultipleLanguages(t *testing.T) {
-	// Arrange
 	rule := &LinterConfigRule{
 		RequirePython:     true,
 		RequireTypeScript: true,
@@ -242,17 +179,12 @@ func TestLinterConfigRule_MultipleLanguages(t *testing.T) {
 		{Path: ".golangci.yml", ParentPath: ".", IsDir: false},
 	}
 
-	// Act
 	violations := rule.Check(files, make(map[string]*walker.DirInfo))
 
-	// Assert
-	if len(violations) != 0 {
-		t.Errorf("Expected no violations with all linter configs present, got %d violations", len(violations))
-	}
+	assert.Empty(t, violations)
 }
 
 func TestLinterConfigRule_PrettierConfig(t *testing.T) {
-	// Arrange
 	rule := &LinterConfigRule{
 		RequireTypeScript: true,
 	}
@@ -261,17 +193,12 @@ func TestLinterConfigRule_PrettierConfig(t *testing.T) {
 		{Path: ".prettierrc", ParentPath: ".", IsDir: false},
 	}
 
-	// Act
 	violations := rule.Check(files, make(map[string]*walker.DirInfo))
 
-	// Assert
-	if len(violations) != 0 {
-		t.Errorf("Expected no violations with .prettierrc, got %d violations", len(violations))
-	}
+	assert.Empty(t, violations)
 }
 
 func TestLinterConfigRule_TsconfigJson(t *testing.T) {
-	// Arrange
 	rule := &LinterConfigRule{
 		RequireTypeScript: true,
 	}
@@ -280,17 +207,12 @@ func TestLinterConfigRule_TsconfigJson(t *testing.T) {
 		{Path: "tsconfig.json", ParentPath: ".", IsDir: false},
 	}
 
-	// Act
 	violations := rule.Check(files, make(map[string]*walker.DirInfo))
 
-	// Assert
-	if len(violations) != 0 {
-		t.Errorf("Expected no violations with tsconfig.json, got %d violations", len(violations))
-	}
+	assert.Empty(t, violations)
 }
 
 func TestLinterConfigRule_JavaScriptFilesRequireTypeScriptLinters(t *testing.T) {
-	// Arrange
 	rule := &LinterConfigRule{
 		RequireTypeScript: true,
 	}
@@ -299,18 +221,12 @@ func TestLinterConfigRule_JavaScriptFilesRequireTypeScriptLinters(t *testing.T) 
 		{Path: ".eslintrc.json", ParentPath: ".", IsDir: false},
 	}
 
-	// Act
 	violations := rule.Check(files, make(map[string]*walker.DirInfo))
 
-	// Assert
-	// JavaScript files should be treated as TypeScript for linter purposes
-	if len(violations) != 0 {
-		t.Errorf("Expected no violations for JS files with ESLint config, got %d violations", len(violations))
-	}
+	assert.Empty(t, violations)
 }
 
 func TestLinterConfigRule_HTMLWithHTMLHintConfig(t *testing.T) {
-	// Arrange
 	rule := &LinterConfigRule{
 		RequireHTML: true,
 	}
@@ -319,17 +235,12 @@ func TestLinterConfigRule_HTMLWithHTMLHintConfig(t *testing.T) {
 		{Path: ".htmlhintrc", ParentPath: ".", IsDir: false},
 	}
 
-	// Act
 	violations := rule.Check(files, make(map[string]*walker.DirInfo))
 
-	// Assert
-	if len(violations) != 0 {
-		t.Errorf("Expected no violations with .htmlhintrc, got %d violations", len(violations))
-	}
+	assert.Empty(t, violations)
 }
 
 func TestLinterConfigRule_HTMLWithoutConfig(t *testing.T) {
-	// Arrange
 	rule := &LinterConfigRule{
 		RequireHTML: true,
 	}
@@ -338,20 +249,13 @@ func TestLinterConfigRule_HTMLWithoutConfig(t *testing.T) {
 		{Path: "README.md", ParentPath: ".", IsDir: false},
 	}
 
-	// Act
 	violations := rule.Check(files, make(map[string]*walker.DirInfo))
 
-	// Assert
-	if len(violations) == 0 {
-		t.Error("Expected violation for missing HTML linter configuration")
-	}
-	if !containsMessage(violations, "No HTML linter configuration found") {
-		t.Error("Expected violation message about missing HTML linter configuration")
-	}
+	assert.NotEmpty(t, violations)
+	assert.True(t, containsMessage(violations, "No HTML linter configuration found"))
 }
 
 func TestLinterConfigRule_CSSWithStylelintConfig(t *testing.T) {
-	// Arrange
 	rule := &LinterConfigRule{
 		RequireCSS: true,
 	}
@@ -360,17 +264,12 @@ func TestLinterConfigRule_CSSWithStylelintConfig(t *testing.T) {
 		{Path: ".stylelintrc.json", ParentPath: ".", IsDir: false},
 	}
 
-	// Act
 	violations := rule.Check(files, make(map[string]*walker.DirInfo))
 
-	// Assert
-	if len(violations) != 0 {
-		t.Errorf("Expected no violations with .stylelintrc.json, got %d violations", len(violations))
-	}
+	assert.Empty(t, violations)
 }
 
 func TestLinterConfigRule_CSSWithoutConfig(t *testing.T) {
-	// Arrange
 	rule := &LinterConfigRule{
 		RequireCSS: true,
 	}
@@ -379,20 +278,13 @@ func TestLinterConfigRule_CSSWithoutConfig(t *testing.T) {
 		{Path: "package.json", ParentPath: ".", IsDir: false},
 	}
 
-	// Act
 	violations := rule.Check(files, make(map[string]*walker.DirInfo))
 
-	// Assert
-	if len(violations) == 0 {
-		t.Error("Expected violation for missing CSS linter configuration")
-	}
-	if !containsMessage(violations, "No CSS linter configuration found") {
-		t.Error("Expected violation message about missing CSS linter configuration")
-	}
+	assert.NotEmpty(t, violations)
+	assert.True(t, containsMessage(violations, "No CSS linter configuration found"))
 }
 
 func TestLinterConfigRule_SQLWithSQLFluffConfig(t *testing.T) {
-	// Arrange
 	rule := &LinterConfigRule{
 		RequireSQL: true,
 	}
@@ -401,17 +293,12 @@ func TestLinterConfigRule_SQLWithSQLFluffConfig(t *testing.T) {
 		{Path: ".sqlfluff", ParentPath: ".", IsDir: false},
 	}
 
-	// Act
 	violations := rule.Check(files, make(map[string]*walker.DirInfo))
 
-	// Assert
-	if len(violations) != 0 {
-		t.Errorf("Expected no violations with .sqlfluff, got %d violations", len(violations))
-	}
+	assert.Empty(t, violations)
 }
 
 func TestLinterConfigRule_SQLWithoutConfig(t *testing.T) {
-	// Arrange
 	rule := &LinterConfigRule{
 		RequireSQL: true,
 	}
@@ -420,20 +307,13 @@ func TestLinterConfigRule_SQLWithoutConfig(t *testing.T) {
 		{Path: "README.md", ParentPath: ".", IsDir: false},
 	}
 
-	// Act
 	violations := rule.Check(files, make(map[string]*walker.DirInfo))
 
-	// Assert
-	if len(violations) == 0 {
-		t.Error("Expected violation for missing SQL linter configuration")
-	}
-	if !containsMessage(violations, "No SQL linter configuration found") {
-		t.Error("Expected violation message about missing SQL linter configuration")
-	}
+	assert.NotEmpty(t, violations)
+	assert.True(t, containsMessage(violations, "No SQL linter configuration found"))
 }
 
 func TestLinterConfigRule_RustWithRustfmtConfig(t *testing.T) {
-	// Arrange
 	rule := &LinterConfigRule{
 		RequireRust: true,
 	}
@@ -442,17 +322,12 @@ func TestLinterConfigRule_RustWithRustfmtConfig(t *testing.T) {
 		{Path: "rustfmt.toml", ParentPath: ".", IsDir: false},
 	}
 
-	// Act
 	violations := rule.Check(files, make(map[string]*walker.DirInfo))
 
-	// Assert
-	if len(violations) != 0 {
-		t.Errorf("Expected no violations with rustfmt.toml, got %d violations", len(violations))
-	}
+	assert.Empty(t, violations)
 }
 
 func TestLinterConfigRule_RustWithoutConfig(t *testing.T) {
-	// Arrange
 	rule := &LinterConfigRule{
 		RequireRust: true,
 	}
@@ -461,20 +336,13 @@ func TestLinterConfigRule_RustWithoutConfig(t *testing.T) {
 		{Path: "Cargo.toml", ParentPath: ".", IsDir: false},
 	}
 
-	// Act
 	violations := rule.Check(files, make(map[string]*walker.DirInfo))
 
-	// Assert
-	if len(violations) == 0 {
-		t.Error("Expected violation for missing Rust linter configuration")
-	}
-	if !containsMessage(violations, "No Rust linter configuration found") {
-		t.Error("Expected violation message about missing Rust linter configuration")
-	}
+	assert.NotEmpty(t, violations)
+	assert.True(t, containsMessage(violations, "No Rust linter configuration found"))
 }
 
 func TestLinterConfigRule_NoHTMLFiles(t *testing.T) {
-	// Arrange
 	rule := &LinterConfigRule{
 		RequireHTML: true,
 	}
@@ -483,18 +351,12 @@ func TestLinterConfigRule_NoHTMLFiles(t *testing.T) {
 		{Path: "README.md", ParentPath: ".", IsDir: false},
 	}
 
-	// Act
 	violations := rule.Check(files, make(map[string]*walker.DirInfo))
 
-	// Assert
-	// Should have no violations since there are no HTML files
-	if len(violations) != 0 {
-		t.Errorf("Expected no violations when no HTML files exist, got %d violations", len(violations))
-	}
+	assert.Empty(t, violations)
 }
 
 func TestLinterConfigRule_AllLanguages(t *testing.T) {
-	// Arrange
 	rule := &LinterConfigRule{
 		RequirePython:     true,
 		RequireTypeScript: true,
@@ -521,24 +383,19 @@ func TestLinterConfigRule_AllLanguages(t *testing.T) {
 		{Path: "rustfmt.toml", ParentPath: ".", IsDir: false},
 	}
 
-	// Act
 	violations := rule.Check(files, make(map[string]*walker.DirInfo))
 
-	// Assert
-	if len(violations) != 0 {
-		t.Errorf("Expected no violations with all linter configs present, got %d violations", len(violations))
-	}
+	assert.Empty(t, violations)
 }
 
 func TestLinterConfigRule_LanguageConfigurations(t *testing.T) {
 	tests := []struct {
-		name              string
-		rule              *LinterConfigRule
-		files             []walker.FileInfo
-		expectViolation   bool
-		expectedMessage   string
+		name            string
+		rule            *LinterConfigRule
+		files           []walker.FileInfo
+		expectViolation bool
+		expectedMessage string
 	}{
-		// Markdown tests
 		{
 			name: "Markdown with config",
 			rule: &LinterConfigRule{RequireMarkdown: true},
@@ -558,7 +415,6 @@ func TestLinterConfigRule_LanguageConfigurations(t *testing.T) {
 			expectViolation: true,
 			expectedMessage: "No Markdown linter configuration found",
 		},
-		// Java tests
 		{
 			name: "Java with Checkstyle config",
 			rule: &LinterConfigRule{RequireJava: true},
@@ -587,7 +443,6 @@ func TestLinterConfigRule_LanguageConfigurations(t *testing.T) {
 			expectViolation: true,
 			expectedMessage: "No Java linter configuration found",
 		},
-		// C++ tests
 		{
 			name: "C++ with clang-format config",
 			rule: &LinterConfigRule{RequireCpp: true},
@@ -616,7 +471,6 @@ func TestLinterConfigRule_LanguageConfigurations(t *testing.T) {
 			expectViolation: true,
 			expectedMessage: "No C++ linter configuration found",
 		},
-		// C# tests
 		{
 			name: "C# with EditorConfig",
 			rule: &LinterConfigRule{RequireCSharp: true},
@@ -649,28 +503,22 @@ func TestLinterConfigRule_LanguageConfigurations(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Act
 			violations := tt.rule.Check(tt.files, make(map[string]*walker.DirInfo))
 
-			// Assert
 			if tt.expectViolation {
-				if len(violations) == 0 {
-					t.Errorf("Expected violation but got none")
-				}
-				if tt.expectedMessage != "" && !containsMessage(violations, tt.expectedMessage) {
-					t.Errorf("Expected message '%s' but got: %v", tt.expectedMessage, violations)
+				assert.NotEmpty(t, violations, "Expected violation but got none")
+				if tt.expectedMessage != "" {
+					assert.True(t, containsMessage(violations, tt.expectedMessage),
+						"Expected message '%s' but got: %v", tt.expectedMessage, violations)
 				}
 			} else {
-				if len(violations) != 0 {
-					t.Errorf("Expected no violations, got %d: %v", len(violations), violations)
-				}
+				assert.Empty(t, violations)
 			}
 		})
 	}
 }
 
 func TestLinterConfigRule_AllLanguagesIncludingNew(t *testing.T) {
-	// Arrange
 	rule := &LinterConfigRule{
 		RequirePython:     true,
 		RequireTypeScript: true,
@@ -709,17 +557,12 @@ func TestLinterConfigRule_AllLanguagesIncludingNew(t *testing.T) {
 		{Path: ".editorconfig", ParentPath: ".", IsDir: false},
 	}
 
-	// Act
 	violations := rule.Check(files, make(map[string]*walker.DirInfo))
 
-	// Assert
-	if len(violations) != 0 {
-		t.Errorf("Expected no violations with all linter configs present, got %d violations", len(violations))
-	}
+	assert.Empty(t, violations)
 }
 
 func TestLinterConfigRule_SuggestionsPresent(t *testing.T) {
-	// Arrange
 	rule := &LinterConfigRule{
 		RequireMarkdown: true,
 	}
@@ -727,20 +570,10 @@ func TestLinterConfigRule_SuggestionsPresent(t *testing.T) {
 		{Path: "README.md", ParentPath: ".", IsDir: false},
 	}
 
-	// Act
 	violations := rule.Check(files, make(map[string]*walker.DirInfo))
 
-	// Assert
-	if len(violations) == 0 {
-		t.Error("Expected violation for missing Markdown linter configuration")
-	}
-	if len(violations) > 0 && len(violations[0].Suggestions) == 0 {
-		t.Error("Expected suggestions to be present in violation")
-	}
-	if len(violations) > 0 && violations[0].Expected == "" {
-		t.Error("Expected 'Expected' field to be populated in violation")
-	}
-	if len(violations) > 0 && violations[0].Actual == "" {
-		t.Error("Expected 'Actual' field to be populated in violation")
-	}
+	require.NotEmpty(t, violations, "Expected violation for missing Markdown linter configuration")
+	require.NotEmpty(t, violations[0].Suggestions, "Expected suggestions to be present in violation")
+	assert.NotEmpty(t, violations[0].Expected, "Expected 'Expected' field to be populated in violation")
+	assert.NotEmpty(t, violations[0].Actual, "Expected 'Actual' field to be populated in violation")
 }

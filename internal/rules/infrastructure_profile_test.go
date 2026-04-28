@@ -263,11 +263,11 @@ func TestMatchesGlobPattern_RecursiveWildcard(t *testing.T) {
 
 	for _, tt := range tests {
 		// Act
-		result := matchesGlobPattern(tt.path, tt.pattern)
+		result := MatchesGlobPattern(tt.path, tt.pattern)
 
 		// Assert
 		if result != tt.expected {
-			t.Errorf("matchesGlobPattern(%q, %q) = %v, want %v", tt.path, tt.pattern, result, tt.expected)
+			t.Errorf("MatchesGlobPattern(%q, %q) = %v, want %v", tt.path, tt.pattern, result, tt.expected)
 		}
 	}
 }
