@@ -1,28 +1,23 @@
-package rules
+package ci
 
 import (
 	"os"
 	"path/filepath"
 	"testing"
 
+	"github.com/Jonathangadeaharder/structurelint/internal/rules"
 	"github.com/Jonathangadeaharder/structurelint/internal/walker"
 )
 
 func TestGitHubWorkflowsRule_Name(t *testing.T) {
-	// Arrange
 	rule := &GitHubWorkflowsRule{}
-
-	// Act
 	name := rule.Name()
-
-	// Assert
 	if name != "github-workflows" {
 		t.Errorf("Expected rule name 'github-workflows', got '%s'", name)
 	}
 }
 
 func TestGitHubWorkflowsRule_MissingWorkflowsDirectory(t *testing.T) {
-	// Arrange
 	rule := &GitHubWorkflowsRule{
 		RequireTests:    true,
 		RequireSecurity: true,
@@ -32,11 +27,7 @@ func TestGitHubWorkflowsRule_MissingWorkflowsDirectory(t *testing.T) {
 		{Path: "README.md", ParentPath: ".", IsDir: false},
 		{Path: "main.go", ParentPath: ".", IsDir: false},
 	}
-
-	// Act
 	violations := rule.Check(files, make(map[string]*walker.DirInfo))
-
-	// Assert
 	if len(violations) == 0 {
 		t.Error("Expected violation for missing .github/workflows directory")
 	}
@@ -46,7 +37,6 @@ func TestGitHubWorkflowsRule_MissingWorkflowsDirectory(t *testing.T) {
 }
 
 func TestGitHubWorkflowsRule_MissingTestWorkflow(t *testing.T) {
-	// Arrange
 	tmpDir := t.TempDir()
 	workflowsDir := filepath.Join(tmpDir, ".github", "workflows")
 	if err := os.MkdirAll(workflowsDir, 0755); err != nil {
@@ -73,18 +63,13 @@ jobs:
 		{Path: workflowPath, ParentPath: workflowsDir, IsDir: false},
 		{Path: "go.mod", ParentPath: tmpDir, IsDir: false},
 	}
-
-	// Act
 	violations := rule.Check(files, make(map[string]*walker.DirInfo))
-
-	// Assert
 	if !containsMessage(violations, "No test/CI workflow found") {
 		t.Error("Expected violation for missing test workflow")
 	}
 }
 
 func TestGitHubWorkflowsRule_ValidTestWorkflow(t *testing.T) {
-	// Arrange
 	tmpDir := t.TempDir()
 	workflowsDir := filepath.Join(tmpDir, ".github", "workflows")
 	if err := os.MkdirAll(workflowsDir, 0755); err != nil {
@@ -112,18 +97,13 @@ jobs:
 		{Path: workflowPath, ParentPath: workflowsDir, IsDir: false},
 		{Path: "go.mod", ParentPath: tmpDir, IsDir: false},
 	}
-
-	// Act
 	violations := rule.Check(files, make(map[string]*walker.DirInfo))
-
-	// Assert
 	if containsMessage(violations, "No test/CI workflow found") {
 		t.Error("Should not have violation for missing test workflow when one exists")
 	}
 }
 
 func TestGitHubWorkflowsRule_MissingSecurityWorkflow(t *testing.T) {
-	// Arrange
 	tmpDir := t.TempDir()
 	workflowsDir := filepath.Join(tmpDir, ".github", "workflows")
 	if err := os.MkdirAll(workflowsDir, 0755); err != nil {
@@ -149,18 +129,13 @@ jobs:
 		{Path: workflowPath, ParentPath: workflowsDir, IsDir: false},
 		{Path: "go.mod", ParentPath: tmpDir, IsDir: false},
 	}
-
-	// Act
 	violations := rule.Check(files, make(map[string]*walker.DirInfo))
-
-	// Assert
 	if !containsMessage(violations, "No security scanning workflow found") {
 		t.Error("Expected violation for missing security workflow")
 	}
 }
 
 func TestGitHubWorkflowsRule_ValidSecurityWorkflow(t *testing.T) {
-	// Arrange
 	tmpDir := t.TempDir()
 	workflowsDir := filepath.Join(tmpDir, ".github", "workflows")
 	if err := os.MkdirAll(workflowsDir, 0755); err != nil {
@@ -187,18 +162,13 @@ jobs:
 		{Path: workflowPath, ParentPath: workflowsDir, IsDir: false},
 		{Path: "go.mod", ParentPath: tmpDir, IsDir: false},
 	}
-
-	// Act
 	violations := rule.Check(files, make(map[string]*walker.DirInfo))
-
-	// Assert
 	if containsMessage(violations, "No security scanning workflow found") {
 		t.Error("Should not have violation for missing security workflow when one exists")
 	}
 }
 
 func TestGitHubWorkflowsRule_MissingQualityWorkflow(t *testing.T) {
-	// Arrange
 	tmpDir := t.TempDir()
 	workflowsDir := filepath.Join(tmpDir, ".github", "workflows")
 	if err := os.MkdirAll(workflowsDir, 0755); err != nil {
@@ -224,18 +194,13 @@ jobs:
 		{Path: workflowPath, ParentPath: workflowsDir, IsDir: false},
 		{Path: "go.mod", ParentPath: tmpDir, IsDir: false},
 	}
-
-	// Act
 	violations := rule.Check(files, make(map[string]*walker.DirInfo))
-
-	// Assert
 	if !containsMessage(violations, "No code quality workflow found") {
 		t.Error("Expected violation for missing code quality workflow")
 	}
 }
 
 func TestGitHubWorkflowsRule_ValidQualityWorkflow(t *testing.T) {
-	// Arrange
 	tmpDir := t.TempDir()
 	workflowsDir := filepath.Join(tmpDir, ".github", "workflows")
 	if err := os.MkdirAll(workflowsDir, 0755); err != nil {
@@ -262,18 +227,13 @@ jobs:
 		{Path: workflowPath, ParentPath: workflowsDir, IsDir: false},
 		{Path: "go.mod", ParentPath: tmpDir, IsDir: false},
 	}
-
-	// Act
 	violations := rule.Check(files, make(map[string]*walker.DirInfo))
-
-	// Assert
 	if containsMessage(violations, "No code quality workflow found") {
 		t.Error("Should not have violation for missing quality workflow when one exists")
 	}
 }
 
 func TestGitHubWorkflowsRule_WorkflowMissingName(t *testing.T) {
-	// Arrange
 	tmpDir := t.TempDir()
 	workflowsDir := filepath.Join(tmpDir, ".github", "workflows")
 	if err := os.MkdirAll(workflowsDir, 0755); err != nil {
@@ -296,18 +256,13 @@ jobs:
 		{Path: workflowPath, ParentPath: workflowsDir, IsDir: false},
 		{Path: "go.mod", ParentPath: tmpDir, IsDir: false},
 	}
-
-	// Act
 	violations := rule.Check(files, make(map[string]*walker.DirInfo))
-
-	// Assert
 	if !containsMessage(violations, "Workflow missing 'name' field") {
 		t.Error("Expected violation for workflow missing name")
 	}
 }
 
 func TestGitHubWorkflowsRule_WorkflowMissingTriggers(t *testing.T) {
-	// Arrange
 	tmpDir := t.TempDir()
 	workflowsDir := filepath.Join(tmpDir, ".github", "workflows")
 	if err := os.MkdirAll(workflowsDir, 0755); err != nil {
@@ -330,18 +285,13 @@ jobs:
 		{Path: workflowPath, ParentPath: workflowsDir, IsDir: false},
 		{Path: "go.mod", ParentPath: tmpDir, IsDir: false},
 	}
-
-	// Act
 	violations := rule.Check(files, make(map[string]*walker.DirInfo))
-
-	// Assert
 	if !containsMessage(violations, "Workflow missing 'on' triggers") {
 		t.Error("Expected violation for workflow missing triggers")
 	}
 }
 
 func TestGitHubWorkflowsRule_RequiredTriggers(t *testing.T) {
-	// Arrange
 	tmpDir := t.TempDir()
 	workflowsDir := filepath.Join(tmpDir, ".github", "workflows")
 	if err := os.MkdirAll(workflowsDir, 0755); err != nil {
@@ -367,18 +317,13 @@ jobs:
 		{Path: workflowPath, ParentPath: workflowsDir, IsDir: false},
 		{Path: "go.mod", ParentPath: tmpDir, IsDir: false},
 	}
-
-	// Act
 	violations := rule.Check(files, make(map[string]*walker.DirInfo))
-
-	// Assert
 	if !containsMessage(violations, "Required trigger 'pull_request' not found") {
 		t.Error("Expected violation for missing required trigger")
 	}
 }
 
 func TestGitHubWorkflowsRule_JobMissingRunsOn(t *testing.T) {
-	// Arrange
 	tmpDir := t.TempDir()
 	workflowsDir := filepath.Join(tmpDir, ".github", "workflows")
 	if err := os.MkdirAll(workflowsDir, 0755); err != nil {
@@ -401,18 +346,13 @@ jobs:
 		{Path: workflowPath, ParentPath: workflowsDir, IsDir: false},
 		{Path: "go.mod", ParentPath: tmpDir, IsDir: false},
 	}
-
-	// Act
 	violations := rule.Check(files, make(map[string]*walker.DirInfo))
-
-	// Assert
 	if !containsMessage(violations, "Job 'test' missing 'runs-on' field") {
 		t.Error("Expected violation for job missing runs-on")
 	}
 }
 
 func TestGitHubWorkflowsRule_JobMissingSteps(t *testing.T) {
-	// Arrange
 	tmpDir := t.TempDir()
 	workflowsDir := filepath.Join(tmpDir, ".github", "workflows")
 	if err := os.MkdirAll(workflowsDir, 0755); err != nil {
@@ -434,18 +374,13 @@ jobs:
 		{Path: workflowPath, ParentPath: workflowsDir, IsDir: false},
 		{Path: "go.mod", ParentPath: tmpDir, IsDir: false},
 	}
-
-	// Act
 	violations := rule.Check(files, make(map[string]*walker.DirInfo))
-
-	// Assert
 	if !containsMessage(violations, "Job 'test' has no steps defined") {
 		t.Error("Expected violation for job missing steps")
 	}
 }
 
 func TestGitHubWorkflowsRule_CompleteValidWorkflow(t *testing.T) {
-	// Arrange
 	tmpDir := t.TempDir()
 	workflowsDir := filepath.Join(tmpDir, ".github", "workflows")
 	if err := os.MkdirAll(workflowsDir, 0755); err != nil {
@@ -507,11 +442,7 @@ jobs:
 		{Path: filepath.Join(workflowsDir, "lint.yml"), ParentPath: workflowsDir, IsDir: false},
 		{Path: "go.mod", ParentPath: tmpDir, IsDir: false},
 	}
-
-	// Act
 	violations := rule.Check(files, make(map[string]*walker.DirInfo))
-
-	// Assert
 	if containsMessage(violations, "No test/CI workflow found") ||
 		containsMessage(violations, "No security scanning workflow found") ||
 		containsMessage(violations, "No code quality workflow found") {
@@ -520,7 +451,6 @@ jobs:
 }
 
 func TestGitHubWorkflowsRule_MissingLogCommits(t *testing.T) {
-	// Arrange
 	tmpDir := t.TempDir()
 	workflowsDir := filepath.Join(tmpDir, ".github", "workflows")
 	if err := os.MkdirAll(workflowsDir, 0755); err != nil {
@@ -548,18 +478,13 @@ jobs:
 		{Path: workflowPath, ParentPath: workflowsDir, IsDir: false},
 		{Path: "go.mod", ParentPath: tmpDir, IsDir: false},
 	}
-
-	// Act
 	violations := rule.Check(files, make(map[string]*walker.DirInfo))
-
-	// Assert
 	if !containsMessage(violations, "Job 'test' missing log commit steps") {
 		t.Errorf("Expected violation for missing log commit steps, got %d violations: %+v", len(violations), violations)
 	}
 }
 
 func TestGitHubWorkflowsRule_ValidLogCommits(t *testing.T) {
-	// Arrange
 	tmpDir := t.TempDir()
 	workflowsDir := filepath.Join(tmpDir, ".github", "workflows")
 	if err := os.MkdirAll(workflowsDir, 0755); err != nil {
@@ -594,18 +519,13 @@ jobs:
 		{Path: workflowPath, ParentPath: workflowsDir, IsDir: false},
 		{Path: "go.mod", ParentPath: tmpDir, IsDir: false},
 	}
-
-	// Act
 	violations := rule.Check(files, make(map[string]*walker.DirInfo))
-
-	// Assert
 	if containsMessage(violations, "Job 'test' missing log commit steps") {
 		t.Error("Should not have violation for missing log commit steps when they exist")
 	}
 }
 
 func TestGitHubWorkflowsRule_MissingRepomixArtifact(t *testing.T) {
-	// Arrange
 	tmpDir := t.TempDir()
 	workflowsDir := filepath.Join(tmpDir, ".github", "workflows")
 	if err := os.MkdirAll(workflowsDir, 0755); err != nil {
@@ -633,18 +553,13 @@ jobs:
 		{Path: workflowPath, ParentPath: workflowsDir, IsDir: false},
 		{Path: "go.mod", ParentPath: tmpDir, IsDir: false},
 	}
-
-	// Act
 	violations := rule.Check(files, make(map[string]*walker.DirInfo))
-
-	// Assert
 	if !containsMessage(violations, "Job 'test' missing repomix artifact steps") {
 		t.Error("Expected violation for missing repomix artifact steps")
 	}
 }
 
 func TestGitHubWorkflowsRule_ValidRepomixArtifact(t *testing.T) {
-	// Arrange
 	tmpDir := t.TempDir()
 	workflowsDir := filepath.Join(tmpDir, ".github", "workflows")
 	if err := os.MkdirAll(workflowsDir, 0755); err != nil {
@@ -680,18 +595,13 @@ jobs:
 		{Path: workflowPath, ParentPath: workflowsDir, IsDir: false},
 		{Path: "go.mod", ParentPath: tmpDir, IsDir: false},
 	}
-
-	// Act
 	violations := rule.Check(files, make(map[string]*walker.DirInfo))
-
-	// Assert
 	if containsMessage(violations, "Job 'test' missing repomix artifact steps") {
 		t.Error("Should not have violation for missing repomix artifact steps when they exist")
 	}
 }
 
-// Helper function to check if violations contain a specific message
-func containsMessage(violations []Violation, message string) bool {
+func containsMessage(violations []rules.Violation, message string) bool {
 	for _, v := range violations {
 		if v.Message == message ||
 			(len(message) > 0 && len(v.Message) > 0 && v.Message[:len(message)] == message) {

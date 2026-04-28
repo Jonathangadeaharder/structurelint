@@ -1,4 +1,4 @@
-package rules
+package structure
 
 import (
 	"testing"
@@ -106,13 +106,8 @@ func TestNamingConventionRule_Check(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Arrange
 			rule := NewNamingConventionRule(tt.patterns)
-
-			// Act
 			violations := rule.Check(tt.files, nil)
-
-			// Assert
 			assert.Equal(t, tt.wantViolCount, len(violations), "Check() got %d violations, want %d", len(violations), tt.wantViolCount)
 			for _, v := range violations {
 				t.Logf("  - %s: %s", v.Path, v.Message)

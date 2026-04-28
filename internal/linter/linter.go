@@ -55,7 +55,10 @@ func (l *Linter) Lint(path string) ([]Violation, error) {
 	}
 
 	factory := NewRuleFactory(l.rootDir, l.config, importGraph)
-	rulesList := factory.CreateRules(files, dirs)
+	rulesList, err := factory.CreateRules(files, dirs)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create rules: %w", err)
+	}
 
 	var violations []Violation
 	for _, rule := range rulesList {
@@ -110,7 +113,7 @@ func (l *Linter) getRuleConfig(ruleName string) (interface{}, bool) {
 	return value, true
 }
 
-func (l *Linter) createRules(files []walker.FileInfo, importGraph *graph.ImportGraph) []rules.Rule {
+func (l *Linter) createRules(files []walker.FileInfo, importGraph *graph.ImportGraph) ([]rules.Rule, error) {
 	factory := NewRuleFactory(l.rootDir, l.config, importGraph)
 	return factory.CreateRules(files, nil)
 }

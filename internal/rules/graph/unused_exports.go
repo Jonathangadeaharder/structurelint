@@ -80,7 +80,7 @@ func (r *UnusedExportsRule) Check(files []walker.FileInfo, dirs map[string]*walk
 func (r *UnusedExportsRule) resolveImportToFile(importPath string) string {
 	// Try to find a matching file in AllFiles
 	for _, file := range r.Graph.AllFiles {
-		if strings.HasPrefix(file, importPath) || file == importPath {
+		if file == importPath || strings.HasPrefix(file, importPath+"/") {
 			return file
 		}
 

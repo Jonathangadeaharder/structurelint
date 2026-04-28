@@ -1,15 +1,16 @@
-package rules
+package structure
 
 import (
 	"strings"
 	"testing"
 
+	"github.com/Jonathangadeaharder/structurelint/internal/rules"
 	"github.com/Jonathangadeaharder/structurelint/internal/walker"
 )
 
 func TestViolation_FormatDetailed_WithAllFields(t *testing.T) {
 	// Arrange
-	violation := Violation{
+	violation := rules.Violation{
 		Rule:    "naming-convention",
 		Path:    "src/components/button.tsx",
 		Message: "does not match naming convention 'PascalCase'",
@@ -45,7 +46,7 @@ func TestViolation_FormatDetailed_WithAllFields(t *testing.T) {
 
 func TestViolation_FormatDetailed_WithoutOptionalFields(t *testing.T) {
 	// Arrange
-	violation := Violation{
+	violation := rules.Violation{
 		Rule:    "max-depth",
 		Path:    "src/deeply/nested/structure/file.py",
 		Message: "exceeds maximum depth of 4",

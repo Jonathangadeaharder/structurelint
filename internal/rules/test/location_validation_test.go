@@ -1,4 +1,4 @@
-package rules
+package test
 
 import (
 	"path/filepath"

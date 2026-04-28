@@ -1,4 +1,4 @@
-package rules
+package graph
 
 import (
 	"regexp"

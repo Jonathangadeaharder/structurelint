@@ -1,11 +1,12 @@
-package rules
+package linter
 
 import (
 	"testing"
+
+	"github.com/Jonathangadeaharder/structurelint/internal/rules"
 )
 
 func TestInitRegistration(t *testing.T) {
-	// Verify standard rules are registered
 	expectedRules := []string{
 		"max-depth",
 		"max-files-in-dir",
@@ -19,16 +20,15 @@ func TestInitRegistration(t *testing.T) {
 	}
 
 	for _, name := range expectedRules {
-		if _, ok := GetFactory(name); !ok {
+		if _, ok := rules.GetFactory(name); !ok {
 			t.Errorf("Rule '%s' is not registered", name)
 		}
 	}
 }
 
 func TestStandardRuleFactories(t *testing.T) {
-	// Test max-depth factory
-	factory, _ := GetFactory("max-depth")
-	ctx := &RuleContext{
+	factory, _ := rules.GetFactory("max-depth")
+	ctx := &rules.RuleContext{
 		Config: map[string]interface{}{"max": 5},
 	}
 	rule, err := factory(ctx)
@@ -39,8 +39,7 @@ func TestStandardRuleFactories(t *testing.T) {
 		t.Error("max-depth factory returned invalid rule")
 	}
 
-	// Test invalid config
-	ctxInvalid := &RuleContext{
+	ctxInvalid := &rules.RuleContext{
 		Config: map[string]interface{}{},
 	}
 	_, err = factory(ctxInvalid)

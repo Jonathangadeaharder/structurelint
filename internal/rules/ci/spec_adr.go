@@ -35,51 +35,55 @@ func (r *SpecADRRule) Name() string {
 func (r *SpecADRRule) Check(files []walker.FileInfo, dirs map[string]*walker.DirInfo) []rules.Violation {
 	var violations []rules.Violation
 
-	// Set defaults if not specified
-	if len(r.SpecFolderPaths) == 0 {
-		r.SpecFolderPaths = []string{"docs/specs", "specifications", "specs"}
+	// Use configured values or defaults (don't mutate receiver)
+	specFolderPaths := r.SpecFolderPaths
+	if len(specFolderPaths) == 0 {
+		specFolderPaths = []string{"docs/specs", "specifications", "specs"}
 	}
-	if len(r.ADRFolderPaths) == 0 {
-		r.ADRFolderPaths = []string{"docs/adr", "docs/decisions", "adr"}
+	adrFolderPaths := r.ADRFolderPaths
+	if len(adrFolderPaths) == 0 {
+		adrFolderPaths = []string{"docs/adr", "docs/decisions", "adr"}
 	}
-	if len(r.SpecFilePatterns) == 0 {
-		r.SpecFilePatterns = []string{"*-spec.md", "feature-*.md"}
+	specFilePatterns := r.SpecFilePatterns
+	if len(specFilePatterns) == 0 {
+		specFilePatterns = []string{"*-spec.md", "feature-*.md"}
 	}
-	if len(r.ADRFilePatterns) == 0 {
-		r.ADRFilePatterns = []string{"ADR-*.md", "*-decision.md", "adr-*.md"}
+	adrFilePatterns := r.ADRFilePatterns
+	if len(adrFilePatterns) == 0 {
+		adrFilePatterns = []string{"ADR-*.md", "*-decision.md", "adr-*.md"}
 	}
 
 	// Check for spec folder existence
 	if r.RequireSpecFolder {
-		if !r.hasFolderPath(dirs, r.SpecFolderPaths) {
+		if !r.hasFolderPath(dirs, specFolderPaths) {
 			violations = append(violations, rules.Violation{
 				Rule:    r.Name(),
 				Path:    ".",
-				Message: r.formatMissingSpecFolderMessage(),
+				Message: r.formatMissingSpecFolderMessage(specFolderPaths),
 			})
 		}
 	}
 
 	// Check for ADR folder existence
 	if r.RequireADRFolder {
-		if !r.hasFolderPath(dirs, r.ADRFolderPaths) {
+		if !r.hasFolderPath(dirs, adrFolderPaths) {
 			violations = append(violations, rules.Violation{
 				Rule:    r.Name(),
 				Path:    ".",
-				Message: r.formatMissingADRFolderMessage(),
+				Message: r.formatMissingADRFolderMessage(adrFolderPaths),
 			})
 		}
 	}
 
 	// Validate spec files follow template
 	if r.EnforceSpecTemplate {
-		specViolations := r.validateSpecFiles(files)
+		specViolations := r.validateSpecFiles(files, specFilePatterns)
 		violations = append(violations, specViolations...)
 	}
 
 	// Validate ADR files follow template
 	if r.EnforceADRTemplate {
-		adrViolations := r.validateADRFiles(files)
+		adrViolations := r.validateADRFiles(files, adrFilePatterns)
 		violations = append(violations, adrViolations...)
 	}
 
@@ -101,7 +105,7 @@ func (r *SpecADRRule) hasFolderPath(dirs map[string]*walker.DirInfo, paths []str
 }
 
 // validateSpecFiles validates that specification files follow the required template
-func (r *SpecADRRule) validateSpecFiles(files []walker.FileInfo) []rules.Violation {
+func (r *SpecADRRule) validateSpecFiles(files []walker.FileInfo, specFilePatterns []string) []rules.Violation {
 	var violations []rules.Violation
 
 	// Required sections in feature specification template
@@ -119,7 +123,7 @@ func (r *SpecADRRule) validateSpecFiles(files []walker.FileInfo) []rules.Violati
 		}
 
 		// Check if file matches spec patterns
-		if !r.matchesPatterns(filepath.Base(file.Path), r.SpecFilePatterns) {
+		if !r.matchesPatterns(filepath.Base(file.Path), specFilePatterns) {
 			continue
 		}
 
@@ -185,7 +189,7 @@ func (r *SpecADRRule) validateSpecFiles(files []walker.FileInfo) []rules.Violati
 }
 
 // validateADRFiles validates that ADR files follow the required template
-func (r *SpecADRRule) validateADRFiles(files []walker.FileInfo) []rules.Violation {
+func (r *SpecADRRule) validateADRFiles(files []walker.FileInfo, adrFilePatterns []string) []rules.Violation {
 	var violations []rules.Violation
 
 	// Required sections in ADR template
@@ -201,7 +205,7 @@ func (r *SpecADRRule) validateADRFiles(files []walker.FileInfo) []rules.Violatio
 		}
 
 		// Check if file matches ADR patterns
-		if !r.matchesPatterns(filepath.Base(file.Path), r.ADRFilePatterns) {
+		if !r.matchesPatterns(filepath.Base(file.Path), adrFilePatterns) {
 			continue
 		}
 
@@ -269,14 +273,14 @@ func (r *SpecADRRule) matchesPatterns(filename string, patterns []string) bool {
 }
 
 // formatMissingSpecFolderMessage creates an error message for missing spec folder
-func (r *SpecADRRule) formatMissingSpecFolderMessage() string {
-	return "No specification folder found. Expected one of: " + strings.Join(r.SpecFolderPaths, ", ") + ". " +
+func (r *SpecADRRule) formatMissingSpecFolderMessage(specFolderPaths []string) string {
+	return "No specification folder found. Expected one of: " + strings.Join(specFolderPaths, ", ") + ". " +
 		"Create a dedicated folder for feature specifications to maintain clear documentation structure."
 }
 
 // formatMissingADRFolderMessage creates an error message for missing ADR folder
-func (r *SpecADRRule) formatMissingADRFolderMessage() string {
-	return "No ADR (Architecture Decision Record) folder found. Expected one of: " + strings.Join(r.ADRFolderPaths, ", ") + ". " +
+func (r *SpecADRRule) formatMissingADRFolderMessage(adrFolderPaths []string) string {
+	return "No ADR (Architecture Decision Record) folder found. Expected one of: " + strings.Join(adrFolderPaths, ", ") + ". " +
 		"Create a dedicated folder for ADRs to document architectural decisions."
 }
 

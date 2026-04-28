@@ -103,14 +103,6 @@ func (h *Hasher) rollingHash(prevHash uint64, removedToken, addedToken types.Tok
 
 	// This is a simplified rolling hash that doesn't require storing the window
 	// It's not a true Rabin-Karp but serves the POC purpose
-	hash := fnv.New64a()
-
-	// Combine previous hash with new token
-	hashBytes := make([]byte, 8)
-	for i := 0; i < 8; i++ {
-		hashBytes[i] = byte(prevHash >> (8 * i))
-	}
-	hash.Write(hashBytes)
 
 	// XOR out the removed token's contribution (approximation)
 	removedHash := fnv.New64a()

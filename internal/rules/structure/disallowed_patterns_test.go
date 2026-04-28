@@ -1,8 +1,9 @@
-package rules
+package structure
 
 import (
 	"testing"
 
+	"github.com/Jonathangadeaharder/structurelint/internal/rules"
 	"github.com/Jonathangadeaharder/structurelint/internal/walker"
 )
 
@@ -144,7 +145,7 @@ func Test_WhenMatchingGlobPattern(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Arrange & Act
-			got := MatchesGlobPattern(tt.path, tt.pattern)
+			got := rules.MatchesGlobPattern(tt.path, tt.pattern)
 
 			// Assert
 			if got != tt.want {

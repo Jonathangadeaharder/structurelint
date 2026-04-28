@@ -1,10 +1,11 @@
-package rules
+package graph
 
 import (
 	"strings"
 	"testing"
 
 	"github.com/Jonathangadeaharder/structurelint/internal/graph"
+	"github.com/Jonathangadeaharder/structurelint/internal/rules"
 	"github.com/Jonathangadeaharder/structurelint/internal/walker"
 )
 
@@ -63,7 +64,7 @@ func TestPropertyEnforcementRule_NoCycles(t *testing.T) {
 	violations := rule.Check([]walker.FileInfo{}, nil)
 
 	// Assert
-	cycleViolations := []Violation{}
+	cycleViolations := []rules.Violation{}
 	for _, v := range violations {
 		if strings.Contains(v.Message, "cyclic") || strings.Contains(v.Message, "cycle") {
 			cycleViolations = append(cycleViolations, v)

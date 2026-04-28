@@ -289,7 +289,7 @@ func TestCreateRules_MaxDepth(t *testing.T) {
 		},
 	}
 
-	rules := linter.createRules([]walker.FileInfo{}, nil)
+	rules, _ := linter.createRules([]walker.FileInfo{}, nil)
 
 	// Should have created max-depth rule
 	hasMaxDepth := false
@@ -310,7 +310,7 @@ func TestCreateRules_NoRules(t *testing.T) {
 		},
 	}
 
-	rules := linter.createRules([]walker.FileInfo{}, nil)
+	rules, _ := linter.createRules([]walker.FileInfo{}, nil)
 
 	assert.Empty(t, rules)
 }
@@ -332,7 +332,7 @@ func TestCreateRules_MultipleRules(t *testing.T) {
 		},
 	}
 
-	rules := linter.createRules([]walker.FileInfo{}, nil)
+	rules, _ := linter.createRules([]walker.FileInfo{}, nil)
 
 	// Should have created 3 rules
 	assert.GreaterOrEqual(t, len(rules), 3)

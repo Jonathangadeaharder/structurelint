@@ -35,7 +35,9 @@ func TestHelperProcess(t *testing.T) {
 	violations := []rules.Violation{
 		{Rule: "test-rule", Path: "test.go", Message: "test violation"},
 	}
-	json.NewEncoder(os.Stdout).Encode(violations)
+	if err := json.NewEncoder(os.Stdout).Encode(violations); err != nil {
+		t.Fatalf("Failed to encode violations: %v", err)
+	}
 }
 
 func TestProcessPlugin_Check(t *testing.T) {

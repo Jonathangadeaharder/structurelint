@@ -298,7 +298,7 @@ func (r *ContractFrameworkRule) checkLanguageContracts(files []walker.FileInfo, 
 	}
 
 	// Check for deprecated frameworks and warn
-	r.checkDeprecatedFrameworks(files, config, &violations)
+	violations = append(violations, r.checkDeprecatedFrameworks(files, config)...)
 
 	return violations
 }
@@ -420,7 +420,9 @@ func (r *ContractFrameworkRule) hasImportPattern(files []walker.FileInfo, patter
 }
 
 // checkDeprecatedFrameworks checks for usage of deprecated contract frameworks
-func (r *ContractFrameworkRule) checkDeprecatedFrameworks(files []walker.FileInfo, config ContractFrameworkConfig, violations *[]rules.Violation) {
+func (r *ContractFrameworkRule) checkDeprecatedFrameworks(files []walker.FileInfo, config ContractFrameworkConfig) []rules.Violation {
+	var violations []rules.Violation
+
 	// Check for deprecated Code Contracts in C#
 	if config.Language == "C#" {
 		for _, file := range files {
@@ -434,7 +436,7 @@ func (r *ContractFrameworkRule) checkDeprecatedFrameworks(files []walker.FileInf
 			}
 
 			if strings.Contains(string(content), "System.Diagnostics.Contracts") {
-				*violations = append(*violations, rules.Violation{
+				violations = append(violations, rules.Violation{
 					Rule:    r.Name(),
 					Path:    file.Path,
 					Message: "DEPRECATED: Microsoft Code Contracts is deprecated and unsupported in .NET Core+. Use nullable reference types (#nullable enable) and ArgumentNullException.ThrowIfNull instead.",
@@ -442,6 +444,8 @@ func (r *ContractFrameworkRule) checkDeprecatedFrameworks(files []walker.FileInf
 			}
 		}
 	}
+
+	return violations
 }
 
 // formatMissingContractMessage creates a detailed error message for missing contract framework
