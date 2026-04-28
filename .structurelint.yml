@@ -60,8 +60,8 @@ rules:
       - "**/*.py"                           # Exclude Python files (no source to test)
       - "internal/clones/**/*.go"           # POC clone detection (tests coming in Phase 3)
       - "internal/autofix/*.go"             # Auto-fix engine (tested via integration)
-      - "internal/config/rules.go"          # Config type definitions
-      - "internal/linter/factory.go"        # Rule factory (tested via linter tests)
+      - "internal/config/*.go"              # Config package (tested via config tests)
+      - "internal/linter/*.go"              # Linter package (tested via linter tests)
       - "internal/output/*.go"              # Output formatters (integration tested)
       - "internal/parser/*.go"              # Parser (tested via parser tests)
       - "internal/plugin/*.go"              # Plugin system (tested via integration)
@@ -73,6 +73,7 @@ rules:
       - "internal/graph/analysis/*.go"      # Graph analysis
       - "internal/graph/export/*.go"        # Graph export
       - "internal/metrics/*.go"             # Metrics (tested via integration)
+      - "internal/walker/*.go"              # Walker (tested via walker tests)
       - "internal/rules/*.go"               # Base rules package
       - "internal/rules/ci/*.go"            # CI rules (tested via ci tests)
       - "internal/rules/graph/*.go"         # Graph rules (tested via graph tests)
@@ -88,10 +89,8 @@ rules:
       - "**/*_test.go"
     exemptions:
       - "testdata/**"
-      - "internal/rules/rules_test.go"  # Integration test for all rules
-      - "internal/rules/enhanced_violations_test.go"  # Priority 4 feature tests
-      - "internal/rules/language_aware_naming_test.go"  # Priority 2 feature tests
       - "tests/**/*.py"                  # Python test files in tests directory
+      - "**/*_bench_test.go"             # Benchmark tests can be anywhere
 
   # Phase 4: File Content Templates
   # Temporarily disabled AAA enforcement for new Phase 4/5 test files
