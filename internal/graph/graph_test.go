@@ -7,66 +7,41 @@ import (
 
 	"github.com/Jonathangadeaharder/structurelint/internal/config"
 	"github.com/Jonathangadeaharder/structurelint/internal/walker"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestNewBuilder(t *testing.T) {
-	// Arrange
 	layers := []config.Layer{
 		{Name: "domain", Path: "src/domain/**", DependsOn: []string{}},
 	}
 
-	// Act
 	builder := NewBuilder("/test/path", layers)
 
-	// Assert
-	if builder == nil {
-		t.Fatal("NewBuilder returned nil")
-	}
-
-	if builder.rootPath != "/test/path" {
-		t.Errorf("Expected rootPath '/test/path', got '%s'", builder.rootPath)
-	}
-
-	if len(builder.layers) != 1 {
-		t.Errorf("Expected 1 layer, got %d", len(builder.layers))
-	}
+	require.NotNil(t, builder)
+	assert.Equal(t, "/test/path", builder.rootPath)
+	assert.Equal(t, 1, len(builder.layers))
 }
 
 func TestBuild_EmptyFileList(t *testing.T) {
 	builder := NewBuilder("/test", []config.Layer{})
 	graph, err := builder.Build([]walker.FileInfo{})
 
-	if err != nil {
-		t.Fatalf("Build failed: %v", err)
-	}
-
-	if graph == nil {
-		t.Fatal("Graph is nil")
-	}
-
-	if len(graph.AllFiles) != 0 {
-		t.Errorf("Expected 0 files, got %d", len(graph.AllFiles))
-	}
+	require.NoError(t, err)
+	require.NotNil(t, graph)
+	assert.Empty(t, graph.AllFiles)
 }
 
 func TestBuild_WithLayers(t *testing.T) {
-	// Create temp directory
 	tmpDir, err := os.MkdirTemp("", "graph-test")
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 	defer os.RemoveAll(tmpDir)
 
-	// Create test files
 	domainDir := filepath.Join(tmpDir, "src", "domain")
-	if err := os.MkdirAll(domainDir, 0755); err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, os.MkdirAll(domainDir, 0755))
 
 	userFile := filepath.Join(domainDir, "user.ts")
-	if err := os.WriteFile(userFile, []byte("export class User {}"), 0644); err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, os.WriteFile(userFile, []byte("export class User {}"), 0644))
 
 	layers := []config.Layer{
 		{Name: "domain", Path: "src/domain/**", DependsOn: []string{}},
@@ -80,63 +55,34 @@ func TestBuild_WithLayers(t *testing.T) {
 	}
 
 	graph, err := builder.Build(files)
-	if err != nil {
-		t.Fatalf("Build failed: %v", err)
-	}
+	require.NoError(t, err)
 
-	// Check that file is in AllFiles
-	if len(graph.AllFiles) != 1 {
-		t.Errorf("Expected 1 file, got %d", len(graph.AllFiles))
-	}
+	assert.Equal(t, 1, len(graph.AllFiles))
 
-	// Check that file is assigned to domain layer
 	layer := graph.GetLayerForFile("src/domain/user.ts")
-	if layer == nil {
-		t.Fatal("File not assigned to any layer")
-	}
-
-	if layer.Name != "domain" {
-		t.Errorf("Expected layer 'domain', got '%s'", layer.Name)
-	}
+	require.NotNil(t, layer)
+	assert.Equal(t, "domain", layer.Name)
 }
 
 func TestMatchesLayerPath_SimplePrefix(t *testing.T) {
 	builder := NewBuilder("/test", []config.Layer{})
 
-	// Simple prefix match
-	if !builder.matchesLayerPath("src/domain/user.ts", "src/domain") {
-		t.Error("Expected src/domain/user.ts to match src/domain")
-	}
-
-	if builder.matchesLayerPath("src/application/service.ts", "src/domain") {
-		t.Error("Expected src/application/service.ts NOT to match src/domain")
-	}
+	assert.True(t, builder.matchesLayerPath("src/domain/user.ts", "src/domain"))
+	assert.False(t, builder.matchesLayerPath("src/application/service.ts", "src/domain"))
 }
 
 func TestMatchesLayerPath_Glob(t *testing.T) {
 	builder := NewBuilder("/test", []config.Layer{})
 
-	// Glob pattern with **
-	if !builder.matchesLayerPath("src/domain/user.ts", "src/domain/**") {
-		t.Error("Expected src/domain/user.ts to match src/domain/**")
-	}
-
-	if !builder.matchesLayerPath("src/domain/models/user.ts", "src/domain/**") {
-		t.Error("Expected src/domain/models/user.ts to match src/domain/**")
-	}
-
-	if builder.matchesLayerPath("src/application/service.ts", "src/domain/**") {
-		t.Error("Expected src/application/service.ts NOT to match src/domain/**")
-	}
+	assert.True(t, builder.matchesLayerPath("src/domain/user.ts", "src/domain/**"))
+	assert.True(t, builder.matchesLayerPath("src/domain/models/user.ts", "src/domain/**"))
+	assert.False(t, builder.matchesLayerPath("src/application/service.ts", "src/domain/**"))
 }
 
 func TestMatchesLayerPath_GlobWithSuffix(t *testing.T) {
 	builder := NewBuilder("/test", []config.Layer{})
 
-	// Glob with suffix
-	if !builder.matchesLayerPath("src/domain/user.model.ts", "src/**/*.model.ts") {
-		t.Error("Expected src/domain/user.model.ts to match src/**/*.model.ts")
-	}
+	assert.True(t, builder.matchesLayerPath("src/domain/user.model.ts", "src/**/*.model.ts"))
 }
 
 func TestFindLayerForFile(t *testing.T) {
@@ -148,23 +94,16 @@ func TestFindLayerForFile(t *testing.T) {
 
 	builder := NewBuilder("/test", layers)
 
-	// Test domain layer
 	layer := builder.findLayerForFile("src/domain/user.ts")
-	if layer == nil || layer.Name != "domain" {
-		t.Error("Expected to find domain layer")
-	}
+	require.NotNil(t, layer)
+	assert.Equal(t, "domain", layer.Name)
 
-	// Test application layer
 	layer = builder.findLayerForFile("src/application/userService.ts")
-	if layer == nil || layer.Name != "application" {
-		t.Error("Expected to find application layer")
-	}
+	require.NotNil(t, layer)
+	assert.Equal(t, "application", layer.Name)
 
-	// Test no layer
 	layer = builder.findLayerForFile("src/other/file.ts")
-	if layer != nil {
-		t.Errorf("Expected no layer, got %s", layer.Name)
-	}
+	assert.Nil(t, layer)
 }
 
 func TestCanLayerDependOn_AllowedDependency(t *testing.T) {
@@ -180,20 +119,9 @@ func TestCanLayerDependOn_AllowedDependency(t *testing.T) {
 	application := graph.FindLayerByName("application")
 	domain := graph.FindLayerByName("domain")
 
-	// presentation can depend on application
-	if !graph.CanLayerDependOn(presentation, application) {
-		t.Error("Expected presentation to be able to depend on application")
-	}
-
-	// presentation can depend on domain
-	if !graph.CanLayerDependOn(presentation, domain) {
-		t.Error("Expected presentation to be able to depend on domain")
-	}
-
-	// application can depend on domain
-	if !graph.CanLayerDependOn(application, domain) {
-		t.Error("Expected application to be able to depend on domain")
-	}
+	assert.True(t, graph.CanLayerDependOn(presentation, application))
+	assert.True(t, graph.CanLayerDependOn(presentation, domain))
+	assert.True(t, graph.CanLayerDependOn(application, domain))
 }
 
 func TestCanLayerDependOn_ForbiddenDependency(t *testing.T) {
@@ -209,20 +137,9 @@ func TestCanLayerDependOn_ForbiddenDependency(t *testing.T) {
 	application := graph.FindLayerByName("application")
 	domain := graph.FindLayerByName("domain")
 
-	// domain CANNOT depend on application
-	if graph.CanLayerDependOn(domain, application) {
-		t.Error("Expected domain NOT to be able to depend on application")
-	}
-
-	// domain CANNOT depend on presentation
-	if graph.CanLayerDependOn(domain, presentation) {
-		t.Error("Expected domain NOT to be able to depend on presentation")
-	}
-
-	// application CANNOT depend on presentation
-	if graph.CanLayerDependOn(application, presentation) {
-		t.Error("Expected application NOT to be able to depend on presentation")
-	}
+	assert.False(t, graph.CanLayerDependOn(domain, application))
+	assert.False(t, graph.CanLayerDependOn(domain, presentation))
+	assert.False(t, graph.CanLayerDependOn(application, presentation))
 }
 
 func TestCanLayerDependOn_SameLayer(t *testing.T) {
@@ -234,10 +151,7 @@ func TestCanLayerDependOn_SameLayer(t *testing.T) {
 
 	domain := graph.FindLayerByName("domain")
 
-	// Layer can depend on itself
-	if !graph.CanLayerDependOn(domain, domain) {
-		t.Error("Expected layer to be able to depend on itself")
-	}
+	assert.True(t, graph.CanLayerDependOn(domain, domain))
 }
 
 func TestCanLayerDependOn_Wildcard(t *testing.T) {
@@ -253,33 +167,19 @@ func TestCanLayerDependOn_Wildcard(t *testing.T) {
 	application := graph.FindLayerByName("application")
 	domain := graph.FindLayerByName("domain")
 
-	// presentation can depend on anything (wildcard)
-	if !graph.CanLayerDependOn(presentation, application) {
-		t.Error("Expected presentation to depend on application (wildcard)")
-	}
-
-	if !graph.CanLayerDependOn(presentation, domain) {
-		t.Error("Expected presentation to depend on domain (wildcard)")
-	}
+	assert.True(t, graph.CanLayerDependOn(presentation, application))
+	assert.True(t, graph.CanLayerDependOn(presentation, domain))
 }
 
 func TestCanLayerDependOn_NilLayers(t *testing.T) {
 	graph := &ImportGraph{}
 
-	// Nil layers should return true (allow dependency)
-	if !graph.CanLayerDependOn(nil, nil) {
-		t.Error("Expected nil layers to allow dependency")
-	}
+	assert.True(t, graph.CanLayerDependOn(nil, nil))
 
 	layer := &config.Layer{Name: "test", Path: "test/**", DependsOn: []string{}}
 
-	if !graph.CanLayerDependOn(layer, nil) {
-		t.Error("Expected layer->nil to allow dependency")
-	}
-
-	if !graph.CanLayerDependOn(nil, layer) {
-		t.Error("Expected nil->layer to allow dependency")
-	}
+	assert.True(t, graph.CanLayerDependOn(layer, nil))
+	assert.True(t, graph.CanLayerDependOn(nil, layer))
 }
 
 func TestGetLayerForFile(t *testing.T) {
@@ -292,19 +192,11 @@ func TestGetLayerForFile(t *testing.T) {
 	}
 
 	layer := graph.GetLayerForFile("src/domain/user.ts")
-	if layer == nil {
-		t.Fatal("Expected to find layer")
-	}
+	require.NotNil(t, layer)
+	assert.Equal(t, "domain", layer.Name)
 
-	if layer.Name != "domain" {
-		t.Errorf("Expected domain layer, got %s", layer.Name)
-	}
-
-	// Test non-existent file
 	layer = graph.GetLayerForFile("src/other/file.ts")
-	if layer != nil {
-		t.Error("Expected nil for non-existent file")
-	}
+	assert.Nil(t, layer)
 }
 
 func TestGetDependencies(t *testing.T) {
@@ -315,15 +207,10 @@ func TestGetDependencies(t *testing.T) {
 	}
 
 	deps := graph.GetDependencies("src/presentation/component.ts")
-	if len(deps) != 2 {
-		t.Errorf("Expected 2 dependencies, got %d", len(deps))
-	}
+	assert.Equal(t, 2, len(deps))
 
-	// Test non-existent file
 	deps = graph.GetDependencies("src/other/file.ts")
-	if len(deps) != 0 {
-		t.Errorf("Expected 0 dependencies, got %d", len(deps))
-	}
+	assert.Empty(t, deps)
 }
 
 func TestFindLayerByName(t *testing.T) {
@@ -334,48 +221,27 @@ func TestFindLayerByName(t *testing.T) {
 		},
 	}
 
-	// Find existing layer
 	layer := graph.FindLayerByName("domain")
-	if layer == nil {
-		t.Fatal("Expected to find domain layer")
-	}
-	if layer.Name != "domain" {
-		t.Errorf("Expected domain layer, got %s", layer.Name)
-	}
+	require.NotNil(t, layer)
+	assert.Equal(t, "domain", layer.Name)
 
-	// Find non-existent layer
 	layer = graph.FindLayerByName("nonexistent")
-	if layer != nil {
-		t.Error("Expected nil for non-existent layer")
-	}
+	assert.Nil(t, layer)
 }
 
 func TestBuild_IncomingReferences(t *testing.T) {
-	// Create temp directory
 	tmpDir, err := os.MkdirTemp("", "graph-ref-test")
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 	defer os.RemoveAll(tmpDir)
 
-	// Create test files
 	srcDir := filepath.Join(tmpDir, "src")
-	if err := os.MkdirAll(srcDir, 0755); err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, os.MkdirAll(srcDir, 0755))
 
 	userFile := filepath.Join(srcDir, "user.ts")
 	serviceFile := filepath.Join(srcDir, "service.ts")
 
-	// user.ts is imported by service.ts
-	if err := os.WriteFile(userFile, []byte("export class User {}"), 0644); err != nil {
-		t.Fatal(err)
-	}
-
-	// service.ts imports user.ts
-	if err := os.WriteFile(serviceFile, []byte("import { User } from './user'"), 0644); err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, os.WriteFile(userFile, []byte("export class User {}"), 0644))
+	require.NoError(t, os.WriteFile(serviceFile, []byte("import { User } from './user'"), 0644))
 
 	builder := NewBuilder(tmpDir, []config.Layer{})
 
@@ -385,18 +251,10 @@ func TestBuild_IncomingReferences(t *testing.T) {
 	}
 
 	graph, err := builder.Build(files)
-	if err != nil {
-		t.Fatalf("Build failed: %v", err)
-	}
+	require.NoError(t, err)
 
-	// service.ts should have imported user
 	deps := graph.GetDependencies(filepath.Join("src", "service.ts"))
-	if len(deps) == 0 {
-		t.Error("Expected service.ts to have dependencies")
-	}
+	assert.NotEmpty(t, deps)
 
-	// user.ts should have incoming references
-	if graph.IncomingRefs[filepath.Join("src", "user.ts")] < 1 {
-		t.Error("Expected user.ts to have at least 1 incoming reference")
-	}
+	assert.GreaterOrEqual(t, graph.IncomingRefs[filepath.Join("src", "user.ts")], 1)
 }

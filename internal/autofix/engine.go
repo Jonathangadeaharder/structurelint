@@ -70,8 +70,9 @@ func (a *MoveFileAction) Apply() error {
 
 	// Remove original file
 	if err := os.Remove(a.SourcePath); err != nil {
-		// Try to clean up target file
-		_ = os.Remove(a.TargetPath)
+		if removeErr := os.Remove(a.TargetPath); removeErr != nil {
+			fmt.Fprintf(os.Stderr, "warning: failed to clean up target file %s: %v\n", a.TargetPath, removeErr)
+		}
 		return fmt.Errorf("failed to remove source file: %w", err)
 	}
 
@@ -159,7 +160,9 @@ func (a *WriteFileAction) Revert() error {
 		if err := os.WriteFile(a.FilePath, content, 0644); err != nil {
 			return fmt.Errorf("failed to restore file: %w", err)
 		}
-		_ = os.Remove(a.backupPath)
+		if err := os.Remove(a.backupPath); err != nil {
+			fmt.Fprintf(os.Stderr, "warning: failed to remove backup %s: %v\n", a.backupPath, err)
+		}
 	} else {
 		// Remove created file
 		if err := os.Remove(a.FilePath); err != nil {
@@ -221,7 +224,9 @@ func (a *UpdateImportAction) Revert() error {
 	}
 
 	// Remove backup
-	_ = os.Remove(a.backupPath)
+	if err := os.Remove(a.backupPath); err != nil {
+		fmt.Fprintf(os.Stderr, "warning: failed to remove backup %s: %v\n", a.backupPath, err)
+	}
 
 	return nil
 }
@@ -315,7 +320,9 @@ func (e *Engine) ApplyFixes(fixes []*Fix) (int, error) {
 			if err = action.Apply(); err != nil {
 				// Revert all applied actions
 				for i := len(appliedActions) - 1; i >= 0; i-- {
-					_ = appliedActions[i].Revert()
+					if revertErr := appliedActions[i].Revert(); revertErr != nil {
+						fmt.Fprintf(os.Stderr, "warning: failed to revert action: %v\n", revertErr)
+					}
 				}
 				return applied, fmt.Errorf("failed to apply fix for %s: %w", fix.Violation.Path, err)
 			}

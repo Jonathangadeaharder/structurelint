@@ -4,6 +4,9 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestLoad(t *testing.T) {
@@ -19,41 +22,23 @@ rules:
     "*.ts": "camelCase"
 `
 
-	if err := os.WriteFile(configFile, []byte(content), 0644); err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, os.WriteFile(configFile, []byte(content), 0644))
 
 	// Act
 	config, err := Load(configFile)
 
 	// Assert
-	if err != nil {
-		t.Fatalf("Expected no error, got %v", err)
-	}
-
-	if !config.Root {
-		t.Error("Expected Root to be true")
-	}
-
-	if len(config.Rules) != 2 {
-		t.Errorf("Expected 2 rules, got %d", len(config.Rules))
-	}
-
-	if _, ok := config.Rules["max-depth"]; !ok {
-		t.Error("Expected max-depth rule to exist")
-	}
+	require.NoError(t, err)
+	assert.True(t, config.Root)
+	assert.Equal(t, 2, len(config.Rules))
+	assert.Contains(t, config.Rules, "max-depth")
 }
 
 func TestLoadNonExistentFile(t *testing.T) {
 	config, err := Load("/nonexistent/file.yml")
 
-	if err != nil {
-		t.Fatalf("Expected no error for missing file, got %v", err)
-	}
-
-	if config.Rules == nil {
-		t.Error("Expected Rules map to be initialized")
-	}
+	require.NoError(t, err)
+	assert.NotNil(t, config.Rules)
 }
 
 func TestMerge(t *testing.T) {
@@ -74,18 +59,12 @@ func TestMerge(t *testing.T) {
 
 	merged := Merge(config1, config2)
 
-	if !merged.Root {
-		t.Error("Expected Root to be true from config2")
-	}
+	assert.True(t, merged.Root)
 
 	maxDepth := merged.Rules["max-depth"].(map[string]interface{})["max"]
-	if maxDepth != 7 {
-		t.Errorf("Expected max-depth to be 7, got %v", maxDepth)
-	}
+	assert.Equal(t, 7, maxDepth)
 
-	if _, ok := merged.Rules["max-files"]; !ok {
-		t.Error("Expected max-files rule from config2")
-	}
+	assert.Contains(t, merged.Rules, "max-files")
 }
 
 func TestMergeWithLayers(t *testing.T) {
@@ -103,17 +82,9 @@ func TestMergeWithLayers(t *testing.T) {
 
 	merged := Merge(config1, config2)
 
-	if len(merged.Layers) != 2 {
-		t.Errorf("Expected 2 layers, got %d", len(merged.Layers))
-	}
-
-	if merged.Layers[0].Name != "domain" {
-		t.Errorf("Expected first layer to be 'domain', got %s", merged.Layers[0].Name)
-	}
-
-	if merged.Layers[1].Name != "app" {
-		t.Errorf("Expected second layer to be 'app', got %s", merged.Layers[1].Name)
-	}
+	assert.Equal(t, 2, len(merged.Layers))
+	assert.Equal(t, "domain", merged.Layers[0].Name)
+	assert.Equal(t, "app", merged.Layers[1].Name)
 }
 
 func TestMergeWithEntrypoints(t *testing.T) {
@@ -127,9 +98,7 @@ func TestMergeWithEntrypoints(t *testing.T) {
 
 	merged := Merge(config1, config2)
 
-	if len(merged.Entrypoints) != 2 {
-		t.Errorf("Expected 2 entrypoints, got %d", len(merged.Entrypoints))
-	}
+	assert.Equal(t, 2, len(merged.Entrypoints))
 }
 
 func TestMergeWithOverrides(t *testing.T) {
@@ -153,9 +122,7 @@ func TestMergeWithOverrides(t *testing.T) {
 
 	merged := Merge(config1, config2)
 
-	if len(merged.Overrides) != 2 {
-		t.Errorf("Expected 2 overrides, got %d", len(merged.Overrides))
-	}
+	assert.Equal(t, 2, len(merged.Overrides))
 }
 
 func TestFindConfigs(t *testing.T) {
@@ -163,37 +130,25 @@ func TestFindConfigs(t *testing.T) {
 
 	// Create nested directory structure
 	subDir := filepath.Join(tmpDir, "src", "components")
-	if err := os.MkdirAll(subDir, 0755); err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, os.MkdirAll(subDir, 0755))
 
 	// Root config
 	rootConfig := filepath.Join(tmpDir, ".structurelint.yml")
-	if err := os.WriteFile(rootConfig, []byte("root: true\nrules:\n  max-depth:\n    max: 5"), 0644); err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, os.WriteFile(rootConfig, []byte("root: true\nrules:\n  max-depth:\n    max: 5"), 0644))
 
 	// Sub config
 	subConfig := filepath.Join(subDir, ".structurelint.yml")
-	if err := os.WriteFile(subConfig, []byte("rules:\n  max-depth:\n    max: 10"), 0644); err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, os.WriteFile(subConfig, []byte("rules:\n  max-depth:\n    max: 10"), 0644))
 
 	configs, err := FindConfigs(subDir)
 
-	if err != nil {
-		t.Fatalf("Expected no error, got %v", err)
-	}
+	require.NoError(t, err)
 
 	// Should find both configs (root and sub)
-	if len(configs) != 2 {
-		t.Errorf("Expected 2 configs, got %d", len(configs))
-	}
+	assert.Equal(t, 2, len(configs))
 
 	// First config should be root
-	if !configs[0].Root {
-		t.Error("Expected first config to be root")
-	}
+	assert.True(t, configs[0].Root)
 }
 
 func TestMergeWithExclude(t *testing.T) {
@@ -207,27 +162,12 @@ func TestMergeWithExclude(t *testing.T) {
 
 	merged := Merge(config1, config2)
 
-	if len(merged.Exclude) != 3 {
-		t.Errorf("Expected 3 exclude patterns, got %d", len(merged.Exclude))
-	}
+	assert.Equal(t, 3, len(merged.Exclude))
 
 	// Verify all patterns are present
-	hasNodeModules, hasDist, hasVendor := false, false, false
-	for _, pattern := range merged.Exclude {
-		if pattern == "node_modules/**" {
-			hasNodeModules = true
-		}
-		if pattern == "dist/**" {
-			hasDist = true
-		}
-		if pattern == "vendor/**" {
-			hasVendor = true
-		}
-	}
-
-	if !hasNodeModules || !hasDist || !hasVendor {
-		t.Error("Expected all exclude patterns to be merged")
-	}
+	assert.Contains(t, merged.Exclude, "node_modules/**")
+	assert.Contains(t, merged.Exclude, "dist/**")
+	assert.Contains(t, merged.Exclude, "vendor/**")
 }
 
 func TestLoadWithExclude(t *testing.T) {
@@ -243,23 +183,13 @@ rules:
     max: 5
 `
 
-	if err := os.WriteFile(configFile, []byte(content), 0644); err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, os.WriteFile(configFile, []byte(content), 0644))
 
 	config, err := Load(configFile)
 
-	if err != nil {
-		t.Fatalf("Expected no error, got %v", err)
-	}
-
-	if len(config.Exclude) != 2 {
-		t.Errorf("Expected 2 exclude patterns, got %d", len(config.Exclude))
-	}
-
-	if config.Exclude[0] != "testdata/**" {
-		t.Errorf("Expected first exclude to be 'testdata/**', got %s", config.Exclude[0])
-	}
+	require.NoError(t, err)
+	assert.Equal(t, 2, len(config.Exclude))
+	assert.Equal(t, "testdata/**", config.Exclude[0])
 }
 
 func TestLoadInvalidYAML(t *testing.T) {
@@ -269,15 +199,11 @@ func TestLoadInvalidYAML(t *testing.T) {
 	// Use invalid YAML with mismatched indentation and tabs/spaces
 	content := "\troot: true\n\t  rules:\n\t\tinvalid:\t  [\n"
 
-	if err := os.WriteFile(configFile, []byte(content), 0644); err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, os.WriteFile(configFile, []byte(content), 0644))
 
 	_, err := Load(configFile)
 
-	if err == nil {
-		t.Error("Expected error for invalid YAML, got none")
-	}
+	assert.Error(t, err)
 }
 
 func TestFindConfigsWithYamlExtension(t *testing.T) {
@@ -285,23 +211,13 @@ func TestFindConfigsWithYamlExtension(t *testing.T) {
 
 	// Use .yaml extension instead of .yml
 	configFile := filepath.Join(tmpDir, ".structurelint.yaml")
-	if err := os.WriteFile(configFile, []byte("root: true\nrules:\n  max-depth:\n    max: 5"), 0644); err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, os.WriteFile(configFile, []byte("root: true\nrules:\n  max-depth:\n    max: 5"), 0644))
 
 	configs, err := FindConfigs(tmpDir)
 
-	if err != nil {
-		t.Fatalf("Expected no error, got %v", err)
-	}
-
-	if len(configs) != 1 {
-		t.Errorf("Expected 1 config, got %d", len(configs))
-	}
-
-	if !configs[0].Root {
-		t.Error("Expected config to have Root=true")
-	}
+	require.NoError(t, err)
+	assert.Equal(t, 1, len(configs))
+	assert.True(t, configs[0].Root)
 }
 
 func TestMergeWithNilConfig(t *testing.T) {
@@ -313,9 +229,7 @@ func TestMergeWithNilConfig(t *testing.T) {
 
 	merged := Merge(config1, nil)
 
-	if len(merged.Rules) != 1 {
-		t.Errorf("Expected 1 rule after merging with nil, got %d", len(merged.Rules))
-	}
+	assert.Equal(t, 1, len(merged.Rules))
 }
 
 func TestFindConfigsNoConfigFound(t *testing.T) {
@@ -323,16 +237,9 @@ func TestFindConfigsNoConfigFound(t *testing.T) {
 
 	configs, err := FindConfigs(tmpDir)
 
-	if err != nil {
-		t.Fatalf("Expected no error, got %v", err)
-	}
+	require.NoError(t, err)
 
 	// Should return default config
-	if len(configs) != 1 {
-		t.Errorf("Expected 1 default config, got %d", len(configs))
-	}
-
-	if configs[0].Rules == nil {
-		t.Error("Expected default config to have initialized Rules map")
-	}
+	assert.Equal(t, 1, len(configs))
+	assert.NotNil(t, configs[0].Rules)
 }

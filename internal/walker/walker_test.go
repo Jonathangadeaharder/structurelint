@@ -4,6 +4,9 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestWalker(t *testing.T) {
@@ -18,33 +21,19 @@ func TestWalker(t *testing.T) {
 	//     dir2/
 	//       c.txt
 
-	if err := os.WriteFile(filepath.Join(tmpDir, "a.txt"), []byte("test"), 0644); err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "a.txt"), []byte("test"), 0644))
 
 	dir1 := filepath.Join(tmpDir, "dir1")
-	if err := os.MkdirAll(dir1, 0755); err != nil {
-		t.Fatal(err)
-	}
-
-	if err := os.WriteFile(filepath.Join(dir1, "b.txt"), []byte("test"), 0644); err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, os.MkdirAll(dir1, 0755))
+	require.NoError(t, os.WriteFile(filepath.Join(dir1, "b.txt"), []byte("test"), 0644))
 
 	dir2 := filepath.Join(dir1, "dir2")
-	if err := os.MkdirAll(dir2, 0755); err != nil {
-		t.Fatal(err)
-	}
-
-	if err := os.WriteFile(filepath.Join(dir2, "c.txt"), []byte("test"), 0644); err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, os.MkdirAll(dir2, 0755))
+	require.NoError(t, os.WriteFile(filepath.Join(dir2, "c.txt"), []byte("test"), 0644))
 
 	// Act
 	w := New(tmpDir)
-	if err := w.Walk(); err != nil {
-		t.Fatalf("Walk failed: %v", err)
-	}
+	require.NoError(t, w.Walk())
 
 	files := w.GetFiles()
 
@@ -60,13 +49,8 @@ func TestWalker(t *testing.T) {
 		}
 	}
 
-	if fileCount != 3 {
-		t.Errorf("Expected 3 files, got %d", fileCount)
-	}
-
-	if dirCount != 2 {
-		t.Errorf("Expected 2 directories, got %d", dirCount)
-	}
+	assert.Equal(t, 3, fileCount)
+	assert.Equal(t, 2, dirCount)
 }
 
 func TestWalker_Depth(t *testing.T) {
@@ -74,26 +58,17 @@ func TestWalker_Depth(t *testing.T) {
 
 	// Create nested structure
 	deep := filepath.Join(tmpDir, "a", "b", "c")
-	if err := os.MkdirAll(deep, 0755); err != nil {
-		t.Fatal(err)
-	}
-
-	if err := os.WriteFile(filepath.Join(deep, "file.txt"), []byte("test"), 0644); err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, os.MkdirAll(deep, 0755))
+	require.NoError(t, os.WriteFile(filepath.Join(deep, "file.txt"), []byte("test"), 0644))
 
 	w := New(tmpDir)
-	if err := w.Walk(); err != nil {
-		t.Fatalf("Walk failed: %v", err)
-	}
+	require.NoError(t, w.Walk())
 
 	maxDepth := w.GetMaxDepth()
 
 	// Depth should be 3 (a/=1, b/=2, c/=3, file.txt is still depth 3)
 	// Directories increment depth, files don't increment beyond their parent
-	if maxDepth != 3 {
-		t.Errorf("Expected max depth 3, got %d", maxDepth)
-	}
+	assert.Equal(t, 3, maxDepth)
 }
 
 func TestWalker_DirInfo(t *testing.T) {
@@ -101,45 +76,30 @@ func TestWalker_DirInfo(t *testing.T) {
 
 	// Create directory with multiple files and subdirs
 	testDir := filepath.Join(tmpDir, "testdir")
-	if err := os.MkdirAll(testDir, 0755); err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, os.MkdirAll(testDir, 0755))
 
 	// Add 3 files
 	for i := 1; i <= 3; i++ {
 		filename := filepath.Join(testDir, filepath.Base(tmpDir)+string(rune('a'+i-1))+".txt")
-		if err := os.WriteFile(filename, []byte("test"), 0644); err != nil {
-			t.Fatal(err)
-		}
+		require.NoError(t, os.WriteFile(filename, []byte("test"), 0644))
 	}
 
 	// Add 2 subdirectories
 	for i := 1; i <= 2; i++ {
 		subdir := filepath.Join(testDir, filepath.Base(tmpDir)+"sub"+string(rune('0'+i)))
-		if err := os.MkdirAll(subdir, 0755); err != nil {
-			t.Fatal(err)
-		}
+		require.NoError(t, os.MkdirAll(subdir, 0755))
 	}
 
 	w := New(tmpDir)
-	if err := w.Walk(); err != nil {
-		t.Fatalf("Walk failed: %v", err)
-	}
+	require.NoError(t, w.Walk())
 
 	dirs := w.GetDirs()
 
 	testDirInfo, ok := dirs["testdir"]
-	if !ok {
-		t.Fatal("Expected to find testdir in dir info")
-	}
+	require.True(t, ok, "Expected to find testdir in dir info")
 
-	if testDirInfo.FileCount != 3 {
-		t.Errorf("Expected 3 files, got %d", testDirInfo.FileCount)
-	}
-
-	if testDirInfo.SubdirCount != 2 {
-		t.Errorf("Expected 2 subdirs, got %d", testDirInfo.SubdirCount)
-	}
+	assert.Equal(t, 3, testDirInfo.FileCount)
+	assert.Equal(t, 2, testDirInfo.SubdirCount)
 }
 
 func TestMatchesPattern(t *testing.T) {
@@ -158,9 +118,6 @@ func TestMatchesPattern(t *testing.T) {
 
 	for _, tt := range tests {
 		got := MatchesPattern(tt.path, tt.pattern)
-		if got != tt.want {
-			t.Errorf("MatchesPattern(%q, %q) = %v, want %v",
-				tt.path, tt.pattern, got, tt.want)
-		}
+		assert.Equal(t, tt.want, got, "MatchesPattern(%q, %q)", tt.path, tt.pattern)
 	}
 }

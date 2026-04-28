@@ -7,6 +7,8 @@ import (
 
 	"github.com/Jonathangadeaharder/structurelint/internal/config"
 	"github.com/Jonathangadeaharder/structurelint/internal/walker"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestNew(t *testing.T) {
@@ -14,13 +16,8 @@ func TestNew(t *testing.T) {
 	linter := New()
 
 	// Assert
-	if linter == nil {
-		t.Fatal("New() returned nil")
-	}
-
-	if linter.config != nil {
-		t.Error("Expected config to be nil initially")
-	}
+	require.NotNil(t, linter)
+	assert.Nil(t, linter.config)
 }
 
 func TestGetRuleConfig_Exists(t *testing.T) {
@@ -39,13 +36,8 @@ func TestGetRuleConfig_Exists(t *testing.T) {
 	cfg, ok := linter.getRuleConfig("max-depth")
 
 	// Assert
-	if !ok {
-		t.Error("Expected rule to exist")
-	}
-
-	if cfg == nil {
-		t.Error("Expected config to be non-nil")
-	}
+	assert.True(t, ok)
+	assert.NotNil(t, cfg)
 }
 
 func TestGetRuleConfig_NotExists(t *testing.T) {
@@ -56,9 +48,7 @@ func TestGetRuleConfig_NotExists(t *testing.T) {
 	}
 
 	_, ok := linter.getRuleConfig("nonexistent-rule")
-	if ok {
-		t.Error("Expected rule not to exist")
-	}
+	assert.False(t, ok)
 }
 
 func TestGetRuleConfig_NilConfig(t *testing.T) {
@@ -67,9 +57,7 @@ func TestGetRuleConfig_NilConfig(t *testing.T) {
 	}
 
 	_, ok := linter.getRuleConfig("max-depth")
-	if ok {
-		t.Error("Expected rule not to exist when config is nil")
-	}
+	assert.False(t, ok)
 }
 
 func TestGetRuleConfig_NilRules(t *testing.T) {
@@ -80,9 +68,7 @@ func TestGetRuleConfig_NilRules(t *testing.T) {
 	}
 
 	_, ok := linter.getRuleConfig("max-depth")
-	if ok {
-		t.Error("Expected rule not to exist when Rules is nil")
-	}
+	assert.False(t, ok)
 }
 
 func TestGetRuleConfig_DisabledByZero(t *testing.T) {
@@ -95,9 +81,7 @@ func TestGetRuleConfig_DisabledByZero(t *testing.T) {
 	}
 
 	_, ok := linter.getRuleConfig("max-depth")
-	if ok {
-		t.Error("Expected rule to be disabled when value is 0")
-	}
+	assert.False(t, ok)
 }
 
 func TestGetRuleConfig_DisabledByFalse(t *testing.T) {
@@ -110,9 +94,7 @@ func TestGetRuleConfig_DisabledByFalse(t *testing.T) {
 	}
 
 	_, ok := linter.getRuleConfig("max-depth")
-	if ok {
-		t.Error("Expected rule to be disabled when value is false")
-	}
+	assert.False(t, ok)
 }
 
 func TestGetRuleConfig_EnabledByTrue(t *testing.T) {
@@ -125,9 +107,7 @@ func TestGetRuleConfig_EnabledByTrue(t *testing.T) {
 	}
 
 	_, ok := linter.getRuleConfig("enforce-layer-boundaries")
-	if !ok {
-		t.Error("Expected rule to be enabled when value is true")
-	}
+	assert.True(t, ok)
 }
 
 func TestIsRuleEnabled_Enabled(t *testing.T) {
@@ -141,9 +121,7 @@ func TestIsRuleEnabled_Enabled(t *testing.T) {
 		},
 	}
 
-	if !linter.isRuleEnabled("max-depth") {
-		t.Error("Expected rule to be enabled")
-	}
+	assert.True(t, linter.isRuleEnabled("max-depth"))
 }
 
 func TestIsRuleEnabled_Disabled(t *testing.T) {
@@ -155,9 +133,7 @@ func TestIsRuleEnabled_Disabled(t *testing.T) {
 		},
 	}
 
-	if linter.isRuleEnabled("max-depth") {
-		t.Error("Expected rule to be disabled")
-	}
+	assert.False(t, linter.isRuleEnabled("max-depth"))
 }
 
 func TestIsRuleEnabled_NotExists(t *testing.T) {
@@ -167,24 +143,18 @@ func TestIsRuleEnabled_NotExists(t *testing.T) {
 		},
 	}
 
-	if linter.isRuleEnabled("nonexistent-rule") {
-		t.Error("Expected rule to be disabled when it doesn't exist")
-	}
+	assert.False(t, linter.isRuleEnabled("nonexistent-rule"))
 }
 
 func TestLint_BasicRules(t *testing.T) {
 	// Create a temporary directory structure
 	tmpDir, err := os.MkdirTemp("", "linter-test")
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 	defer os.RemoveAll(tmpDir)
 
 	// Create a simple project structure
 	srcDir := filepath.Join(tmpDir, "src")
-	if err := os.MkdirAll(srcDir, 0755); err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, os.MkdirAll(srcDir, 0755))
 
 	// Create a config file with max-depth rule
 	configContent := `
@@ -194,33 +164,23 @@ rules:
     max: 2
 `
 	configFile := filepath.Join(tmpDir, ".structurelint.yml")
-	if err := os.WriteFile(configFile, []byte(configContent), 0644); err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, os.WriteFile(configFile, []byte(configContent), 0644))
 
 	// Create a deeply nested file (should violate max-depth: 2)
 	deepDir := filepath.Join(srcDir, "level1", "level2", "level3")
-	if err := os.MkdirAll(deepDir, 0755); err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, os.MkdirAll(deepDir, 0755))
 
 	deepFile := filepath.Join(deepDir, "file.ts")
-	if err := os.WriteFile(deepFile, []byte("// test"), 0644); err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, os.WriteFile(deepFile, []byte("// test"), 0644))
 
 	// Run linter
 	linter := New()
 	violations, err := linter.Lint(tmpDir)
 
-	if err != nil {
-		t.Fatalf("Lint failed: %v", err)
-	}
+	require.NoError(t, err)
 
 	// Should have violations for exceeding max depth
-	if len(violations) == 0 {
-		t.Error("Expected violations for max-depth rule")
-	}
+	assert.NotEmpty(t, violations)
 
 	// Verify at least one violation is about depth
 	hasDepthViolation := false
@@ -231,57 +191,41 @@ rules:
 		}
 	}
 
-	if !hasDepthViolation {
-		t.Error("Expected at least one max-depth violation")
-	}
+	assert.True(t, hasDepthViolation)
 }
 
 func TestLint_NoConfig(t *testing.T) {
 	// Create a temporary directory without config
 	tmpDir, err := os.MkdirTemp("", "linter-test-noconfig")
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 	defer os.RemoveAll(tmpDir)
 
 	// Create a simple file
 	testFile := filepath.Join(tmpDir, "test.ts")
-	if err := os.WriteFile(testFile, []byte("// test"), 0644); err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, os.WriteFile(testFile, []byte("// test"), 0644))
 
 	// Run linter (should not fail even without config)
 	linter := New()
 	violations, err := linter.Lint(tmpDir)
 
-	if err != nil {
-		t.Fatalf("Lint failed: %v", err)
-	}
+	require.NoError(t, err)
 
 	// Should have no violations (no rules configured)
-	if len(violations) != 0 {
-		t.Errorf("Expected 0 violations without config, got %d", len(violations))
-	}
+	assert.Empty(t, violations)
 }
 
 func TestLint_WithLayers(t *testing.T) {
 	// Create a temporary directory structure
 	tmpDir, err := os.MkdirTemp("", "linter-layers-test")
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 	defer os.RemoveAll(tmpDir)
 
 	// Create directory structure
 	domainDir := filepath.Join(tmpDir, "src", "domain")
 	appDir := filepath.Join(tmpDir, "src", "application")
 
-	if err := os.MkdirAll(domainDir, 0755); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.MkdirAll(appDir, 0755); err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, os.MkdirAll(domainDir, 0755))
+	require.NoError(t, os.MkdirAll(appDir, 0755))
 
 	// Create domain file that violates layer boundaries by importing from application
 	domainFile := filepath.Join(domainDir, "user.ts")
@@ -289,9 +233,7 @@ func TestLint_WithLayers(t *testing.T) {
 import { UserService } from '../application/userService';
 export class User {}
 `
-	if err := os.WriteFile(domainFile, []byte(domainContent), 0644); err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, os.WriteFile(domainFile, []byte(domainContent), 0644))
 
 	// Create application file
 	appFile := filepath.Join(appDir, "userService.ts")
@@ -299,9 +241,7 @@ export class User {}
 import { User } from '../domain/user';
 export class UserService {}
 `
-	if err := os.WriteFile(appFile, []byte(appContent), 0644); err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, os.WriteFile(appFile, []byte(appContent), 0644))
 
 	// Create config with layers
 	configContent := `
@@ -318,17 +258,13 @@ layers:
     dependsOn: [domain]
 `
 	configFile := filepath.Join(tmpDir, ".structurelint.yml")
-	if err := os.WriteFile(configFile, []byte(configContent), 0644); err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, os.WriteFile(configFile, []byte(configContent), 0644))
 
 	// Run linter
 	linter := New()
 	violations, err := linter.Lint(tmpDir)
 
-	if err != nil {
-		t.Fatalf("Lint failed: %v", err)
-	}
+	require.NoError(t, err)
 
 	// Should have violations for layer boundaries
 	hasLayerViolation := false
@@ -339,9 +275,7 @@ layers:
 		}
 	}
 
-	if !hasLayerViolation {
-		t.Error("Expected layer boundary violation")
-	}
+	assert.True(t, hasLayerViolation)
 }
 
 func TestCreateRules_MaxDepth(t *testing.T) {
@@ -355,7 +289,7 @@ func TestCreateRules_MaxDepth(t *testing.T) {
 		},
 	}
 
-	rules := linter.createRules([]walker.FileInfo{}, nil)
+	rules, _ := linter.createRules([]walker.FileInfo{}, nil)
 
 	// Should have created max-depth rule
 	hasMaxDepth := false
@@ -366,9 +300,7 @@ func TestCreateRules_MaxDepth(t *testing.T) {
 		}
 	}
 
-	if !hasMaxDepth {
-		t.Error("Expected max-depth rule to be created")
-	}
+	assert.True(t, hasMaxDepth)
 }
 
 func TestCreateRules_NoRules(t *testing.T) {
@@ -378,11 +310,9 @@ func TestCreateRules_NoRules(t *testing.T) {
 		},
 	}
 
-	rules := linter.createRules([]walker.FileInfo{}, nil)
+	rules, _ := linter.createRules([]walker.FileInfo{}, nil)
 
-	if len(rules) != 0 {
-		t.Errorf("Expected 0 rules, got %d", len(rules))
-	}
+	assert.Empty(t, rules)
 }
 
 func TestCreateRules_MultipleRules(t *testing.T) {
@@ -402,12 +332,10 @@ func TestCreateRules_MultipleRules(t *testing.T) {
 		},
 	}
 
-	rules := linter.createRules([]walker.FileInfo{}, nil)
+	rules, _ := linter.createRules([]walker.FileInfo{}, nil)
 
 	// Should have created 3 rules
-	if len(rules) < 3 {
-		t.Errorf("Expected at least 3 rules, got %d", len(rules))
-	}
+	assert.GreaterOrEqual(t, len(rules), 3)
 
 	// Check that all rules are present
 	ruleNames := make(map[string]bool)
@@ -415,10 +343,7 @@ func TestCreateRules_MultipleRules(t *testing.T) {
 		ruleNames[rule.Name()] = true
 	}
 
-	expectedRules := []string{"max-depth", "max-files-in-dir", "max-subdirs"}
-	for _, expectedRule := range expectedRules {
-		if !ruleNames[expectedRule] {
-			t.Errorf("Expected rule '%s' to be created", expectedRule)
-		}
-	}
+	assert.True(t, ruleNames["max-depth"])
+	assert.True(t, ruleNames["max-files-in-dir"])
+	assert.True(t, ruleNames["max-subdirs"])
 }

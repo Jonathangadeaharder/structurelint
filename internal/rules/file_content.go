@@ -47,7 +47,7 @@ func (r *FileContentRule) Check(files []walker.FileInfo, dirs map[string]*walker
 
 		// Check if this file matches any template pattern
 		for pattern, templateName := range r.Templates {
-			if matchesGlobPattern(file.Path, pattern) {
+			if MatchesGlobPattern(file.Path, pattern) {
 				template, exists := templates[templateName]
 				if !exists {
 					violations = append(violations, Violation{

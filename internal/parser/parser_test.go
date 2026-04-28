@@ -4,6 +4,9 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestParseTypeScriptImports(t *testing.T) {
@@ -18,9 +21,7 @@ import * as baz from './baz';
 const qux = require('./qux');
 `
 
-	if err := os.WriteFile(tsFile, []byte(content), 0644); err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, os.WriteFile(tsFile, []byte(content), 0644))
 
 	parser := New(tmpDir)
 
@@ -28,22 +29,12 @@ const qux = require('./qux');
 	imports, err := parser.ParseFile(tsFile)
 
 	// Assert
-	if err != nil {
-		t.Fatalf("Expected no error, got %v", err)
-	}
-
-	if len(imports) != 4 {
-		t.Errorf("Expected 4 imports, got %d", len(imports))
-	}
+	require.NoError(t, err)
+	assert.Equal(t, 4, len(imports))
 
 	// Check first import
-	if imports[0].ImportPath != "./foo" {
-		t.Errorf("Expected import path './foo', got %s", imports[0].ImportPath)
-	}
-
-	if !imports[0].IsRelative {
-		t.Error("Expected relative import")
-	}
+	assert.Equal(t, "./foo", imports[0].ImportPath)
+	assert.True(t, imports[0].IsRelative)
 }
 
 func TestParseGoImports(t *testing.T) {
@@ -60,20 +51,13 @@ import (
 import "strings"
 `
 
-	if err := os.WriteFile(goFile, []byte(content), 0644); err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, os.WriteFile(goFile, []byte(content), 0644))
 
 	parser := New(tmpDir)
 	imports, err := parser.ParseFile(goFile)
 
-	if err != nil {
-		t.Fatalf("Expected no error, got %v", err)
-	}
-
-	if len(imports) != 3 {
-		t.Errorf("Expected 3 imports, got %d", len(imports))
-	}
+	require.NoError(t, err)
+	assert.Equal(t, 3, len(imports))
 
 	expectedPaths := map[string]bool{
 		"fmt":                  true,
@@ -82,9 +66,7 @@ import "strings"
 	}
 
 	for _, imp := range imports {
-		if !expectedPaths[imp.ImportPath] {
-			t.Errorf("Unexpected import path: %s", imp.ImportPath)
-		}
+		assert.True(t, expectedPaths[imp.ImportPath], "Unexpected import path: %s", imp.ImportPath)
 	}
 }
 
@@ -97,20 +79,13 @@ from typing import List
 import json.decoder
 `
 
-	if err := os.WriteFile(pyFile, []byte(content), 0644); err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, os.WriteFile(pyFile, []byte(content), 0644))
 
 	parser := New(tmpDir)
 	imports, err := parser.ParseFile(pyFile)
 
-	if err != nil {
-		t.Fatalf("Expected no error, got %v", err)
-	}
-
-	if len(imports) != 3 {
-		t.Errorf("Expected 3 imports, got %d", len(imports))
-	}
+	require.NoError(t, err)
+	assert.Equal(t, 3, len(imports))
 }
 
 func TestParseTypeScriptExports(t *testing.T) {
@@ -124,20 +99,13 @@ export { one, two };
 export default something;
 `
 
-	if err := os.WriteFile(tsFile, []byte(content), 0644); err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, os.WriteFile(tsFile, []byte(content), 0644))
 
 	parser := New(tmpDir)
 	exports, err := parser.ParseExports(tsFile)
 
-	if err != nil {
-		t.Fatalf("Expected no error, got %v", err)
-	}
-
-	if len(exports) != 5 {
-		t.Errorf("Expected 5 export statements, got %d", len(exports))
-	}
+	require.NoError(t, err)
+	assert.Equal(t, 5, len(exports))
 
 	// Check for default export
 	hasDefault := false
@@ -148,9 +116,7 @@ export default something;
 		}
 	}
 
-	if !hasDefault {
-		t.Error("Expected to find default export")
-	}
+	assert.True(t, hasDefault)
 }
 
 func TestParseGoExports(t *testing.T) {
@@ -167,16 +133,12 @@ const PublicConst = 42
 var PrivateVar = "test"
 `
 
-	if err := os.WriteFile(goFile, []byte(content), 0644); err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, os.WriteFile(goFile, []byte(content), 0644))
 
 	parser := New(tmpDir)
 	exports, err := parser.ParseExports(goFile)
 
-	if err != nil {
-		t.Fatalf("Expected no error, got %v", err)
-	}
+	require.NoError(t, err)
 
 	// Should only find exported (uppercase) symbols
 	expectedExports := map[string]bool{
@@ -195,9 +157,7 @@ var PrivateVar = "test"
 		}
 	}
 
-	if exportCount != 4 {
-		t.Errorf("Expected 4 exported symbols, found %d", exportCount)
-	}
+	assert.Equal(t, 4, exportCount)
 }
 
 func TestParsePythonExports(t *testing.T) {
@@ -216,20 +176,13 @@ class PublicClass:
 __all__ = ['public_function', 'PublicClass']
 `
 
-	if err := os.WriteFile(pyFile, []byte(content), 0644); err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, os.WriteFile(pyFile, []byte(content), 0644))
 
 	parser := New(tmpDir)
 	exports, err := parser.ParseExports(pyFile)
 
-	if err != nil {
-		t.Fatalf("Expected no error, got %v", err)
-	}
-
-	if len(exports) == 0 {
-		t.Fatal("Expected to find exports")
-	}
+	require.NoError(t, err)
+	require.NotEmpty(t, exports, "Expected to find exports")
 
 	// Should prefer __all__ definition
 	hasPublicFunction := false
@@ -246,9 +199,8 @@ __all__ = ['public_function', 'PublicClass']
 		}
 	}
 
-	if !hasPublicFunction || !hasPublicClass {
-		t.Error("Expected to find exports from __all__")
-	}
+	assert.True(t, hasPublicFunction)
+	assert.True(t, hasPublicClass)
 }
 
 func TestResolveImportPath(t *testing.T) {
@@ -266,9 +218,6 @@ func TestResolveImportPath(t *testing.T) {
 
 	for _, tt := range tests {
 		result := parser.ResolveImportPath(tt.sourceFile, tt.importPath)
-		if result != tt.expected {
-			t.Errorf("ResolveImportPath(%s, %s) = %s, want %s",
-				tt.sourceFile, tt.importPath, result, tt.expected)
-		}
+		assert.Equal(t, tt.expected, result, "ResolveImportPath(%s, %s)", tt.sourceFile, tt.importPath)
 	}
 }

@@ -21,9 +21,7 @@ func LoadGitignorePatterns(rootDir string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer func() {
-		_ = file.Close() // Error on close doesn't affect read-only operation
-	}()
+	defer file.Close()
 
 	var patterns []string
 	scanner := bufio.NewScanner(file)

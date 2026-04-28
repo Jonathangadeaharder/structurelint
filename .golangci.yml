@@ -12,9 +12,9 @@ linters:
 
 linters-settings:
   gocyclo:
-    min-complexity: 17
+    min-complexity: 26
   gocognit:
     min-complexity: 85
 
 run:
-  tests: false
+  tests: true

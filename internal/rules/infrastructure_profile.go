@@ -43,14 +43,14 @@ func NewInfrastructureProfile(userPatterns []string) *InfrastructureProfile {
 func (p *InfrastructureProfile) IsInfrastructure(path string) bool {
 	// Check default patterns
 	for _, pattern := range p.InfraPatterns {
-		if matchesGlobPattern(path, pattern) {
+		if MatchesGlobPattern(path, pattern) {
 			return true
 		}
 	}
 
 	// Check user patterns
 	for _, pattern := range p.UserPatterns {
-		if matchesGlobPattern(path, pattern) {
+		if MatchesGlobPattern(path, pattern) {
 			return true
 		}
 	}

@@ -31,7 +31,7 @@ func ParseDirectives(absPath string) []Directive {
 	if err != nil {
 		return nil
 	}
-	defer func() { _ = file.Close() }()
+	defer file.Close()
 
 	var directives []Directive
 	scanner := bufio.NewScanner(file)

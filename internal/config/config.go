@@ -1,6 +1,7 @@
 package config
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -249,7 +250,12 @@ func FindConfigsWithGitignore(startPath string) ([]*Config, error) {
 	if len(configs) > 0 {
 		// Apply gitignore to each config before merging
 		for i, config := range configs {
-			configs[i], _ = ApplyGitignore(config, rootDir)
+			merged, err := ApplyGitignore(config, rootDir)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "warning: failed to apply gitignore: %v\n", err)
+				continue
+			}
+			configs[i] = merged
 		}
 	}
 
@@ -395,7 +401,92 @@ func GetRuleConfig[T any](config *Config, ruleName string) (T, bool) {
 		}
 	}
 
-	// Try to convert the value to the target type
-	// This is a simplified conversion; in production, you'd want more robust handling
+	// Convert via JSON marshaling (handles YAML -> Go type conversion)
+	jsonBytes, err := json.Marshal(value)
+	if err != nil {
+		return result, false
+	}
+	if err := json.Unmarshal(jsonBytes, &result); err != nil {
+		return result, false
+	}
 	return result, true
+}
+
+// TypedRules converts the raw map[string]interface{} Rules to a type-safe RuleConfigs.
+// Returns nil if no rules are configured.
+func (c *Config) TypedRules() *RuleConfigs {
+	if c == nil || c.Rules == nil || len(c.Rules) == 0 {
+		return nil
+	}
+
+	result := &RuleConfigs{}
+
+	if v, ok := GetRuleConfig[*MaxDepthConfig](c, "max-depth"); ok {
+		result.MaxDepth = v
+	}
+	if v, ok := GetRuleConfig[*MaxFilesInDirConfig](c, "max-files-in-dir"); ok {
+		result.MaxFilesInDir = v
+	}
+	if v, ok := GetRuleConfig[*MaxSubdirsConfig](c, "max-subdirs"); ok {
+		result.MaxSubdirs = v
+	}
+	if v, ok := GetRuleConfig[*MaxCognitiveComplexityConfig](c, "max-cognitive-complexity"); ok {
+		result.MaxCognitiveComplexity = v
+	}
+	if v, ok := GetRuleConfig[*MaxHalsteadEffortConfig](c, "max-halstead-effort"); ok {
+		result.MaxHalsteadEffort = v
+	}
+	if v, ok := GetRuleConfig[NamingConventionConfig](c, "naming-convention"); ok {
+		result.NamingConvention = v
+	}
+	if v, ok := GetRuleConfig[FileExistenceConfig](c, "file-existence"); ok {
+		result.FileExistence = v
+	}
+	if v, ok := GetRuleConfig[RegexMatchConfig](c, "regex-match"); ok {
+		result.RegexMatch = v
+	}
+	if v, ok := GetRuleConfig[DisallowedPatternsConfig](c, "disallowed-patterns"); ok {
+		result.DisallowedPatterns = v
+	}
+	if v, ok := GetRuleConfig[*TestAdjacencyConfig](c, "test-adjacency"); ok {
+		result.TestAdjacency = v
+	}
+	if v, ok := GetRuleConfig[*TestLocationConfig](c, "test-location"); ok {
+		result.TestLocation = v
+	}
+	if v, ok := GetRuleConfig[*FileContentConfig](c, "file-content"); ok {
+		result.FileContent = v
+	}
+	if v, ok := GetRuleConfig[*GitHubWorkflowsConfig](c, "github-workflows"); ok {
+		result.GitHubWorkflows = v
+	}
+	if v, ok := GetRuleConfig[*LinterConfigConfig](c, "linter-config"); ok {
+		result.LinterConfig = v
+	}
+	if v, ok := GetRuleConfig[*ApiSpecConfig](c, "api-spec"); ok {
+		result.ApiSpec = v
+	}
+	if v, ok := GetRuleConfig[*ContractFrameworkConfig](c, "contract-framework"); ok {
+		result.ContractFramework = v
+	}
+	if v, ok := GetRuleConfig[*SpecADREnforcementConfig](c, "spec-adr-enforcement"); ok {
+		result.SpecADREnforcement = v
+	}
+	if v, ok := GetRuleConfig[*EnforceLayerBoundariesConfig](c, "enforce-layer-boundaries"); ok {
+		result.EnforceLayerBoundaries = v
+	}
+	if v, ok := GetRuleConfig[*DisallowOrphanedFilesConfig](c, "disallow-orphaned-files"); ok {
+		result.DisallowOrphanedFiles = v
+	}
+	if v, ok := GetRuleConfig[*DisallowUnusedExportsConfig](c, "disallow-unused-exports"); ok {
+		result.DisallowUnusedExports = v
+	}
+	if v, ok := GetRuleConfig[*PropertyEnforcementConfig](c, "property-enforcement"); ok {
+		result.PropertyEnforcement = v
+	}
+	if v, ok := GetRuleConfig[*PathBasedLayersConfig](c, "path-based-layers"); ok {
+		result.PathBasedLayers = v
+	}
+
+	return result
 }

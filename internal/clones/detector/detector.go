@@ -145,7 +145,9 @@ func (d *Detector) findGoFiles(rootPath string) ([]string, error) {
 				matched = matchesPattern(path, pattern)
 			} else {
 				// Match against basename for simple patterns
-				matched, _ = filepath.Match(pattern, filepath.Base(path))
+				if m, err := filepath.Match(pattern, filepath.Base(path)); err == nil {
+					matched = m
+				}
 			}
 			if matched {
 				return nil
