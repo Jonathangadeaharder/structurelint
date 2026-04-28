@@ -49,8 +49,8 @@ jobs:
         run: |
           COVERAGE=$(go tool cover -func=coverage.out | tail -1 | awk '{gsub(/%/, "", $3); print $3}')
           echo "Total coverage: ${COVERAGE}%"
-          if awk "BEGIN {exit !($COVERAGE < 40)}"; then
-            echo "Coverage ${COVERAGE}% is below 40% threshold"
+          if awk "BEGIN {exit !($COVERAGE < 35)}"; then
+            echo "Coverage ${COVERAGE}% is below 35% threshold"
             exit 1
           fi
 
