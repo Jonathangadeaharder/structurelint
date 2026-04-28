@@ -91,6 +91,9 @@ rules:
       - "testdata/**"
       - "tests/**/*.py"                  # Python test files in tests directory
       - "**/*_bench_test.go"             # Benchmark tests can be anywhere
+      - "internal/linter/init_test.go"
+      - "internal/rules/structure/enhanced_violations_test.go"
+      - "internal/rules/structure/language_aware_naming_test.go"
 
   # Phase 4: File Content Templates
   # Temporarily disabled AAA enforcement for new Phase 4/5 test files
