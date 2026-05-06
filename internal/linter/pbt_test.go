@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"sort"
+	"strings"
 	"testing"
 
 	"github.com/Jonathangadeaharder/structurelint/internal/rules"
@@ -42,7 +43,7 @@ func arbWalkerFile(t *rapid.T) walker.FileInfo {
 	}
 	return walker.FileInfo{
 		Path:       relPath,
-		AbsPath:    "/root/" + relPath,
+		AbsPath:    filepath.Join("/root", relPath),
 		IsDir:      false,
 		Depth:      depth,
 		ParentPath: parentPath,
@@ -60,6 +61,7 @@ func arbWalkerFiles(t *rapid.T) []walker.FileInfo {
 
 func buildDirs(files []walker.FileInfo) map[string]*walker.DirInfo {
 	dirs := make(map[string]*walker.DirInfo)
+	seenChildren := make(map[string]map[string]struct{})
 	dirs["."] = &walker.DirInfo{Path: ".", Depth: 0}
 
 	for _, f := range files {
@@ -79,7 +81,13 @@ func buildDirs(files []walker.FileInfo) map[string]*walker.DirInfo {
 			if _, ok := dirs[p]; !ok {
 				dirs[p] = &walker.DirInfo{Path: p, Depth: depthOf(p)}
 			}
-			dirs[p].SubdirCount++
+			if seenChildren[p] == nil {
+				seenChildren[p] = map[string]struct{}{}
+			}
+			if _, ok := seenChildren[p][d]; !ok {
+				seenChildren[p][d] = struct{}{}
+				dirs[p].SubdirCount++
+			}
 			d = p
 		}
 	}
@@ -90,13 +98,7 @@ func depthOf(path string) int {
 	if path == "" || path == "." {
 		return 0
 	}
-	count := 0
-	for _, c := range path {
-		if c == filepath.Separator || c == '/' {
-			count++
-		}
-	}
-	return count
+	return strings.Count(filepath.ToSlash(path), "/") + 1
 }
 
 func arbRule(t *rapid.T) rules.Rule {
@@ -166,11 +168,12 @@ func violationsKey(v []rules.Violation) string {
 		paths[i] = fmt.Sprintf("%s|%s|%s", vi.Rule, vi.Path, vi.Message)
 	}
 	sort.Strings(paths)
-	result := ""
+	var sb strings.Builder
 	for _, p := range paths {
-		result += p + ";"
+		sb.WriteString(p)
+		sb.WriteByte(';')
 	}
-	return result
+	return sb.String()
 }
 
 func filesForDeepPath(base string, depth int, ext string) []walker.FileInfo {
@@ -182,7 +185,7 @@ func filesForDeepPath(base string, depth int, ext string) []walker.FileInfo {
 	dir := filepath.Join(components...)
 	files = append(files, walker.FileInfo{
 		Path:       filepath.Join(dir, "deep_file"+ext),
-		AbsPath:    "/root/" + filepath.Join(dir, "deep_file"+ext),
+		AbsPath:    filepath.Join("/root", dir, "deep_file"+ext),
 		IsDir:      false,
 		Depth:      depth + 2,
 		ParentPath: dir,
@@ -196,7 +199,7 @@ func filesForManyFiles(dir string, count int, ext string) []walker.FileInfo {
 		name := fmt.Sprintf("file_%d%s", i, ext)
 		files[i] = walker.FileInfo{
 			Path:       filepath.Join(dir, name),
-			AbsPath:    "/root/" + filepath.Join(dir, name),
+			AbsPath:    filepath.Join("/root", dir, name),
 			IsDir:      false,
 			Depth:      1,
 			ParentPath: dir,
@@ -296,7 +299,7 @@ func TestMaxSubdirsNoFalseNegatives(t *testing.T) {
 			subdirName := fmt.Sprintf("sub%d", i)
 			files[i] = walker.FileInfo{
 				Path:       filepath.Join(parentDir, subdirName, "mod"+ext),
-				AbsPath:    "/root/" + filepath.Join(parentDir, subdirName, "mod"+ext),
+				AbsPath:    filepath.Join("/root", parentDir, subdirName, "mod"+ext),
 				IsDir:      false,
 				Depth:      2,
 				ParentPath: filepath.Join(parentDir, subdirName),
@@ -398,7 +401,7 @@ func TestPathBasedLayerRuleIdempotent(t *testing.T) {
 				name := fmt.Sprintf("file_%d.ts", j)
 				files = append(files, walker.FileInfo{
 					Path:       filepath.Join(fmt.Sprintf("layer%d", i), name),
-					AbsPath:    "/root/" + filepath.Join(fmt.Sprintf("layer%d", i), name),
+					AbsPath:    filepath.Join("/root", fmt.Sprintf("layer%d", i), name),
 					IsDir:      false,
 					Depth:      1,
 					ParentPath: fmt.Sprintf("layer%d", i),

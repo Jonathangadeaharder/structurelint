@@ -14,8 +14,8 @@ import (
 func arbViolation(t *rapid.T) rules.Violation {
 	return rules.Violation{
 		Rule:    rapid.StringMatching(`[a-z][a-z-]*[a-z]`).Draw(t, "rule"),
-		Path:    rapid.StringMatching(`[a-z]+/[a-z]+\\.go`).Draw(t, "path"),
-		Message: rapid.StringOfN(rapid.RuneFrom([]rune("abcdefghijklmnopqrstuvwxyz ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.,:;")), 1, 80, -1).Draw(t, "message"),
+		Path:    rapid.StringMatching(`[a-z]+/[a-z]+\.go`).Draw(t, "path"),
+		Message: rapid.StringOfN(rapid.RuneFrom([]rune("abcdefghijklmnopqrstuvwxyz ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.,:;\"\\<>&\t\r")), 1, 80, -1).Draw(t, "message"),
 	}
 }
 
