@@ -160,24 +160,37 @@ func (r *TestLocationRule) hasAdjacentSource(testPath string, sourceFiles map[st
 func (r *TestLocationRule) getSourceFileName(testFileName, ext string) string {
 	nameWithoutExt := strings.TrimSuffix(testFileName, ext)
 
-	// Remove common test patterns
-	patterns := map[string]string{
-		"_test":  "",
-		".test":  "",
-		".spec":  "",
-		"_spec":  "",
-		"Test":   "",
-		"test_":  "",
+	// Remove common test patterns iteratively to handle compound suffixes
+	// (e.g., formatter_pbt_test → formatter_pbt → formatter)
+	patterns := []string{
+		"_test",
+		"_pbt",
+		"_bench",
+		"_fuzz",
+		".test",
+		".spec",
+		"_spec",
+		"Test",
+		"test_",
 	}
 
-	for pattern, replacement := range patterns {
-		if strings.Contains(nameWithoutExt, pattern) {
-			nameWithoutExt = strings.ReplaceAll(nameWithoutExt, pattern, replacement)
-			return nameWithoutExt + ext
+	changed := true
+	for changed {
+		changed = false
+		for _, pattern := range patterns {
+			if strings.Contains(nameWithoutExt, pattern) {
+				nameWithoutExt = strings.ReplaceAll(nameWithoutExt, pattern, "")
+				changed = true
+				break
+			}
 		}
 	}
 
-	return ""
+	if nameWithoutExt == "" {
+		return ""
+	}
+
+	return nameWithoutExt + ext
 }
 
 // matchesFilePattern checks if a file matches any of the configured patterns
