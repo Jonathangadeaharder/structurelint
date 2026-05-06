@@ -16,7 +16,7 @@ jobs:
   # Linting with golangci-lint
   lint:
     name: Lint Code
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
 
     steps:
       - name: Checkout code
@@ -36,7 +36,7 @@ jobs:
   # Code formatting check
   format:
     name: Check Formatting
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
 
     steps:
       - name: Checkout code
@@ -61,7 +61,7 @@ jobs:
   # Static analysis
   staticcheck:
     name: Static Analysis
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
 
     steps:
       - name: Checkout code
@@ -81,7 +81,7 @@ jobs:
   # Test coverage check
   coverage:
     name: Test Coverage
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
 
     steps:
       - name: Checkout code
@@ -107,7 +107,7 @@ jobs:
   # Complexity analysis
   complexity:
     name: Complexity Analysis
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
 
     steps:
       - name: Checkout code

@@ -15,7 +15,7 @@ on:
 jobs:
   test:
     name: Run Tests
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
 
     strategy:
       matrix:
@@ -60,7 +60,7 @@ jobs:
   # Integration tests (optional but recommended)
   integration:
     name: Integration Tests
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     needs: test  # Run after unit tests pass
 
     steps:

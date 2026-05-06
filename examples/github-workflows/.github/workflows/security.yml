@@ -19,7 +19,7 @@ jobs:
   # CodeQL analysis for security vulnerabilities
   codeql:
     name: CodeQL Analysis
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     permissions:
       actions: read
       contents: read
@@ -55,7 +55,7 @@ jobs:
   # Dependency vulnerability scanning
   dependency-scan:
     name: Dependency Vulnerability Scan
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
 
     steps:
       - name: Checkout code
@@ -70,7 +70,7 @@ jobs:
   # Secret scanning (using Trivy)
   secret-scan:
     name: Secret Scanning
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
 
     steps:
       - name: Checkout code
@@ -88,7 +88,7 @@ jobs:
   # SAST (Static Application Security Testing)
   sast:
     name: Static Security Analysis
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
 
     steps:
       - name: Checkout code
