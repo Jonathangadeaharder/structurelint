@@ -2,6 +2,7 @@ package fuzz
 
 import (
 	"encoding/json"
+	"encoding/xml"
 	"testing"
 
 	"github.com/Jonathangadeaharder/structurelint/internal/output"
@@ -85,6 +86,11 @@ func FuzzJUnitFormatter(f *testing.F) {
 		if len(result) == 0 && len(violations) > 0 {
 			t.Error("non-empty violations produced empty JUnit output")
 		}
+
+		var parsed output.JUnitTestSuites
+		if err := xml.Unmarshal([]byte(result), &parsed); err != nil {
+			t.Fatalf("JUnitFormatter produced invalid XML: %v", err)
+		}
 	})
 }
 
@@ -144,6 +150,19 @@ func FuzzJSONFormatterManyViolations(f *testing.F) {
 
 		if !json.Valid([]byte(result)) {
 			t.Error("produced invalid JSON")
+		}
+
+		var parsed output.JSONOutput
+		if err := json.Unmarshal([]byte(result), &parsed); err != nil {
+			t.Fatalf("failed to unmarshal JSON output: %v", err)
+		}
+
+		if parsed.Violations != count {
+			t.Errorf("violations count: got %d, want %d", parsed.Violations, count)
+		}
+
+		if len(parsed.Results) != count {
+			t.Errorf("results count: got %d, want %d", len(parsed.Results), count)
 		}
 	})
 }

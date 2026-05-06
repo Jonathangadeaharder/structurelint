@@ -3,8 +3,10 @@ package fuzz
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
+	"github.com/Jonathangadeaharder/structurelint/internal/parser"
 	"github.com/Jonathangadeaharder/structurelint/internal/rules"
 	"github.com/Jonathangadeaharder/structurelint/internal/walker"
 )
@@ -50,16 +52,32 @@ func FuzzRuleShouldIgnoreFile(f *testing.F) {
 		f.Add(s.path, s.content, s.ruleName)
 	}
 	f.Fuzz(func(t *testing.T, path, content, ruleName string) {
+		if strings.Contains(path, "\x00") || strings.Contains(content, "\x00") {
+			t.Skip()
+		}
+
 		tmpDir := t.TempDir()
-		testFile := filepath.Join(tmpDir, path)
+		cleanPath := filepath.Clean(path)
+		if filepath.IsAbs(cleanPath) || cleanPath == ".." ||
+			strings.HasPrefix(cleanPath, ".."+string(os.PathSeparator)) {
+			t.Skip()
+		}
+		testFile := filepath.Join(tmpDir, cleanPath)
+		if rel, err := filepath.Rel(tmpDir, testFile); err != nil || strings.HasPrefix(rel, "..") {
+			t.Skip()
+		}
+		if err := os.MkdirAll(filepath.Dir(testFile), 0o755); err != nil {
+			t.Skip()
+		}
 		if err := os.WriteFile(testFile, []byte(content), 0644); err != nil {
 			return
 		}
 
 		file := walker.FileInfo{
-			Path:    path,
-			AbsPath: testFile,
-			IsDir:   false,
+			Path:       path,
+			AbsPath:    testFile,
+			IsDir:      false,
+			Directives: parser.ParseDirectives(testFile),
 		}
 
 		shouldIgnore, _ := rules.ShouldIgnoreFile(file, ruleName)

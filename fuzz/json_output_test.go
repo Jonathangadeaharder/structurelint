@@ -36,6 +36,8 @@ func FuzzJSONOutput(f *testing.F) {
 		}
 
 		var parsed output.JSONOutput
-		json.Unmarshal([]byte(result), &parsed)
+		if err := json.Unmarshal([]byte(result), &parsed); err != nil {
+			t.Fatalf("formatter produced invalid JSON: %v", err)
+		}
 	})
 }
