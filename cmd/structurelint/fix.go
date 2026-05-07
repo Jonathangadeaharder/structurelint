@@ -301,8 +301,8 @@ Examples:
   structurelint fix --auto
     Automatically apply all safe fixes
 
-  structurelint fix --rule github-workflows
-    Only fix violations from the github-workflows rule
+  structurelint fix --rule naming-convention
+    Only fix violations from the naming-convention rule
 
   structurelint fix --auto --rule naming
     Automatically fix all naming convention violations

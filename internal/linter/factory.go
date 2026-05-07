@@ -6,9 +6,7 @@ import (
 	"github.com/Jonathangadeaharder/structurelint/internal/config"
 	"github.com/Jonathangadeaharder/structurelint/internal/graph"
 	"github.com/Jonathangadeaharder/structurelint/internal/rules"
-	rulesci "github.com/Jonathangadeaharder/structurelint/internal/rules/ci"
 	rulesgraph "github.com/Jonathangadeaharder/structurelint/internal/rules/graph"
-	"github.com/Jonathangadeaharder/structurelint/internal/rules/quality"
 	rulestest "github.com/Jonathangadeaharder/structurelint/internal/rules/test"
 	"github.com/Jonathangadeaharder/structurelint/internal/walker"
 
@@ -42,22 +40,31 @@ func (f *RuleFactory) CreateRules(files []walker.FileInfo, dirs map[string]*walk
 
 	var rulesList []rules.Rule
 	rulesList = append(rulesList, f.createRegistryRules()...)
-	rulesList = append(rulesList, f.createComplexityRules()...)
 	rulesList = append(rulesList, f.createGraphDependentRules()...)
 	rulesList = append(rulesList, f.createPathBasedLayerRules()...)
 	rulesList = append(rulesList, f.createTestValidationRules()...)
-	rulesList = append(rulesList, f.createContentRules()...)
-	rulesList = append(rulesList, f.createCIRules()...)
-	rulesList = append(rulesList, f.createLinterConfigRules()...)
 
 	return rulesList, nil
 }
 
 func (f *RuleFactory) checkBreakingChanges() error {
-	if _, ok := f.config.Rules["max-cyclomatic-complexity"]; ok {
-		return fmt.Errorf("BREAKING CHANGE: 'max-cyclomatic-complexity' rule has been removed.\n" +
-			"Use 'max-cognitive-complexity' instead - it's scientifically superior (r=0.54 vs cyclomatic's weak correlation).\n" +
-			"See: https://github.com/Jonathangadeaharder/structurelint#phase-5-evidence-based-metrics")
+	removed := map[string]string{
+		"max-cyclomatic-complexity": "Function-level complexity is out of scope for structurelint. Use a language-specific tool (gocognit, ruff, eslint complexity).",
+		"max-cognitive-complexity":  "Function-level complexity is out of scope. Use gocognit / ruff / eslint complexity.",
+		"max-halstead-effort":       "Function-level complexity is out of scope. Use a language-specific complexity tool.",
+		"github-workflows":          "CI YAML linting is out of scope. Use actionlint, zizmor, or yamllint.",
+		"linter-config":             "Linter presence checks are out of scope. Use a presence rule via file-existence.",
+		"contract-framework":        "Dependency-presence checks are out of scope. Encode requirements in a presence rule via file-existence.",
+		"api-spec":                  "Replace with file-existence: `api/openapi.yaml: exists:1`.",
+		"spec-adr-enforcement":      "Replace with file-existence + naming-convention.",
+		"file-content":              "Template enforcement is out of scope. Use copier / cookiecutter.",
+		"disallow-unused-exports":   "Cannot be done correctly without per-language symbol resolution. Use ts-prune / knip / ruff F401 / deadcode.",
+		"property-enforcement":      "Replaced by 'disallow-import-cycles' (cycle detection only). max_dependencies_per_file / max_dependency_depth dropped — arbitrary metrics. forbidden_patterns is covered by 'path-based-layers' forbiddenPaths.",
+	}
+	for ruleName, advice := range removed {
+		if _, ok := f.config.Rules[ruleName]; ok {
+			return fmt.Errorf("rule '%s' has been removed in this version. %s", ruleName, advice)
+		}
 	}
 	return nil
 }
@@ -99,58 +106,6 @@ func (f *RuleFactory) normalizeConfig(config interface{}) map[string]interface{}
 	}
 }
 
-func (f *RuleFactory) createComplexityRules() []rules.Rule {
-	var rulesList []rules.Rule
-
-	if rule := f.createCognitiveComplexityRule(); rule != nil {
-		rulesList = append(rulesList, rule)
-	}
-	if rule := f.createHalsteadEffortRule(); rule != nil {
-		rulesList = append(rulesList, rule)
-	}
-
-	return rulesList
-}
-
-func (f *RuleFactory) createCognitiveComplexityRule() rules.Rule {
-	config, ok := f.config.Rules["max-cognitive-complexity"]
-	if !ok || !f.isRuleEnabled("max-cognitive-complexity") {
-		return nil
-	}
-	complexityMap, ok := config.(map[string]interface{})
-	if !ok {
-		return nil
-	}
-	max := f.getIntFromMap(complexityMap, "max")
-	if max <= 0 {
-		return nil
-	}
-	testMax := f.getIntFromMap(complexityMap, "test-max")
-	filePatterns := f.getStringSliceFromMap(complexityMap, "file-patterns")
-	rule := quality.NewMaxCognitiveComplexityRule(max, filePatterns)
-	if testMax > 0 {
-		rule = rule.WithTestMax(testMax)
-	}
-	return rule
-}
-
-func (f *RuleFactory) createHalsteadEffortRule() rules.Rule {
-	config, ok := f.config.Rules["max-halstead-effort"]
-	if !ok || !f.isRuleEnabled("max-halstead-effort") {
-		return nil
-	}
-	effortMap, ok := config.(map[string]interface{})
-	if !ok {
-		return nil
-	}
-	max := f.getFloatFromMap(effortMap, "max")
-	if max <= 0 {
-		return nil
-	}
-	filePatterns := f.getStringSliceFromMap(effortMap, "file-patterns")
-	return quality.NewMaxHalsteadEffortRule(max, filePatterns)
-}
-
 func (f *RuleFactory) createGraphDependentRules() []rules.Rule {
 	if f.importGraph == nil {
 		return nil
@@ -161,12 +116,6 @@ func (f *RuleFactory) createGraphDependentRules() []rules.Rule {
 		rulesList = append(rulesList, rule)
 	}
 	if rule := f.createOrphanedFilesRule(); rule != nil {
-		rulesList = append(rulesList, rule)
-	}
-	if rule := f.createUnusedExportsRule(); rule != nil {
-		rulesList = append(rulesList, rule)
-	}
-	if rule := f.createPropertyEnforcementRule(); rule != nil {
 		rulesList = append(rulesList, rule)
 	}
 	return rulesList
@@ -201,34 +150,6 @@ func (f *RuleFactory) createOrphanedFilesRule() rules.Rule {
 		rule = rule.WithEntryPointPatterns(entryPointPatterns)
 	}
 	return rule
-}
-
-func (f *RuleFactory) createUnusedExportsRule() rules.Rule {
-	if _, ok := f.config.Rules["disallow-unused-exports"]; !ok {
-		return nil
-	}
-	if !f.isRuleEnabled("disallow-unused-exports") {
-		return nil
-	}
-	return rulesgraph.NewUnusedExportsRule(f.importGraph)
-}
-
-func (f *RuleFactory) createPropertyEnforcementRule() rules.Rule {
-	config, ok := f.config.Rules["property-enforcement"]
-	if !ok || !f.isRuleEnabled("property-enforcement") {
-		return nil
-	}
-	configMap, ok := config.(map[string]interface{})
-	if !ok {
-		return nil
-	}
-	enforcementConfig := rulesgraph.PropertyEnforcementConfig{
-		MaxDependenciesPerFile: f.getIntFromMap(configMap, "max_dependencies_per_file"),
-		MaxDependencyDepth:     f.getIntFromMap(configMap, "max_dependency_depth"),
-		DetectCycles:           f.getBoolFromMap(configMap, "detect_cycles"),
-		ForbiddenPatterns:      f.getStringSliceFromMap(configMap, "forbidden_patterns"),
-	}
-	return rulesgraph.NewPropertyEnforcementRule(f.importGraph, enforcementConfig)
 }
 
 func (f *RuleFactory) createPathBasedLayerRules() []rules.Rule {
@@ -310,152 +231,6 @@ func (f *RuleFactory) createTestValidationRules() []rules.Rule {
 	return rulesList
 }
 
-func (f *RuleFactory) createContentRules() []rules.Rule {
-	fileContent, ok := f.config.Rules["file-content"]
-	if !ok || !f.isRuleEnabled("file-content") {
-		return nil
-	}
-
-	contentMap, ok := fileContent.(map[string]interface{})
-	if !ok {
-		return nil
-	}
-
-	templates := f.getStringMapFromMap(contentMap, "templates")
-	templateDir := f.getStringFromMap(contentMap, "template-dir")
-
-	if len(templates) == 0 || templateDir == "" {
-		return nil
-	}
-
-	rootPath := f.rootDir
-	if rootPath == "" {
-		rootPath = "."
-	}
-
-	return []rules.Rule{rules.NewFileContentRule(templates, templateDir, rootPath)}
-}
-
-func (f *RuleFactory) createCIRules() []rules.Rule {
-	var rulesList []rules.Rule
-
-	if workflowConfig, ok := f.config.Rules["github-workflows"]; ok {
-		if f.isRuleEnabled("github-workflows") {
-			if configMap, ok := workflowConfig.(map[string]interface{}); ok {
-				rule := rulesci.NewGitHubWorkflowsRule(rulesci.GitHubWorkflowsRule{
-					RequireTests:           f.getBoolFromMap(configMap, "require-tests"),
-					RequireSecurity:        f.getBoolFromMap(configMap, "require-security"),
-					RequireQuality:         f.getBoolFromMap(configMap, "require-quality"),
-					RequireLogCommits:      f.getBoolFromMap(configMap, "require-log-commits"),
-					RequireRepomixArtifact: f.getBoolFromMap(configMap, "require-repomix-artifact"),
-					RequiredJobs:           f.getStringSliceFromMap(configMap, "required-jobs"),
-					RequiredTriggers:       f.getStringSliceFromMap(configMap, "required-triggers"),
-					AllowMissing:           f.getStringSliceFromMap(configMap, "allow-missing"),
-				})
-				rulesList = append(rulesList, rule)
-			}
-		}
-	}
-
-	return rulesList
-}
-
-func (f *RuleFactory) createLinterConfigRules() []rules.Rule {
-	var rulesList []rules.Rule
-	if rule := f.createLinterConfigRule(); rule != nil {
-		rulesList = append(rulesList, rule)
-	}
-	if rule := f.createAPISpecRule(); rule != nil {
-		rulesList = append(rulesList, rule)
-	}
-	if rule := f.createContractFrameworkRule(); rule != nil {
-		rulesList = append(rulesList, rule)
-	}
-	if rule := f.createSpecADRRule(); rule != nil {
-		rulesList = append(rulesList, rule)
-	}
-	return rulesList
-}
-
-func (f *RuleFactory) createLinterConfigRule() rules.Rule {
-	config, ok := f.config.Rules["linter-config"]
-	if !ok || !f.isRuleEnabled("linter-config") {
-		return nil
-	}
-	configMap, ok := config.(map[string]interface{})
-	if !ok {
-		return nil
-	}
-	return rulesci.NewLinterConfigRule(rulesci.LinterConfigRule{
-		RequirePython:     f.getBoolFromMap(configMap, "require-python"),
-		RequireTypeScript: f.getBoolFromMap(configMap, "require-typescript"),
-		RequireGo:         f.getBoolFromMap(configMap, "require-go"),
-		RequireHTML:       f.getBoolFromMap(configMap, "require-html"),
-		RequireCSS:        f.getBoolFromMap(configMap, "require-css"),
-		RequireSQL:        f.getBoolFromMap(configMap, "require-sql"),
-		RequireRust:       f.getBoolFromMap(configMap, "require-rust"),
-		CustomLinters:     f.getStringSliceFromMap(configMap, "custom-linters"),
-	})
-}
-
-func (f *RuleFactory) createAPISpecRule() rules.Rule {
-	config, ok := f.config.Rules["api-spec"]
-	if !ok || !f.isRuleEnabled("api-spec") {
-		return nil
-	}
-	configMap, ok := config.(map[string]interface{})
-	if !ok {
-		return nil
-	}
-	return rulesci.NewOpenAPIAsyncAPIRule(rulesci.OpenAPIAsyncAPIRule{
-		RequireOpenAPI:  f.getBoolFromMap(configMap, "require-openapi"),
-		RequireAsyncAPI: f.getBoolFromMap(configMap, "require-asyncapi"),
-		CustomSpecs:     f.getStringSliceFromMap(configMap, "custom-specs"),
-	})
-}
-
-func (f *RuleFactory) createContractFrameworkRule() rules.Rule {
-	config, ok := f.config.Rules["contract-framework"]
-	if !ok || !f.isRuleEnabled("contract-framework") {
-		return nil
-	}
-	configMap, ok := config.(map[string]interface{})
-	if !ok {
-		return nil
-	}
-	return rulesci.NewContractFrameworkRule(rulesci.ContractFrameworkRule{
-		RequirePython:     f.getBoolFromMap(configMap, "require-python"),
-		RequireRust:       f.getBoolFromMap(configMap, "require-rust"),
-		RequireTypeScript: f.getBoolFromMap(configMap, "require-typescript"),
-		RequireGo:         f.getBoolFromMap(configMap, "require-go"),
-		RequireJava:       f.getBoolFromMap(configMap, "require-java"),
-		RequireCSharp:     f.getBoolFromMap(configMap, "require-csharp"),
-		RequireCPlusPlus:  f.getBoolFromMap(configMap, "require-cplusplus"),
-		CustomFrameworks:  f.getStringSliceFromMap(configMap, "custom-frameworks"),
-	})
-}
-
-func (f *RuleFactory) createSpecADRRule() rules.Rule {
-	config, ok := f.config.Rules["spec-adr-enforcement"]
-	if !ok || !f.isRuleEnabled("spec-adr-enforcement") {
-		return nil
-	}
-	configMap, ok := config.(map[string]interface{})
-	if !ok {
-		return nil
-	}
-	return rulesci.NewSpecADRRule(rulesci.SpecADRRule{
-		RequireSpecFolder:   f.getBoolFromMap(configMap, "require-spec-folder"),
-		RequireADRFolder:    f.getBoolFromMap(configMap, "require-adr-folder"),
-		EnforceSpecTemplate: f.getBoolFromMap(configMap, "enforce-spec-template"),
-		EnforceADRTemplate:  f.getBoolFromMap(configMap, "enforce-adr-template"),
-		SpecFolderPaths:     f.getStringSliceFromMap(configMap, "spec-folder-paths"),
-		ADRFolderPaths:      f.getStringSliceFromMap(configMap, "adr-folder-paths"),
-		SpecFilePatterns:    f.getStringSliceFromMap(configMap, "spec-file-patterns"),
-		ADRFilePatterns:     f.getStringSliceFromMap(configMap, "adr-file-patterns"),
-	})
-}
-
 func (f *RuleFactory) isRuleEnabled(ruleName string) bool {
 	if f.config == nil || f.config.Rules == nil {
 		return false
@@ -510,35 +285,12 @@ func (f *RuleFactory) getIntFromMap(m map[string]interface{}, key string) int {
 	return 0
 }
 
-func (f *RuleFactory) getFloatFromMap(m map[string]interface{}, key string) float64 {
-	if val, ok := m[key].(float64); ok {
-		return val
-	}
-	if val, ok := m[key].(int); ok {
-		return float64(val)
-	}
-	return 0
-}
-
 func (f *RuleFactory) getStringSliceFromMap(m map[string]interface{}, key string) []string {
 	if val, ok := m[key].([]interface{}); ok {
 		result := make([]string, 0, len(val))
 		for _, v := range val {
 			if strVal, ok := v.(string); ok {
 				result = append(result, strVal)
-			}
-		}
-		return result
-	}
-	return nil
-}
-
-func (f *RuleFactory) getStringMapFromMap(m map[string]interface{}, key string) map[string]string {
-	if val, ok := m[key].(map[string]interface{}); ok {
-		result := make(map[string]string)
-		for k, v := range val {
-			if strVal, ok := v.(string); ok {
-				result[k] = strVal
 			}
 		}
 		return result

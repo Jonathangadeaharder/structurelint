@@ -3,7 +3,9 @@ package walker
 import (
 	"io/fs"
 	"path/filepath"
+	"regexp"
 	"strings"
+	"sync"
 
 	"github.com/Jonathangadeaharder/structurelint/internal/parser"
 )
@@ -13,6 +15,7 @@ type FileInfo struct {
 	Path       string             // Relative path from root
 	AbsPath    string             // Absolute path
 	IsDir      bool               // Whether this is a directory
+	IsSymlink  bool               // Whether this entry is a symlink
 	Depth      int                // Nesting depth from root
 	ParentPath string             // Path of parent directory
 	Directives []parser.Directive // Parsed structurelint directives from the file
@@ -105,6 +108,7 @@ func (w *Walker) processPath(relPath, absPath string, d fs.DirEntry) error {
 		Path:       relPath,
 		AbsPath:    absPath,
 		IsDir:      d.IsDir(),
+		IsSymlink:  d.Type()&fs.ModeSymlink != 0,
 		Depth:      depth,
 		ParentPath: parentPath,
 		Directives: directives,
@@ -208,69 +212,103 @@ func (w *Walker) GetMaxDepth() int {
 	return maxDepth
 }
 
-// MatchesPattern checks if a path matches a glob pattern
+// MatchesPattern checks if a path matches a glob pattern.
+// Supports `*` (no slash crossing), `?`, `[...]`, and `**` (any path).
+// Trailing `/` on the pattern is treated as a directory prefix match.
 func MatchesPattern(path, pattern string) bool {
-	// Handle directory patterns (ending with /)
+	path = filepath.ToSlash(path)
+	pattern = filepath.ToSlash(pattern)
+
 	if strings.HasSuffix(pattern, "/") {
-		pattern = strings.TrimSuffix(pattern, "/")
-		// For directory patterns, check if the path starts with the pattern
-		if strings.HasPrefix(path, pattern) {
+		trimmed := strings.TrimSuffix(pattern, "/")
+		if path == trimmed || strings.HasPrefix(path, trimmed+"/") {
+			return true
+		}
+		if re := patternRegexp(trimmed); re != nil && re.MatchString(path) {
 			return true
 		}
 	}
 
-	// Use filepath.Match for glob patterns
-	matched, err := filepath.Match(pattern, filepath.Base(path))
-	if err == nil && matched {
+	if path == pattern {
 		return true
 	}
 
-	// For patterns with path separators, try matching the full path
-	if strings.Contains(pattern, "/") {
-		matched, err := filepath.Match(pattern, path)
+	re := patternRegexp(pattern)
+	if re != nil && re.MatchString(path) {
+		return true
+	}
+
+	if !strings.Contains(pattern, "**") && !strings.Contains(pattern, "/") {
+		base := filepath.Base(path)
+		matched, err := filepath.Match(pattern, base)
 		if err == nil && matched {
 			return true
 		}
-
-		// Handle ** for recursive matching
-		if strings.Contains(pattern, "**") {
-			return matchGlob(path, pattern)
-		}
 	}
-
 	return false
 }
 
-// matchGlob provides more sophisticated glob matching including **
-func matchGlob(path, pattern string) bool {
-	// Simple implementation of ** matching
-	// This is a basic version; production would use a library like doublestar
-	parts := strings.Split(pattern, "**")
-	if len(parts) == 1 {
-		matched, _ := filepath.Match(pattern, path)
-		return matched
+var walkerGlobCache sync.Map
+
+func patternRegexp(pattern string) *regexp.Regexp {
+	if v, ok := walkerGlobCache.Load(pattern); ok {
+		return v.(*regexp.Regexp)
 	}
-
-	// For patterns like "src/**/*.ts"
-	if len(parts) == 2 {
-		prefix := strings.TrimSuffix(parts[0], "/")
-		suffix := strings.TrimPrefix(parts[1], "/")
-
-		// Check prefix
-		if prefix != "" && !strings.HasPrefix(path, prefix) {
-			return false
-		}
-
-		// Check suffix
-		if suffix != "" {
-			matched, _ := filepath.Match(suffix, filepath.Base(path))
-			if !matched {
-				return false
+	var b strings.Builder
+	b.WriteString("^")
+	i := 0
+	for i < len(pattern) {
+		switch c := pattern[i]; c {
+		case '*':
+			if i+1 < len(pattern) && pattern[i+1] == '*' {
+				if i+2 < len(pattern) && pattern[i+2] == '/' {
+					b.WriteString("(?:.*/)?")
+					i += 3
+					continue
+				}
+				if i > 0 && pattern[i-1] == '/' {
+					s := b.String()
+					b.Reset()
+					b.WriteString(strings.TrimSuffix(s, "/"))
+					b.WriteString("(?:/.*)?")
+					i += 2
+					continue
+				}
+				b.WriteString(".*")
+				i += 2
+			} else {
+				b.WriteString("[^/]*")
+				i++
 			}
+		case '?':
+			b.WriteString("[^/]")
+			i++
+		case '.', '+', '(', ')', '|', '^', '$', '{', '}', '\\':
+			b.WriteByte('\\')
+			b.WriteByte(c)
+			i++
+		case '[':
+			j := i + 1
+			for j < len(pattern) && pattern[j] != ']' {
+				j++
+			}
+			if j < len(pattern) {
+				b.WriteString(pattern[i : j+1])
+				i = j + 1
+			} else {
+				b.WriteString("\\[")
+				i++
+			}
+		default:
+			b.WriteByte(c)
+			i++
 		}
-
-		return true
 	}
-
-	return false
+	b.WriteString("$")
+	re, err := regexp.Compile(b.String())
+	if err != nil {
+		return nil
+	}
+	walkerGlobCache.Store(pattern, re)
+	return re
 }
