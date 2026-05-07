@@ -86,6 +86,26 @@ func init() {
 		}
 		return nil, fmt.Errorf("invalid configuration")
 	})
+
+	rules.Register("case-conflicts", func(_ *rules.RuleContext) (rules.Rule, error) {
+		return NewCaseConflictsRule(), nil
+	})
+
+	rules.Register("disallow-empty-dirs", func(_ *rules.RuleContext) (rules.Rule, error) {
+		return NewEmptyDirsRule(), nil
+	})
+
+	rules.Register("disallow-symlinks", func(_ *rules.RuleContext) (rules.Rule, error) {
+		return NewSymlinksRule(), nil
+	})
+
+	rules.Register("disallow-deep-relative-imports", func(ctx *rules.RuleContext) (rules.Rule, error) {
+		max := 3
+		if v, ok := ctx.GetInt("max-parents"); ok && v > 0 {
+			max = v
+		}
+		return NewDeepRelativeImportsRule(max), nil
+	})
 }
 
 // parseMaxDepthOverrides accepts:

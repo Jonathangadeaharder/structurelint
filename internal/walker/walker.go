@@ -15,6 +15,7 @@ type FileInfo struct {
 	Path       string             // Relative path from root
 	AbsPath    string             // Absolute path
 	IsDir      bool               // Whether this is a directory
+	IsSymlink  bool               // Whether this entry is a symlink
 	Depth      int                // Nesting depth from root
 	ParentPath string             // Path of parent directory
 	Directives []parser.Directive // Parsed structurelint directives from the file
@@ -107,6 +108,7 @@ func (w *Walker) processPath(relPath, absPath string, d fs.DirEntry) error {
 		Path:       relPath,
 		AbsPath:    absPath,
 		IsDir:      d.IsDir(),
+		IsSymlink:  d.Type()&fs.ModeSymlink != 0,
 		Depth:      depth,
 		ParentPath: parentPath,
 		Directives: directives,
