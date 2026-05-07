@@ -92,3 +92,19 @@ func TestMaxDepthRule_WhenGettingName(t *testing.T) {
 		t.Errorf("Name() = %v, want max-depth", got)
 	}
 }
+
+func TestMaxDepthRule_PerGlobOverrides(t *testing.T) {
+	files := []walker.FileInfo{
+		{Path: "src/app.ts", Depth: 2},
+		{Path: "src/routes/admin/dashboard/settings/+page.svelte", Depth: 6},
+		{Path: "src/lib/foo/bar/baz/qux.ts", Depth: 6},
+	}
+	rule := NewMaxDepthRuleWithOverrides(4, []MaxDepthOverride{
+		{Pattern: "src/routes/**", Max: 8},
+	})
+	v := rule.Check(files, nil)
+
+	if len(v) != 1 || v[0].Path != "src/lib/foo/bar/baz/qux.ts" {
+		t.Errorf("expected one violation on src/lib/..., got %+v", v)
+	}
+}
