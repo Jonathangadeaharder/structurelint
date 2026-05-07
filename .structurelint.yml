@@ -8,7 +8,6 @@ exclude:
   - examples/**
 
 rules:
-  # Phase 0: Basic filesystem rules
   max-depth:
     max: 5
 
@@ -16,22 +15,8 @@ rules:
     max: 40
 
   max-subdirs:
-    max: 20  # internal/ has 15 subdirs (after Phase 4 & 5), allow room for growth
+    max: 20
 
-  # Phase 5: Evidence-Based Complexity Metrics
-  max-cognitive-complexity:
-    max: 40
-    file-patterns:
-      - "**/*.go"
-
-  max-halstead-effort:
-    max: 50000
-    file-patterns:
-      - "**/*.go"
-
-  # README.md Documentation Requirements
-  # Every directory is like a building lobby - it needs a directory/guide
-  # Format: "filename": "exists:count"
   file-existence:
     "README.md": "exists:1"
 
@@ -39,135 +24,67 @@ rules:
     - "*.tmp"
     - "*.bak"
     - ".DS_Store"
-    # Markdown Documentation Policy:
-    # - README.md files: Required in every directory (see file-existence rule)
-    # - Root-level exceptions: README.md, CONTRIBUTING.md, LICENSE.md
-    # - All other .md files: Must be in docs/ folder
-    # Disallow .md files in subdirectories, except README.md
+    # README.md required everywhere; other .md only allowed under docs/ or root.
     - "internal/**/*.md"
     - "cmd/**/*.md"
     - "examples/**/*.md"
-    - "!**/README.md"  # Allow README.md files everywhere
+    - "!**/README.md"
 
-  # Phase 3: Test File Validation
-  # Files can use @structurelint:no-test directive to declare they don't need tests
   test-adjacency:
-    pattern: "adjacent"              # Tests next to source code (Go convention)
+    pattern: "adjacent"
     file-patterns:
       - "**/*.go"
     exemptions:
-      - "cmd/**/*.go"                       # Entry points don't need tests
-      - "**/*_gen.go"                       # Generated files
-      - "**/*.py"                           # Exclude Python files (no source to test)
-      - "internal/clones/**/*.go"           # POC clone detection (tests coming in Phase 3)
-      - "internal/autofix/*.go"             # Auto-fix engine (tested via integration)
-      - "internal/config/*.go"              # Config package (tested via config tests)
-      - "internal/linter/*.go"              # Linter package (tested via linter tests)
-      - "internal/output/*.go"              # Output formatters (integration tested)
-      - "internal/parser/*.go"              # Parser (tested via parser tests)
-      - "internal/plugin/*.go"              # Plugin system (tested via integration)
-      - "internal/tui/*.go"                 # TUI (manual testing)
-      - "internal/scaffold/*.go"            # Scaffold (tested via integration)
-      - "internal/init/*.go"                # Init command (tested via integration)
-      - "internal/lang/*.go"                # Language detection (tested via detector tests)
-      - "internal/graph/*.go"               # Graph (tested via graph tests)
-      - "internal/graph/analysis/*.go"      # Graph analysis
-      - "internal/graph/export/*.go"        # Graph export
-      - "internal/metrics/*.go"             # Metrics (tested via integration)
-      - "internal/walker/*.go"              # Walker (tested via walker tests)
-      - "internal/rules/*.go"               # Base rules package
-      - "internal/rules/ci/*.go"            # CI rules (tested via ci tests)
-      - "internal/rules/graph/*.go"         # Graph rules (tested via graph tests)
-      - "internal/rules/quality/*.go"       # Quality rules (tested via quality tests)
-      - "internal/rules/structure/*.go"     # Structure rules (tested via structure tests)
-      - "internal/rules/test/*.go"          # Test rules (tested via test tests)
-      - "internal/rules/predicate/*.go"     # Predicate rules
-      - "internal/ptest/*.go"                 # PBT shared generators
-      - "fuzz/*.go"                            # Fuzz targets
+      - "cmd/**/*.go"
+      - "**/*_gen.go"
+      - "**/*.py"
+      - "internal/clones/**/*.go"
+      - "internal/autofix/*.go"
+      - "internal/config/*.go"
+      - "internal/linter/*.go"
+      - "internal/output/*.go"
+      - "internal/parser/*.go"
+      - "internal/plugin/*.go"
+      - "internal/tui/*.go"
+      - "internal/scaffold/*.go"
+      - "internal/init/*.go"
+      - "internal/lang/*.go"
+      - "internal/graph/*.go"
+      - "internal/graph/analysis/*.go"
+      - "internal/graph/export/*.go"
+      - "internal/metrics/*.go"
+      - "internal/walker/*.go"
+      - "internal/rules/*.go"
+      - "internal/rules/graph/*.go"
+      - "internal/rules/structure/*.go"
+      - "internal/rules/test/*.go"
+      - "internal/rules/predicate/*.go"
+      - "internal/ptest/*.go"
+      - "fuzz/*.go"
 
   test-location:
-    integration-test-dir: "tests"    # Allow integration tests in tests/ folder
-    allow-adjacent: true             # Allow tests next to source code
-    file-patterns:                   # Explicitly scope to Go test files only
+    integration-test-dir: "tests"
+    allow-adjacent: true
+    file-patterns:
       - "**/*_test.go"
     exemptions:
       - "testdata/**"
-      - "tests/**/*.py"                  # Python test files in tests directory
-      - "**/*_bench_test.go"             # Benchmark tests can be anywhere
+      - "tests/**/*.py"
+      - "**/*_bench_test.go"
       - "internal/linter/init_test.go"
       - "internal/rules/structure/enhanced_violations_test.go"
       - "internal/rules/structure/language_aware_naming_test.go"
-      - "internal/ptest/**"                    # PBT shared generators (no adjacent source)
-      - "fuzz/**"                              # Fuzz targets (no adjacent source)
+      - "internal/ptest/**"
+      - "fuzz/**"
 
-  # Phase 4: File Content Templates
-  # Temporarily disabled AAA enforcement for new Phase 4/5 test files
-  file-content:
-    template-dir: ".structurelint/templates"
-    templates:
-      "**/README.md": "readme"            # Enforce README structure
-      "CONTRIBUTING.md": "contributing"    # Enforce contributing guidelines
-      # "**/*_test.go": "test-gwt-table"    # Enforce GWT naming + AAA for Go tests (supports table-driven)
-
-  # GitHub Workflows Enforcement
-  github-workflows:
-    require-tests: true
-    require-quality: true
-    # required-jobs:  # Disabled because it enforces on ALL workflows
-    #   - "test"
-    #   - "lint"
-
-  # API Specification Enforcement
-  # Enforce OpenAPI for REST endpoints and AsyncAPI for event-driven systems
-  # api-spec:
-  #   require-openapi: true    # Require OpenAPI/Swagger spec when REST endpoints detected
-  #   require-asyncapi: true   # Require AsyncAPI spec when event-driven patterns detected
-  #   custom-specs: []         # Additional custom spec files to recognize
-
-  # Design by Contract Framework Enforcement
-  # Enforce established contract frameworks for better component contracts
-  # contract-framework:
-  #   require-python: true      # Python: icontract or deal
-  #   require-rust: true        # Rust: Native assertions and type system
-  #   require-typescript: true  # TypeScript: Zod for runtime validation
-  #   require-go: true          # Go: gocontracts or standard assertions
-  #   require-java: true        # Java: Jakarta Bean Validation 3.0 (JSR-380)
-  #   require-csharp: true      # C#: Nullable reference types (Code Contracts deprecated)
-  #   require-cplusplus: true   # C++: Native assertions (C++26 contracts in development)
-  #   custom-frameworks: []     # Additional custom frameworks to recognize
-
-  # Specification and ADR (Architecture Decision Record) Enforcement
-  # Enforce documentation structure and templates for specs and ADRs
-  # spec-adr-enforcement:
-  #   require-spec-folder: true          # Require dedicated folder for specifications
-  #   require-adr-folder: true           # Require dedicated folder for ADRs
-  #   enforce-spec-template: true        # Validate specs follow feature specification template
-  #   enforce-adr-template: true         # Validate ADRs follow ADR template
-  #   spec-folder-paths:                 # Accepted locations for specs
-  #     - "docs/specs"
-  #     - "specifications"
-  #   adr-folder-paths:                  # Accepted locations for ADRs
-  #     - "docs/adr"
-  #     - "docs/decisions"
-  #   spec-file-patterns:                # Patterns for spec files
-  #     - "*-spec.md"
-  #     - "feature-*.md"
-  #   adr-file-patterns:                 # Patterns for ADR files
-  #     - "ADR-*.md"
-  #     - "adr-*.md"
-  #     - "*-decision.md"
-
-  # Dependency Property Enforcement
-  # Comprehensive dependency management and analysis
   property-enforcement:
-    detect_cycles: true                      # Detect circular dependencies
-    max_dependencies_per_file: 15            # Limit direct dependencies per file
-    max_dependency_depth: 5                  # Limit dependency chain depth
+    detect_cycles: true
+    max_dependencies_per_file: 15
+    max_dependency_depth: 5
     forbidden_patterns:
-      - "internal/rules/** -> cmd/**"        # Rules should not depend on cmd
-      - "internal/walker/** -> internal/rules/**"  # Walker should not depend on rules
+      - "internal/rules/** -> cmd/**"
+      - "internal/walker/** -> internal/rules/**"
 
-# Phase 1: Architectural layers for Go project
 layers:
   - name: cmd
     path: cmd/**
@@ -177,7 +94,6 @@ layers:
     path: internal/**
     dependsOn: []
 
-# Phase 2: Dead code detection
 entrypoints:
   - cmd/structurelint/main.go
   - "**/*_test.go"

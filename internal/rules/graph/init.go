@@ -21,11 +21,4 @@ func init() {
 		// TODO: Pass entrypoints from context
 		return NewOrphanedFilesRule(ctx.ImportGraph, []string{}), nil
 	})
-
-	rules.Register("disallow-unused-exports", func(ctx *rules.RuleContext) (rules.Rule, error) {
-		if ctx.ImportGraph == nil {
-			return nil, fmt.Errorf("import graph required")
-		}
-		return NewUnusedExportsRule(ctx.ImportGraph), nil
-	})
 }
