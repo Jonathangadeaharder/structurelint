@@ -16,7 +16,6 @@ func TestInitRegistration(t *testing.T) {
 		"disallowed-patterns",
 		"enforce-layer-boundaries",
 		"disallow-orphaned-files",
-		"disallow-unused-exports",
 	}
 
 	for _, name := range expectedRules {

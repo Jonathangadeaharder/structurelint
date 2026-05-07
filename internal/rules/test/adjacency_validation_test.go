@@ -27,9 +27,33 @@ func TestTestAdjacencyRule_Check_Adjacent(t *testing.T) {
 			name:         "Go file without test - violation",
 			filePatterns: []string{"**/*.go"},
 			files: []walker.FileInfo{
-				{Path: "main.go", ParentPath: "", IsDir: false},
+				{Path: "service.go", ParentPath: "", IsDir: false},
 			},
 			wantViolCount: 1,
+		},
+		{
+			name:         "main.go is framework-exempt entrypoint",
+			filePatterns: []string{"**/*.go"},
+			files: []walker.FileInfo{
+				{Path: "main.go", ParentPath: "", IsDir: false},
+			},
+			wantViolCount: 0,
+		},
+		{
+			name:         "SvelteKit +page.svelte is framework-exempt",
+			filePatterns: []string{"**/*.svelte"},
+			files: []walker.FileInfo{
+				{Path: "src/routes/+page.svelte", ParentPath: "src/routes", IsDir: false},
+			},
+			wantViolCount: 0,
+		},
+		{
+			name:         "TS declaration files are framework-exempt",
+			filePatterns: []string{"**/*.ts"},
+			files: []walker.FileInfo{
+				{Path: "types/global.d.ts", ParentPath: "types", IsDir: false},
+			},
+			wantViolCount: 0,
 		},
 		{
 			name:         "TypeScript file with test - no violation",

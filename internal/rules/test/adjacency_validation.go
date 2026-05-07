@@ -18,6 +18,47 @@ type TestAdjacencyRule struct {
 	Exemptions   []string // Patterns to exempt from checking
 }
 
+// frameworkExemptionPatterns are paths that the test-adjacency rule should
+// never flag, regardless of file-pattern config. They are typed by framework
+// convention or filesystem role and don't carry logic that benefits from
+// adjacent unit tests.
+//
+// Edit with restraint — anything added here is silently exempt for every
+// project. Patterns are matched via rules.MatchesGlobPattern.
+var frameworkExemptionPatterns = []string{
+	"**/+page.svelte",
+	"**/+page.ts",
+	"**/+page.server.ts",
+	"**/+layout.svelte",
+	"**/+layout.ts",
+	"**/+layout.server.ts",
+	"**/+error.svelte",
+	"**/+server.ts",
+	"**/page.tsx",
+	"**/page.ts",
+	"**/layout.tsx",
+	"**/layout.ts",
+	"**/error.tsx",
+	"**/loading.tsx",
+	"**/route.ts",
+	"**/route.tsx",
+	"**/middleware.ts",
+	"**/*.d.ts",
+	"**/*.types.ts",
+	"**/*.config.ts",
+	"**/*.config.js",
+	"**/*.config.mjs",
+	"**/vite.config.*",
+	"**/vitest.config.*",
+	"**/playwright.config.*",
+	"**/svelte.config.*",
+	"**/tsconfig*.json",
+	"**/__init__.py",
+	"**/conftest.py",
+	"**/main.go",
+	"**/doc.go",
+}
+
 // Name returns the rule name
 func (r *TestAdjacencyRule) Name() string {
 	return "test-adjacency"
@@ -185,9 +226,16 @@ func (r *TestAdjacencyRule) matchesFilePattern(path string) bool {
 	return false
 }
 
-// isExempted checks if a file is exempted from test requirements
+// isExempted checks if a file is exempted from test requirements.
+// User-provided exemptions take precedence; framework-convention paths
+// (e.g. SvelteKit `+page.svelte`) are always exempt.
 func (r *TestAdjacencyRule) isExempted(path string) bool {
 	for _, exemption := range r.Exemptions {
+		if rules.MatchesGlobPattern(path, exemption) {
+			return true
+		}
+	}
+	for _, exemption := range frameworkExemptionPatterns {
 		if rules.MatchesGlobPattern(path, exemption) {
 			return true
 		}

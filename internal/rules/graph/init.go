@@ -22,10 +22,10 @@ func init() {
 		return NewOrphanedFilesRule(ctx.ImportGraph, []string{}), nil
 	})
 
-	rules.Register("disallow-unused-exports", func(ctx *rules.RuleContext) (rules.Rule, error) {
+	rules.Register("disallow-import-cycles", func(ctx *rules.RuleContext) (rules.Rule, error) {
 		if ctx.ImportGraph == nil {
 			return nil, fmt.Errorf("import graph required")
 		}
-		return NewUnusedExportsRule(ctx.ImportGraph), nil
+		return NewImportCyclesRule(ctx.ImportGraph), nil
 	})
 }

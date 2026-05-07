@@ -430,12 +430,6 @@ func (c *Config) TypedRules() *RuleConfigs {
 	if v, ok := GetRuleConfig[*MaxSubdirsConfig](c, "max-subdirs"); ok {
 		result.MaxSubdirs = v
 	}
-	if v, ok := GetRuleConfig[*MaxCognitiveComplexityConfig](c, "max-cognitive-complexity"); ok {
-		result.MaxCognitiveComplexity = v
-	}
-	if v, ok := GetRuleConfig[*MaxHalsteadEffortConfig](c, "max-halstead-effort"); ok {
-		result.MaxHalsteadEffort = v
-	}
 	if v, ok := GetRuleConfig[NamingConventionConfig](c, "naming-convention"); ok {
 		result.NamingConvention = v
 	}
@@ -454,35 +448,14 @@ func (c *Config) TypedRules() *RuleConfigs {
 	if v, ok := GetRuleConfig[*TestLocationConfig](c, "test-location"); ok {
 		result.TestLocation = v
 	}
-	if v, ok := GetRuleConfig[*FileContentConfig](c, "file-content"); ok {
-		result.FileContent = v
-	}
-	if v, ok := GetRuleConfig[*GitHubWorkflowsConfig](c, "github-workflows"); ok {
-		result.GitHubWorkflows = v
-	}
-	if v, ok := GetRuleConfig[*LinterConfigConfig](c, "linter-config"); ok {
-		result.LinterConfig = v
-	}
-	if v, ok := GetRuleConfig[*ApiSpecConfig](c, "api-spec"); ok {
-		result.ApiSpec = v
-	}
-	if v, ok := GetRuleConfig[*ContractFrameworkConfig](c, "contract-framework"); ok {
-		result.ContractFramework = v
-	}
-	if v, ok := GetRuleConfig[*SpecADREnforcementConfig](c, "spec-adr-enforcement"); ok {
-		result.SpecADREnforcement = v
-	}
 	if v, ok := GetRuleConfig[*EnforceLayerBoundariesConfig](c, "enforce-layer-boundaries"); ok {
 		result.EnforceLayerBoundaries = v
 	}
 	if v, ok := GetRuleConfig[*DisallowOrphanedFilesConfig](c, "disallow-orphaned-files"); ok {
 		result.DisallowOrphanedFiles = v
 	}
-	if v, ok := GetRuleConfig[*DisallowUnusedExportsConfig](c, "disallow-unused-exports"); ok {
-		result.DisallowUnusedExports = v
-	}
-	if v, ok := GetRuleConfig[*PropertyEnforcementConfig](c, "property-enforcement"); ok {
-		result.PropertyEnforcement = v
+	if v, ok := GetRuleConfig[*DisallowImportCyclesConfig](c, "disallow-import-cycles"); ok {
+		result.DisallowImportCycles = v
 	}
 	if v, ok := GetRuleConfig[*PathBasedLayersConfig](c, "path-based-layers"); ok {
 		result.PathBasedLayers = v
