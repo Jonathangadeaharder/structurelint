@@ -10,7 +10,7 @@ on:
 jobs:
   lint-self:
     name: Lint Structurelint Project
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
 
     steps:
       - name: Checkout code
@@ -39,7 +39,7 @@ jobs:
 
   test-commands:
     name: Test All Commands
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
 
     steps:
       - name: Checkout code
@@ -73,7 +73,7 @@ jobs:
 
   integration-test:
     name: Integration Test
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
 
     steps:
       - name: Checkout code
