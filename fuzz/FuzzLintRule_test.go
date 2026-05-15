@@ -23,7 +23,10 @@ func FuzzRuleViolationFormat(f *testing.F) {
 			Expected: expected,
 			Actual:   actual,
 		}
-		_ = v.FormatDetailed()
+		result := v.FormatDetailed()
+		if path != "" && !strings.Contains(result, path) {
+			t.Errorf("FormatDetailed() should contain path %q, got %q", path, result)
+		}
 	})
 }
 
