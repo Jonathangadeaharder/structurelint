@@ -12,16 +12,16 @@ import (
 
 // Config represents a .structurelint.yml configuration file
 type Config struct {
-	Root                  bool                   `yaml:"root"`
-	Extends               interface{}            `yaml:"extends"`               // string or []string
-	Exclude               []string               `yaml:"exclude"`               // Patterns to exclude from linting
-	AutoLoadGitignore     *bool                  `yaml:"autoLoadGitignore"`     // Auto-load .gitignore patterns (default: true)
-	AutoLanguageNaming    *bool                  `yaml:"autoLanguageNaming"`    // Auto-apply language-specific naming conventions (default: true)
-	InfrastructurePatterns []string              `yaml:"infrastructurePatterns"` // Additional patterns for infrastructure code (Priority 2 feature)
-	Rules                 map[string]interface{} `yaml:"rules"`
-	Overrides             []Override             `yaml:"overrides"`
-	Layers                []Layer                `yaml:"layers"`      // Phase 1: Layer definitions
-	Entrypoints           []string               `yaml:"entrypoints"` // Phase 2: Entry points for orphan detection
+	Root                   bool                   `yaml:"root"`
+	Extends                interface{}            `yaml:"extends"`                // string or []string
+	Exclude                []string               `yaml:"exclude"`                // Patterns to exclude from linting
+	AutoLoadGitignore      *bool                  `yaml:"autoLoadGitignore"`      // Auto-load .gitignore patterns (default: true)
+	AutoLanguageNaming     *bool                  `yaml:"autoLanguageNaming"`     // Auto-apply language-specific naming conventions (default: true)
+	InfrastructurePatterns []string               `yaml:"infrastructurePatterns"` // Additional patterns for infrastructure code (Priority 2 feature)
+	Rules                  map[string]interface{} `yaml:"rules"`
+	Overrides              []Override             `yaml:"overrides"`
+	Layers                 []Layer                `yaml:"layers"`      // Phase 1: Layer definitions
+	Entrypoints            []string               `yaml:"entrypoints"` // Phase 2: Entry points for orphan detection
 }
 
 // Override represents a configuration override for specific file patterns
@@ -235,15 +235,16 @@ func resolveExtendPath(extendPath, baseDir string) (string, error) {
 
 // FindConfigs finds all .structurelint.yml files from the given path up to the root
 func FindConfigs(startPath string) ([]*Config, error) {
-	configs, _, err := findConfigsWithRoot(startPath)
+	configs, _, _, err := findConfigsWithRoot(startPath)
 	return configs, err
 }
 
-// FindConfigsWithGitignore finds configs and applies .gitignore patterns
-func FindConfigsWithGitignore(startPath string) ([]*Config, error) {
-	configs, rootDir, err := findConfigsWithRoot(startPath)
+// FindConfigsWithGitignore finds configs and applies .gitignore patterns.
+// Returns the configs and whether at least one config file was found on disk.
+func FindConfigsWithGitignore(startPath string) ([]*Config, bool, error) {
+	configs, rootDir, found, err := findConfigsWithRoot(startPath)
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 
 	// If we have configs, apply gitignore to the merged config
@@ -259,27 +260,32 @@ func FindConfigsWithGitignore(startPath string) ([]*Config, error) {
 		}
 	}
 
-	return configs, nil
+	return configs, found, nil
 }
 
-// findConfigsWithRoot finds configs and returns the root directory
-func findConfigsWithRoot(startPath string) ([]*Config, string, error) {
+// findConfigsWithRoot finds configs and returns the root directory and whether any config was found on disk.
+func findConfigsWithRoot(startPath string) ([]*Config, string, bool, error) {
 	var configs []*Config
 	var rootDir string
 
 	// Convert to absolute path
 	absPath, err := filepath.Abs(startPath)
 	if err != nil {
-		return nil, "", fmt.Errorf("failed to get absolute path: %w", err)
+		return nil, "", false, fmt.Errorf("failed to get absolute path: %w", err)
 	}
 
 	currentPath := absPath
 	rootDir = absPath // Default root to the start path
+	found := false
 
 	for {
-		rootDir, configs, err = checkAndLoadConfig(currentPath, configs)
+		var configFound bool
+		rootDir, configs, configFound, err = checkAndLoadConfig(currentPath, configs)
 		if err != nil {
-			return nil, "", err
+			return nil, "", false, err
+		}
+		if configFound {
+			found = true
 		}
 
 		// If we found a root config, stop searching
@@ -297,26 +303,28 @@ func findConfigsWithRoot(startPath string) ([]*Config, string, error) {
 
 	// If no config found, return a default config
 	if len(configs) == 0 {
-		return []*Config{{Rules: make(map[string]interface{})}}, absPath, nil
+		return []*Config{{Rules: make(map[string]interface{})}}, absPath, false, nil
 	}
 
-	return configs, rootDir, nil
+	return configs, rootDir, found, nil
 }
 
-func checkAndLoadConfig(currentPath string, configs []*Config) (string, []*Config, error) {
+func checkAndLoadConfig(currentPath string, configs []*Config) (string, []*Config, bool, error) {
 	rootDir := ""
-	
+	found := false
+
 	configPath := filepath.Join(currentPath, ".structurelint.yml")
 	if _, err := os.Stat(configPath); err == nil {
 		config, err := Load(configPath)
 		if err != nil {
-			return "", nil, err
+			return "", nil, false, err
 		}
 		configs = append([]*Config{config}, configs...) // Prepend to maintain order
+		found = true
 
 		// Check if this config has Root: true, which means stop searching upwards
 		if config.Root {
-			return currentPath, configs, nil
+			return currentPath, configs, true, nil
 		}
 	}
 
@@ -325,15 +333,16 @@ func checkAndLoadConfig(currentPath string, configs []*Config) (string, []*Confi
 	if _, err := os.Stat(configPath); err == nil && len(configs) == 0 {
 		config, err := Load(configPath)
 		if err != nil {
-			return "", nil, err
+			return "", nil, false, err
 		}
 		configs = append([]*Config{config}, configs...)
+		found = true
 		if config.Root {
-			return currentPath, configs, nil
+			return currentPath, configs, true, nil
 		}
 	}
 
-	return rootDir, configs, nil
+	return rootDir, configs, found, nil
 }
 
 // Merge merges multiple configs into a single config
@@ -430,12 +439,6 @@ func (c *Config) TypedRules() *RuleConfigs {
 	if v, ok := GetRuleConfig[*MaxSubdirsConfig](c, "max-subdirs"); ok {
 		result.MaxSubdirs = v
 	}
-	if v, ok := GetRuleConfig[*MaxCognitiveComplexityConfig](c, "max-cognitive-complexity"); ok {
-		result.MaxCognitiveComplexity = v
-	}
-	if v, ok := GetRuleConfig[*MaxHalsteadEffortConfig](c, "max-halstead-effort"); ok {
-		result.MaxHalsteadEffort = v
-	}
 	if v, ok := GetRuleConfig[NamingConventionConfig](c, "naming-convention"); ok {
 		result.NamingConvention = v
 	}
@@ -454,35 +457,14 @@ func (c *Config) TypedRules() *RuleConfigs {
 	if v, ok := GetRuleConfig[*TestLocationConfig](c, "test-location"); ok {
 		result.TestLocation = v
 	}
-	if v, ok := GetRuleConfig[*FileContentConfig](c, "file-content"); ok {
-		result.FileContent = v
-	}
-	if v, ok := GetRuleConfig[*GitHubWorkflowsConfig](c, "github-workflows"); ok {
-		result.GitHubWorkflows = v
-	}
-	if v, ok := GetRuleConfig[*LinterConfigConfig](c, "linter-config"); ok {
-		result.LinterConfig = v
-	}
-	if v, ok := GetRuleConfig[*ApiSpecConfig](c, "api-spec"); ok {
-		result.ApiSpec = v
-	}
-	if v, ok := GetRuleConfig[*ContractFrameworkConfig](c, "contract-framework"); ok {
-		result.ContractFramework = v
-	}
-	if v, ok := GetRuleConfig[*SpecADREnforcementConfig](c, "spec-adr-enforcement"); ok {
-		result.SpecADREnforcement = v
-	}
 	if v, ok := GetRuleConfig[*EnforceLayerBoundariesConfig](c, "enforce-layer-boundaries"); ok {
 		result.EnforceLayerBoundaries = v
 	}
 	if v, ok := GetRuleConfig[*DisallowOrphanedFilesConfig](c, "disallow-orphaned-files"); ok {
 		result.DisallowOrphanedFiles = v
 	}
-	if v, ok := GetRuleConfig[*DisallowUnusedExportsConfig](c, "disallow-unused-exports"); ok {
-		result.DisallowUnusedExports = v
-	}
-	if v, ok := GetRuleConfig[*PropertyEnforcementConfig](c, "property-enforcement"); ok {
-		result.PropertyEnforcement = v
+	if v, ok := GetRuleConfig[*DisallowImportCyclesConfig](c, "disallow-import-cycles"); ok {
+		result.DisallowImportCycles = v
 	}
 	if v, ok := GetRuleConfig[*PathBasedLayersConfig](c, "path-based-layers"); ok {
 		result.PathBasedLayers = v

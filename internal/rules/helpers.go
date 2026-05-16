@@ -3,82 +3,115 @@ package rules
 
 import (
 	"path/filepath"
+	"regexp"
 	"strings"
+	"sync"
 )
 
-// MatchesGlobPattern checks if a path matches a glob pattern including **
+// MatchesGlobPattern checks if a path matches a glob pattern.
+// Supports `*` (no slash crossing), `?`, `[...]`, and `**` (any path including empty).
+// Negation patterns must be handled by the caller (look for `!` prefix).
 func MatchesGlobPattern(path, pattern string) bool {
-	// Normalize paths to use forward slashes for consistent matching across platforms
 	path = filepath.ToSlash(path)
 	pattern = filepath.ToSlash(pattern)
 
-	// Handle ** patterns
-	if strings.Contains(pattern, "**") {
-		parts := strings.Split(pattern, "**")
-
-		if len(parts) == 2 {
-			prefix := strings.TrimSuffix(parts[0], "/")
-			suffix := strings.TrimPrefix(parts[1], "/")
-
-			// Check prefix
-			if prefix != "" && !strings.HasPrefix(path, prefix) {
-				return false
-			}
-
-			// Check suffix
-			if suffix != "" {
-				// If suffix has a glob pattern, use filepath.Match
-				if strings.ContainsAny(suffix, "*?[]") {
-					matched, _ := filepath.Match(suffix, filepath.Base(path))
-					return matched
-				}
-				// Otherwise check if path ends with suffix or contains it
-				return strings.HasSuffix(path, suffix) || strings.Contains(path, suffix)
-			}
-
-			return true
-		}
-	}
-
-	// Exact match
 	if path == pattern {
 		return true
 	}
 
-	// Try glob matching
-	matched, err := filepath.Match(pattern, filepath.Base(path))
-	if err == nil && matched {
+	re := globToRegexp(pattern)
+	if re == nil {
+		return false
+	}
+	if re.MatchString(path) {
 		return true
 	}
 
-	// Try matching full path
-	matched, err = filepath.Match(pattern, path)
-	if err == nil && matched {
-		return true
+	// Common ergonomic case: pattern without `**` should also match by basename
+	// (e.g., `*.pyc` matches `foo/bar.pyc`). Avoid for `**` patterns where the
+	// caller intended a full-path match.
+	if !strings.Contains(pattern, "**") && !strings.Contains(pattern, "/") {
+		base := filepath.Base(path)
+		if re.MatchString(base) {
+			return true
+		}
 	}
-
 	return false
 }
 
-// WorkflowFile represents a parsed GitHub Actions workflow file
-type WorkflowFile struct {
-	Name string                 `yaml:"name"`
-	On   interface{}            `yaml:"on"`
-	Jobs map[string]WorkflowJob `yaml:"jobs"`
-}
+var globRegexpCache sync.Map // pattern → *regexp.Regexp
 
-// WorkflowJob represents a job in a GitHub Actions workflow
-type WorkflowJob struct {
-	Name  string           `yaml:"name"`
-	RunsOn interface{}     `yaml:"runs-on"`
-	Steps []WorkflowStep   `yaml:"steps"`
-}
-
-// WorkflowStep represents a step in a workflow job
-type WorkflowStep struct {
-	Name string                 `yaml:"name"`
-	Uses string                 `yaml:"uses"`
-	Run  string                 `yaml:"run"`
-	If   string                 `yaml:"if"`
-	With map[string]interface{} `yaml:"with"`
+// globToRegexp converts a glob pattern to an anchored regexp.
+// Returns nil if the regexp could not be built (caller falls back to no match).
+func globToRegexp(pattern string) *regexp.Regexp {
+	if v, ok := globRegexpCache.Load(pattern); ok {
+		return v.(*regexp.Regexp)
+	}
+	var b strings.Builder
+	b.WriteString("^")
+	i := 0
+	for i < len(pattern) {
+		switch c := pattern[i]; c {
+		case '*':
+			if i+1 < len(pattern) && pattern[i+1] == '*' {
+				// `**` — match anything including slashes.
+				// Special-case `**/` and `/**` to make leading/trailing
+				// segments optional (so `**/foo` matches `foo` and `bar/foo`).
+				if i+2 < len(pattern) && pattern[i+2] == '/' {
+					b.WriteString("(?:.*/)?")
+					i += 3
+					continue
+				}
+				if i > 0 && pattern[i-1] == '/' {
+					// Already wrote a `/`, replace by `(?:.*)?`.
+					s := b.String()
+					b.Reset()
+					b.WriteString(strings.TrimSuffix(s, "/"))
+					b.WriteString("(?:/.*)?")
+					i += 2
+					continue
+				}
+				b.WriteString(".*")
+				i += 2
+			} else {
+				b.WriteString("[^/]*")
+				i++
+			}
+		case '?':
+			b.WriteString("[^/]")
+			i++
+		case '.', '+', '(', ')', '|', '^', '$', '{', '}', '\\':
+			b.WriteByte('\\')
+			b.WriteByte(c)
+			i++
+		case '[':
+			// Pass through character class until the closing `]`.
+			// Convert `[!` negation (glob) to `[^` (regex).
+			j := i + 1
+			for j < len(pattern) && pattern[j] != ']' {
+				j++
+			}
+			if j < len(pattern) {
+				cls := pattern[i : j+1]
+				if len(cls) > 2 && cls[1] == '!' {
+					cls = "[" + "^" + cls[2:]
+				}
+				b.WriteString(cls)
+				i = j + 1
+			} else {
+				b.WriteString("\\[")
+				i++
+			}
+		default:
+			b.WriteByte(c)
+			i++
+		}
+	}
+	b.WriteString("$")
+	re, err := regexp.Compile(b.String())
+	if err != nil {
+		return nil
+	}
+	globRegexpCache.Store(pattern, re)
+	return re
 }

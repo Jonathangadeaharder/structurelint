@@ -30,17 +30,16 @@ func (r *OrphanedFilesRule) Check(files []walker.FileInfo, dirs map[string]*walk
 	var violations []rules.Violation
 
 	for _, filePath := range r.Graph.AllFiles {
-		// Skip entrypoints
+		if !isParserSupported(filePath) {
+			continue
+		}
 		if r.isEntrypoint(filePath) {
 			continue
 		}
-
-		// Skip configuration and documentation files
 		if r.isConfigOrDocFile(filePath) {
 			continue
 		}
 
-		// Check if file has any incoming references
 		refCount, exists := r.Graph.IncomingRefs[filePath]
 		if !exists || refCount == 0 {
 			violations = append(violations, rules.Violation{
@@ -52,6 +51,23 @@ func (r *OrphanedFilesRule) Check(files []walker.FileInfo, dirs map[string]*walk
 	}
 
 	return violations
+}
+
+// isParserSupported reports whether structurelint can resolve imports for a
+// file's language. Files in unsupported languages (Svelte, Rust, etc.) are
+// skipped to avoid false-positive orphan reports — without an import parser
+// they look unreferenced even when they are not.
+func isParserSupported(path string) bool {
+	switch filepath.Ext(path) {
+	case ".go",
+		".ts", ".tsx", ".js", ".jsx", ".mjs",
+		".py",
+		".java",
+		".c", ".h", ".cc", ".cpp", ".cxx", ".hpp",
+		".cs":
+		return true
+	}
+	return false
 }
 
 // isEntrypoint checks if a file is an entrypoint

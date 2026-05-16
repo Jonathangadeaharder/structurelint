@@ -26,6 +26,9 @@ func (r *NamingConventionRule) Check(files []walker.FileInfo, dirs map[string]*w
 	var violations []rules.Violation
 
 	for _, file := range files {
+		if isFrameworkConventionFile(file.Path) {
+			continue
+		}
 		for pattern, convention := range r.Patterns {
 			if matchesPattern(file.Path, pattern) {
 				if !r.matchesConvention(file.Path, pattern, convention) {
@@ -386,4 +389,43 @@ func toSnakeCase(words []string) string {
 		lower = append(lower, strings.ToLower(word))
 	}
 	return strings.Join(lower, "_")
+}
+
+// frameworkConventionPatterns are file paths whose names follow framework-
+// imposed conventions (SvelteKit, Next.js, etc.) and therefore should not
+// be evaluated by user-supplied naming-convention rules.
+var frameworkConventionPatterns = []string{
+	"**/+page.svelte",
+	"**/+page.ts",
+	"**/+page.server.ts",
+	"**/+layout.svelte",
+	"**/+layout.ts",
+	"**/+layout.server.ts",
+	"**/+error.svelte",
+	"**/+server.ts",
+	"**/page.tsx",
+	"**/page.ts",
+	"**/page.jsx",
+	"**/page.js",
+	"**/layout.tsx",
+	"**/layout.ts",
+	"**/layout.jsx",
+	"**/layout.js",
+	"**/error.tsx",
+	"**/loading.tsx",
+	"**/route.ts",
+	"**/route.tsx",
+	"**/middleware.ts",
+	"**/__init__.py",
+	"**/__main__.py",
+	"**/conftest.py",
+}
+
+func isFrameworkConventionFile(path string) bool {
+	for _, p := range frameworkConventionPatterns {
+		if rules.MatchesGlobPattern(path, p) {
+			return true
+		}
+	}
+	return false
 }

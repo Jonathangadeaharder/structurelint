@@ -154,3 +154,36 @@ func NewFileExistenceRule(requirements map[string]string) *FileExistenceRule {
 		Requirements: requirements,
 	}
 }
+
+// ValidateFileExistenceConfig surfaces malformed `exists:N` / `exists:N-M`
+// specifications at config-load time rather than as per-directory violations
+// at lint time. Returns the list of bad keys with reasons.
+func ValidateFileExistenceConfig(requirements map[string]string) []string {
+	var errs []string
+	for pattern, requirement := range requirements {
+		parts := strings.Split(requirement, ":")
+		if len(parts) != 2 || parts[0] != "exists" {
+			errs = append(errs, fmt.Sprintf("%q: requirement must be 'exists:N' or 'exists:N-M' (got %q)", pattern, requirement))
+			continue
+		}
+		spec := parts[1]
+		if strings.Contains(spec, "-") {
+			rangeParts := strings.Split(spec, "-")
+			if len(rangeParts) != 2 {
+				errs = append(errs, fmt.Sprintf("%q: range must be 'min-max' (got %q)", pattern, spec))
+				continue
+			}
+			if _, err := strconv.Atoi(rangeParts[0]); err != nil {
+				errs = append(errs, fmt.Sprintf("%q: range minimum %q is not an integer", pattern, rangeParts[0]))
+			}
+			if _, err := strconv.Atoi(rangeParts[1]); err != nil {
+				errs = append(errs, fmt.Sprintf("%q: range maximum %q is not an integer", pattern, rangeParts[1]))
+			}
+			continue
+		}
+		if _, err := strconv.Atoi(spec); err != nil {
+			errs = append(errs, fmt.Sprintf("%q: count %q is not an integer", pattern, spec))
+		}
+	}
+	return errs
+}
