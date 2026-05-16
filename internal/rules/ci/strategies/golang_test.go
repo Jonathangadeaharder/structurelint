@@ -4,15 +4,14 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Jonathangadeaharder/structurelint/internal/rules/ci"
+	"github.com/Jonathangadeaharder/structurelint/internal/rules/ci/core"
 )
 
 func TestGoMissingGates(t *testing.T) {
-	reader := ci.MockFileReader{}
-	strat := NewGoStrategy(reader, nil)
-	jobs := map[string]ci.JobInfo{
+	strat := NewGoStrategy(nil, nil)
+	jobs := map[string]core.JobInfo{
 		"build": {
-			Steps: []ci.StepInfo{
+			Steps: []core.StepInfo{
 				{Name: "build", Run: "go build ./..."},
 			},
 		},
@@ -32,11 +31,10 @@ func TestGoMissingGates(t *testing.T) {
 }
 
 func TestGoAllGatesPresent(t *testing.T) {
-	reader := ci.MockFileReader{}
-	strat := NewGoStrategy(reader, nil)
-	jobs := map[string]ci.JobInfo{
+	strat := NewGoStrategy(nil, nil)
+	jobs := map[string]core.JobInfo{
 		"quality": {
-			Steps: []ci.StepInfo{
+			Steps: []core.StepInfo{
 				{Name: "lint", Run: "golangci-lint run ./..."},
 				{Name: "vet", Run: "go vet ./..."},
 				{Name: "test", Run: "go test -race -covermode=atomic ./..."},

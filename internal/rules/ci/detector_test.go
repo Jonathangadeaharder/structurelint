@@ -2,31 +2,33 @@ package ci
 
 import (
 	"testing"
+
+	"github.com/Jonathangadeaharder/structurelint/internal/rules/ci/core"
 )
 
 func TestDetectSvelteKit(t *testing.T) {
 	reader := MockFileReader{Files: map[string]string{
-		"/project/package.json":    `{"devDependencies": {"svelte": "^5.0.0"}}`,
+		"/project/package.json":     `{"devDependencies": {"svelte": "^5.0.0"}}`,
 		"/project/svelte.config.js": `import adapter from '@sveltejs/adapter-auto'`,
 	}}
 	detector := NewProjectDetector(reader)
-	files := []FileInfo{
+	files := []core.FileInfo{
 		{Path: "package.json", AbsPath: "/project/package.json"},
 		{Path: "svelte.config.js", AbsPath: "/project/svelte.config.js"},
 	}
 	types := detector.Detect(files)
-	if len(types) != 1 || types[0] != SvelteKit {
+	if len(types) != 1 || types[0] != core.SvelteKit {
 		t.Fatalf("expected SvelteKit, got %v", types)
 	}
 }
 
 func TestDetectGo(t *testing.T) {
 	detector := NewProjectDetector(nil)
-	files := []FileInfo{
+	files := []core.FileInfo{
 		{Path: "go.mod", AbsPath: "/project/go.mod"},
 	}
 	types := detector.Detect(files)
-	if len(types) != 1 || types[0] != Go {
+	if len(types) != 1 || types[0] != core.Go {
 		t.Fatalf("expected Go, got %v", types)
 	}
 }
@@ -37,7 +39,7 @@ func TestDetectMultiple(t *testing.T) {
 		"/project/pyproject.toml": `[project]`,
 	}}
 	detector := NewProjectDetector(reader)
-	files := []FileInfo{
+	files := []core.FileInfo{
 		{Path: "package.json", AbsPath: "/project/package.json"},
 		{Path: "pyproject.toml", AbsPath: "/project/pyproject.toml"},
 		{Path: "svelte.config.ts", AbsPath: "/project/svelte.config.ts"},
@@ -48,10 +50,10 @@ func TestDetectMultiple(t *testing.T) {
 	}
 	hasSK, hasPy := false, false
 	for _, t := range types {
-		if t == SvelteKit {
+		if t == core.SvelteKit {
 			hasSK = true
 		}
-		if t == Python {
+		if t == core.Python {
 			hasPy = true
 		}
 	}

@@ -3,19 +3,19 @@ package strategies
 import (
 	"strings"
 
-	"github.com/Jonathangadeaharder/structurelint/internal/rules/ci"
+	"github.com/Jonathangadeaharder/structurelint/internal/rules/ci/core"
 )
 
 type SvelteKitStrategy struct {
-	reader             ci.FileReader
-	coverage           ci.CoverageThresholds
+	reader             core.FileReader
+	coverage           core.CoverageThresholds
 	requireVitestLinter bool
 	requireSvelteuml    bool
 }
 
-func NewSvelteKitStrategy(reader ci.FileReader, cfg map[string]interface{}) *SvelteKitStrategy {
+func NewSvelteKitStrategy(reader core.FileReader, cfg map[string]interface{}) *SvelteKitStrategy {
 	s := &SvelteKitStrategy{reader: reader}
-	s.coverage = ci.CoverageThresholds{
+	s.coverage = core.CoverageThresholds{
 		Branches:   90,
 		Lines:      80,
 		Functions:  90,
@@ -38,34 +38,34 @@ func NewSvelteKitStrategy(reader ci.FileReader, cfg map[string]interface{}) *Sve
 	return s
 }
 
-func (s *SvelteKitStrategy) ProjectType() ci.ProjectType { return ci.SvelteKit }
-func (s *SvelteKitStrategy) RequiredCoverage() ci.CoverageThresholds { return s.coverage }
-func (s *SvelteKitStrategy) RequiredCIGates() []ci.CIGate {
-	gates := []ci.CIGate{
+func (s *SvelteKitStrategy) ProjectType() core.ProjectType { return core.SvelteKit }
+func (s *SvelteKitStrategy) RequiredCoverage() core.CoverageThresholds { return s.coverage }
+func (s *SvelteKitStrategy) RequiredCIGates() []core.CIGate {
+	gates := []core.CIGate{
 		{Name: "svelte-check --fail-on-warnings", Required: true, Hint: "Add svelte-check with --fail-on-warnings"},
 		{Name: "biome check", Required: true, Hint: "Add biome check to CI"},
 		{Name: "vitest coverage", Required: true, Hint: "Add vitest run --coverage"},
 		{Name: "build", Required: true, Hint: "Add pnpm build"},
 	}
 	if s.requireVitestLinter {
-		gates = append(gates, ci.CIGate{Name: "vitest-linter", Required: true, Hint: "Add vitest-linter CI gate"})
+		gates = append(gates, core.CIGate{Name: "vitest-linter", Required: true, Hint: "Add vitest-linter CI gate"})
 	}
 	if s.requireSvelteuml {
-		gates = append(gates, ci.CIGate{Name: "svelteuml", Required: true, Hint: "Add svelteuml diagram generation to CI"})
+		gates = append(gates, core.CIGate{Name: "svelteuml", Required: true, Hint: "Add svelteuml diagram generation to CI"})
 	}
 	return gates
 }
 
-func (s *SvelteKitStrategy) RequiredLinters() []ci.LinterTool {
-	return []ci.LinterTool{
+func (s *SvelteKitStrategy) RequiredLinters() []core.LinterTool {
+	return []core.LinterTool{
 		{Name: "biome", Required: true, Hint: "Configure biome.json"},
 	}
 }
 
-func (s *SvelteKitStrategy) CheckProjectConfig(files []ci.FileInfo, reader ci.FileReader) []ci.CheckResult { return nil }
+func (s *SvelteKitStrategy) CheckProjectConfig(files []core.FileInfo, reader core.FileReader) []core.CheckResult { return nil }
 
-func (s *SvelteKitStrategy) CheckWorkflowSteps(jobs map[string]ci.JobInfo) []ci.CheckResult {
-	var results []ci.CheckResult
+func (s *SvelteKitStrategy) CheckWorkflowSteps(jobs map[string]core.JobInfo) []core.CheckResult {
+	var results []core.CheckResult
 	gates := s.RequiredCIGates()
 	for _, gate := range gates {
 		found := false
@@ -79,7 +79,7 @@ func (s *SvelteKitStrategy) CheckWorkflowSteps(jobs map[string]ci.JobInfo) []ci.
 					if strings.Contains(combined, "svelte-check") {
 						found = true
 						if !strings.Contains(combined, "--fail-on-warnings") {
-							results = append(results, ci.CheckResult{
+							results = append(results, core.CheckResult{
 								Message: "svelte-check without --fail-on-warnings",
 								Fix:     "Add --fail-on-warnings to svelte-check command.",
 							})
@@ -109,7 +109,7 @@ func (s *SvelteKitStrategy) CheckWorkflowSteps(jobs map[string]ci.JobInfo) []ci.
 			}
 		}
 		if !found && gate.Required {
-			results = append(results, ci.CheckResult{
+			results = append(results, core.CheckResult{
 				Message: "Missing required CI gate: " + gate.Name,
 				Fix:     gate.Hint,
 			})
@@ -118,4 +118,4 @@ func (s *SvelteKitStrategy) CheckWorkflowSteps(jobs map[string]ci.JobInfo) []ci.
 	return results
 }
 
-func (s *SvelteKitStrategy) CheckSuppressions(files []ci.FileInfo, reader ci.FileReader) []ci.CheckResult { return nil }
+func (s *SvelteKitStrategy) CheckSuppressions(files []core.FileInfo, reader core.FileReader) []core.CheckResult { return nil }

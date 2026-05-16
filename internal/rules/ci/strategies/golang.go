@@ -3,17 +3,17 @@ package strategies
 import (
 	"strings"
 
-	"github.com/Jonathangadeaharder/structurelint/internal/rules/ci"
+	"github.com/Jonathangadeaharder/structurelint/internal/rules/ci/core"
 )
 
 type GoStrategy struct {
-	reader   ci.FileReader
-	coverage ci.CoverageThresholds
+	reader   core.FileReader
+	coverage core.CoverageThresholds
 }
 
-func NewGoStrategy(reader ci.FileReader, cfg map[string]interface{}) *GoStrategy {
+func NewGoStrategy(reader core.FileReader, cfg map[string]interface{}) *GoStrategy {
 	s := &GoStrategy{reader: reader}
-	s.coverage = ci.CoverageThresholds{Lines: 90}
+	s.coverage = core.CoverageThresholds{Lines: 90}
 	if cfg != nil {
 		if cv, ok := cfg["coverage"].(map[string]interface{}); ok {
 			if l, ok := cv["lines"].(float64); ok { s.coverage.Lines = l }
@@ -22,23 +22,23 @@ func NewGoStrategy(reader ci.FileReader, cfg map[string]interface{}) *GoStrategy
 	return s
 }
 
-func (s *GoStrategy) ProjectType() ci.ProjectType { return ci.Go }
-func (s *GoStrategy) RequiredCoverage() ci.CoverageThresholds { return s.coverage }
-func (s *GoStrategy) RequiredCIGates() []ci.CIGate {
-	return []ci.CIGate{
+func (s *GoStrategy) ProjectType() core.ProjectType { return core.Go }
+func (s *GoStrategy) RequiredCoverage() core.CoverageThresholds { return s.coverage }
+func (s *GoStrategy) RequiredCIGates() []core.CIGate {
+	return []core.CIGate{
 		{Name: "go test -race", Required: true, Hint: "Add go test -race -covermode=atomic"},
 		{Name: "golangci-lint", Required: true, Hint: "Add golangci-lint to CI"},
 		{Name: "go vet", Required: true, Hint: "Add go vet to CI"},
 	}
 }
-func (s *GoStrategy) RequiredLinters() []ci.LinterTool {
-	return []ci.LinterTool{
+func (s *GoStrategy) RequiredLinters() []core.LinterTool {
+	return []core.LinterTool{
 		{Name: "golangci-lint", Required: true, Hint: "Configure .golangci.yml"},
 	}
 }
-func (s *GoStrategy) CheckProjectConfig(files []ci.FileInfo, reader ci.FileReader) []ci.CheckResult { return nil }
-func (s *GoStrategy) CheckWorkflowSteps(jobs map[string]ci.JobInfo) []ci.CheckResult {
-	var results []ci.CheckResult
+func (s *GoStrategy) CheckProjectConfig(files []core.FileInfo, reader core.FileReader) []core.CheckResult { return nil }
+func (s *GoStrategy) CheckWorkflowSteps(jobs map[string]core.JobInfo) []core.CheckResult {
+	var results []core.CheckResult
 	foundTest := false
 	foundLint := false
 	foundVet := false
@@ -58,14 +58,14 @@ func (s *GoStrategy) CheckWorkflowSteps(jobs map[string]ci.JobInfo) []ci.CheckRe
 		}
 	}
 	if !foundTest {
-		results = append(results, ci.CheckResult{Message: "Missing go test in CI", Fix: "Add go test -race -covermode=atomic to CI."})
+		results = append(results, core.CheckResult{Message: "Missing go test in CI", Fix: "Add go test -race -covermode=atomic to CI."})
 	}
 	if !foundLint {
-		results = append(results, ci.CheckResult{Message: "Missing golangci-lint in CI", Fix: "Add golangci-lint run to CI."})
+		results = append(results, core.CheckResult{Message: "Missing golangci-lint in CI", Fix: "Add golangci-lint run to CI."})
 	}
 	if !foundVet {
-		results = append(results, ci.CheckResult{Message: "Missing go vet in CI", Fix: "Add go vet to CI."})
+		results = append(results, core.CheckResult{Message: "Missing go vet in CI", Fix: "Add go vet to CI."})
 	}
 	return results
 }
-func (s *GoStrategy) CheckSuppressions(files []ci.FileInfo, reader ci.FileReader) []ci.CheckResult { return nil }
+func (s *GoStrategy) CheckSuppressions(files []core.FileInfo, reader core.FileReader) []core.CheckResult { return nil }

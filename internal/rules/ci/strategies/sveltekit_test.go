@@ -4,12 +4,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Jonathangadeaharder/structurelint/internal/rules/ci"
+	"github.com/Jonathangadeaharder/structurelint/internal/rules/ci/core"
 )
 
 func TestSvelteKitRequiredGates(t *testing.T) {
-	reader := ci.MockFileReader{}
-	strat := NewSvelteKitStrategy(reader, nil)
+	strat := NewSvelteKitStrategy(nil, nil)
 	gates := strat.RequiredCIGates()
 	if len(gates) < 4 {
 		t.Fatalf("expected at least 4 gates, got %d", len(gates))
@@ -17,11 +16,10 @@ func TestSvelteKitRequiredGates(t *testing.T) {
 }
 
 func TestSvelteKitChecksSvelteCheck(t *testing.T) {
-	reader := ci.MockFileReader{}
-	strat := NewSvelteKitStrategy(reader, nil)
-	jobs := map[string]ci.JobInfo{
+	strat := NewSvelteKitStrategy(nil, nil)
+	jobs := map[string]core.JobInfo{
 		"quality": {
-			Steps: []ci.StepInfo{
+			Steps: []core.StepInfo{
 				{Name: "svelte-check", Run: "pnpm exec svelte-check --tsconfig tsconfig.json"},
 			},
 		},
@@ -40,12 +38,11 @@ func TestSvelteKitChecksSvelteCheck(t *testing.T) {
 }
 
 func TestSvelteKitMissingRequiredGate(t *testing.T) {
-	reader := ci.MockFileReader{}
 	cfg := map[string]interface{}{"require-vitest-linter": true}
-	strat := NewSvelteKitStrategy(reader, cfg)
-	jobs := map[string]ci.JobInfo{
+	strat := NewSvelteKitStrategy(nil, cfg)
+	jobs := map[string]core.JobInfo{
 		"test": {
-			Steps: []ci.StepInfo{
+			Steps: []core.StepInfo{
 				{Name: "run tests", Run: "pnpm vitest run"},
 			},
 		},

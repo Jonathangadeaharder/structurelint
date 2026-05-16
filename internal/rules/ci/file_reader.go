@@ -3,11 +3,9 @@ package ci
 import (
 	"fmt"
 	"os"
-)
 
-type FileReader interface {
-	ReadFile(path string) ([]byte, error)
-}
+	"github.com/Jonathangadeaharder/structurelint/internal/rules/ci/core"
+)
 
 type OSFileReader struct{}
 
@@ -26,3 +24,6 @@ func (m MockFileReader) ReadFile(path string) ([]byte, error) {
 	}
 	return []byte(content), nil
 }
+
+var _ core.FileReader = OSFileReader{}
+var _ core.FileReader = MockFileReader{}

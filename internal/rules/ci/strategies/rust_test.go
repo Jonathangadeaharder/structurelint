@@ -4,16 +4,15 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Jonathangadeaharder/structurelint/internal/rules/ci"
+	"github.com/Jonathangadeaharder/structurelint/internal/rules/ci/core"
 )
 
 func TestRustMissingGates(t *testing.T) {
-	reader := ci.MockFileReader{}
 	cfg := map[string]interface{}{"require-cargo-test-lint": true}
-	strat := NewRustStrategy(reader, cfg)
-	jobs := map[string]ci.JobInfo{
+	strat := NewRustStrategy(nil, cfg)
+	jobs := map[string]core.JobInfo{
 		"build": {
-			Steps: []ci.StepInfo{
+			Steps: []core.StepInfo{
 				{Name: "build", Run: "cargo build"},
 			},
 		},
@@ -35,12 +34,11 @@ func TestRustMissingGates(t *testing.T) {
 }
 
 func TestRustAllGatesPresent(t *testing.T) {
-	reader := ci.MockFileReader{}
 	cfg := map[string]interface{}{"require-cargo-test-lint": true}
-	strat := NewRustStrategy(reader, cfg)
-	jobs := map[string]ci.JobInfo{
+	strat := NewRustStrategy(nil, cfg)
+	jobs := map[string]core.JobInfo{
 		"quality": {
-			Steps: []ci.StepInfo{
+			Steps: []core.StepInfo{
 				{Name: "clippy", Run: "cargo clippy -- -W clippy::all"},
 				{Name: "fmt", Run: "cargo fmt --check"},
 				{Name: "test", Run: "cargo test"},

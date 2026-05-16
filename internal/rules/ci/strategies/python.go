@@ -3,18 +3,18 @@ package strategies
 import (
 	"strings"
 
-	"github.com/Jonathangadeaharder/structurelint/internal/rules/ci"
+	"github.com/Jonathangadeaharder/structurelint/internal/rules/ci/core"
 )
 
 type PythonStrategy struct {
-	reader             ci.FileReader
-	coverage           ci.CoverageThresholds
+	reader             core.FileReader
+	coverage           core.CoverageThresholds
 	requirePytestLinter bool
 }
 
-func NewPythonStrategy(reader ci.FileReader, cfg map[string]interface{}) *PythonStrategy {
+func NewPythonStrategy(reader core.FileReader, cfg map[string]interface{}) *PythonStrategy {
 	s := &PythonStrategy{reader: reader}
-	s.coverage = ci.CoverageThresholds{
+	s.coverage = core.CoverageThresholds{
 		Branches:   90,
 		Lines:      80,
 		Functions:  90,
@@ -34,28 +34,28 @@ func NewPythonStrategy(reader ci.FileReader, cfg map[string]interface{}) *Python
 	return s
 }
 
-func (s *PythonStrategy) ProjectType() ci.ProjectType { return ci.Python }
-func (s *PythonStrategy) RequiredCoverage() ci.CoverageThresholds { return s.coverage }
-func (s *PythonStrategy) RequiredCIGates() []ci.CIGate {
-	gates := []ci.CIGate{
+func (s *PythonStrategy) ProjectType() core.ProjectType { return core.Python }
+func (s *PythonStrategy) RequiredCoverage() core.CoverageThresholds { return s.coverage }
+func (s *PythonStrategy) RequiredCIGates() []core.CIGate {
+	gates := []core.CIGate{
 		{Name: "ruff check", Required: true, Hint: "Add ruff check to CI"},
 		{Name: "pyright", Required: true, Hint: "Add pyright type-checking to CI"},
 		{Name: "pytest --cov-branch --cov-fail-under", Required: true, Hint: "Ensure pytest uses --cov-branch and --cov-fail-under=90"},
 	}
 	if s.requirePytestLinter {
-		gates = append(gates, ci.CIGate{Name: "pytest-linter", Required: true, Hint: "Add pytest-linter CI gate"})
+		gates = append(gates, core.CIGate{Name: "pytest-linter", Required: true, Hint: "Add pytest-linter CI gate"})
 	}
 	return gates
 }
-func (s *PythonStrategy) RequiredLinters() []ci.LinterTool {
-	return []ci.LinterTool{
+func (s *PythonStrategy) RequiredLinters() []core.LinterTool {
+	return []core.LinterTool{
 		{Name: "ruff", Required: true, Hint: "Configure ruff in pyproject.toml"},
 		{Name: "pyright", Required: true, Hint: "Configure pyright in pyproject.toml or pyrightconfig.json"},
 	}
 }
-func (s *PythonStrategy) CheckProjectConfig(files []ci.FileInfo, reader ci.FileReader) []ci.CheckResult { return nil }
-func (s *PythonStrategy) CheckWorkflowSteps(jobs map[string]ci.JobInfo) []ci.CheckResult {
-	var results []ci.CheckResult
+func (s *PythonStrategy) CheckProjectConfig(files []core.FileInfo, reader core.FileReader) []core.CheckResult { return nil }
+func (s *PythonStrategy) CheckWorkflowSteps(jobs map[string]core.JobInfo) []core.CheckResult {
+	var results []core.CheckResult
 	for _, job := range jobs {
 		for _, step := range job.Steps {
 			runLower := strings.ToLower(step.Run)
@@ -63,13 +63,13 @@ func (s *PythonStrategy) CheckWorkflowSteps(jobs map[string]ci.JobInfo) []ci.Che
 				continue
 			}
 			if !strings.Contains(runLower, "--cov-branch") {
-				results = append(results, ci.CheckResult{
+				results = append(results, core.CheckResult{
 					Message: "pytest command missing --cov-branch",
 					Fix:     "Add --cov-branch to pytest command for branch coverage.",
 				})
 			}
 			if !strings.Contains(runLower, "--cov-fail-under") {
-				results = append(results, ci.CheckResult{
+				results = append(results, core.CheckResult{
 					Message: "pytest command missing --cov-fail-under",
 					Fix:     "Add --cov-fail-under=90 to pytest command.",
 				})
@@ -95,28 +95,19 @@ func (s *PythonStrategy) CheckWorkflowSteps(jobs map[string]ci.JobInfo) []ci.Che
 		}
 	}
 	if !foundRuff {
-		results = append(results, ci.CheckResult{
-			Message: "Missing ruff check in CI",
-			Fix:     "Add ruff check to CI workflow.",
-		})
+		results = append(results, core.CheckResult{Message: "Missing ruff check in CI", Fix: "Add ruff check to CI workflow."})
 	}
 	if !foundPyright {
-		results = append(results, ci.CheckResult{
-			Message: "Missing pyright in CI",
-			Fix:     "Add pyright type-checking to CI workflow.",
-		})
+		results = append(results, core.CheckResult{Message: "Missing pyright in CI", Fix: "Add pyright type-checking to CI workflow."})
 	}
 	if s.requirePytestLinter && !foundPytestLinter {
-		results = append(results, ci.CheckResult{
-			Message: "Missing pytest-linter CI gate",
-			Fix:     "Add pytest-linter CI gate.",
-		})
+		results = append(results, core.CheckResult{Message: "Missing pytest-linter CI gate", Fix: "Add pytest-linter CI gate."})
 	}
 
 	return results
 }
-func (s *PythonStrategy) CheckSuppressions(files []ci.FileInfo, reader ci.FileReader) []ci.CheckResult {
-	var results []ci.CheckResult
+func (s *PythonStrategy) CheckSuppressions(files []core.FileInfo, reader core.FileReader) []core.CheckResult {
+	var results []core.CheckResult
 	for _, f := range files {
 		if !strings.HasSuffix(f.Path, ".py") {
 			continue
@@ -134,7 +125,7 @@ func (s *PythonStrategy) CheckSuppressions(files []ci.FileInfo, reader ci.FileRe
 			}
 		}
 		if count > 0 {
-			results = append(results, ci.CheckResult{
+			results = append(results, core.CheckResult{
 				Path:    f.Path,
 				Message: "Python suppression comments exceed threshold",
 				Fix:     "Reduce # noqa / # type: ignore comments. Address root causes.",

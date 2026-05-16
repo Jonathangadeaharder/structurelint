@@ -2,12 +2,14 @@ package ci
 
 import (
 	"testing"
+
+	"github.com/Jonathangadeaharder/structurelint/internal/rules/ci/core"
 )
 
 func TestCheckCommandMasking(t *testing.T) {
-	jobs := map[string]JobInfo{
+	jobs := map[string]core.JobInfo{
 		"test": {
-			Steps: []StepInfo{
+			Steps: []core.StepInfo{
 				{Name: "Run tests", Run: "go test ./... || true"},
 			},
 		},
@@ -19,9 +21,9 @@ func TestCheckCommandMasking(t *testing.T) {
 }
 
 func TestCheckCommandMaskingClean(t *testing.T) {
-	jobs := map[string]JobInfo{
+	jobs := map[string]core.JobInfo{
 		"test": {
-			Steps: []StepInfo{
+			Steps: []core.StepInfo{
 				{Name: "Run tests", Run: "go test ./..."},
 			},
 		},
@@ -33,10 +35,10 @@ func TestCheckCommandMaskingClean(t *testing.T) {
 }
 
 func TestCheckContinueOnError(t *testing.T) {
-	jobs := map[string]JobInfo{
+	jobs := map[string]core.JobInfo{
 		"quality": {
-			Steps: []StepInfo{
-				{Name: "lint", ContinueOnError: "true", Run: "ruff check"},
+			Steps: []core.StepInfo{
+				{Name: "lint", Run: "ruff check", ContinueOnError: "true"},
 			},
 		},
 	}
@@ -47,7 +49,7 @@ func TestCheckContinueOnError(t *testing.T) {
 }
 
 func TestCheckRequiredChecksAggregator(t *testing.T) {
-	jobs := map[string]JobInfo{
+	jobs := map[string]core.JobInfo{
 		"test":            {},
 		"required-checks": {},
 	}
@@ -58,7 +60,7 @@ func TestCheckRequiredChecksAggregator(t *testing.T) {
 }
 
 func TestCheckRequiredChecksAggregatorMissing(t *testing.T) {
-	jobs := map[string]JobInfo{
+	jobs := map[string]core.JobInfo{
 		"test": {},
 		"lint": {},
 	}

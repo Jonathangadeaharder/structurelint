@@ -4,18 +4,20 @@ import (
 	"encoding/json"
 	"path/filepath"
 	"strings"
+
+	"github.com/Jonathangadeaharder/structurelint/internal/rules/ci/core"
 )
 
 type ProjectDetector struct {
-	reader FileReader
+	reader core.FileReader
 }
 
-func NewProjectDetector(reader FileReader) *ProjectDetector {
+func NewProjectDetector(reader core.FileReader) *ProjectDetector {
 	return &ProjectDetector{reader: reader}
 }
 
-func (d *ProjectDetector) Detect(files []FileInfo) []ProjectType {
-	var types []ProjectType
+func (d *ProjectDetector) Detect(files []core.FileInfo) []core.ProjectType {
+	var types []core.ProjectType
 	hasSvelteKit := false
 	hasPython := false
 	hasGo := false
@@ -44,21 +46,21 @@ func (d *ProjectDetector) Detect(files []FileInfo) []ProjectType {
 	}
 
 	if hasSvelteKit {
-		types = append(types, SvelteKit)
+		types = append(types, core.SvelteKit)
 	}
 	if hasPython {
-		types = append(types, Python)
+		types = append(types, core.Python)
 	}
 	if hasGo {
-		types = append(types, Go)
+		types = append(types, core.Go)
 	}
 	if hasRust {
-		types = append(types, Rust)
+		types = append(types, core.Rust)
 	}
 	return types
 }
 
-func (d *ProjectDetector) isSvelteKit(f FileInfo) (bool, error) {
+func (d *ProjectDetector) isSvelteKit(f core.FileInfo) (bool, error) {
 	if d.reader == nil {
 		return false, nil
 	}

@@ -4,15 +4,14 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Jonathangadeaharder/structurelint/internal/rules/ci"
+	"github.com/Jonathangadeaharder/structurelint/internal/rules/ci/core"
 )
 
 func TestPythonCheckPytestCoverage(t *testing.T) {
-	reader := ci.MockFileReader{}
-	strat := NewPythonStrategy(reader, nil)
-	jobs := map[string]ci.JobInfo{
+	strat := NewPythonStrategy(nil, nil)
+	jobs := map[string]core.JobInfo{
 		"test": {
-			Steps: []ci.StepInfo{
+			Steps: []core.StepInfo{
 				{Name: "run tests", Run: "pytest"},
 			},
 		},
@@ -34,11 +33,10 @@ func TestPythonCheckPytestCoverage(t *testing.T) {
 }
 
 func TestPythonCheckPytestCoveragePass(t *testing.T) {
-	reader := ci.MockFileReader{}
-	strat := NewPythonStrategy(reader, nil)
-	jobs := map[string]ci.JobInfo{
+	strat := NewPythonStrategy(nil, nil)
+	jobs := map[string]core.JobInfo{
 		"test": {
-			Steps: []ci.StepInfo{
+			Steps: []core.StepInfo{
 				{Name: "test", Run: "pytest --cov --cov-branch --cov-fail-under=90"},
 			},
 		},
@@ -52,11 +50,10 @@ func TestPythonCheckPytestCoveragePass(t *testing.T) {
 }
 
 func TestPythonMissingRuff(t *testing.T) {
-	reader := ci.MockFileReader{}
-	strat := NewPythonStrategy(reader, nil)
-	jobs := map[string]ci.JobInfo{
+	strat := NewPythonStrategy(nil, nil)
+	jobs := map[string]core.JobInfo{
 		"test": {
-			Steps: []ci.StepInfo{
+			Steps: []core.StepInfo{
 				{Name: "run tests", Run: "pytest"},
 			},
 		},

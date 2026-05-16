@@ -1,4 +1,4 @@
-package ci
+package core
 
 import "github.com/Jonathangadeaharder/structurelint/internal/rules"
 
@@ -66,4 +66,18 @@ func (c CheckResult) ToViolation() rules.Violation {
 		v.Suggestions = []string{c.Fix}
 	}
 	return v
+}
+
+type FileReader interface {
+	ReadFile(path string) ([]byte, error)
+}
+
+type Strategy interface {
+	ProjectType() ProjectType
+	RequiredCoverage() CoverageThresholds
+	RequiredCIGates() []CIGate
+	RequiredLinters() []LinterTool
+	CheckProjectConfig(files []FileInfo, reader FileReader) []CheckResult
+	CheckWorkflowSteps(jobs map[string]JobInfo) []CheckResult
+	CheckSuppressions(files []FileInfo, reader FileReader) []CheckResult
 }

@@ -3,18 +3,18 @@ package strategies
 import (
 	"strings"
 
-	"github.com/Jonathangadeaharder/structurelint/internal/rules/ci"
+	"github.com/Jonathangadeaharder/structurelint/internal/rules/ci/core"
 )
 
 type RustStrategy struct {
-	reader              ci.FileReader
-	coverage            ci.CoverageThresholds
+	reader              core.FileReader
+	coverage            core.CoverageThresholds
 	requireCargoTestLint bool
 }
 
-func NewRustStrategy(reader ci.FileReader, cfg map[string]interface{}) *RustStrategy {
+func NewRustStrategy(reader core.FileReader, cfg map[string]interface{}) *RustStrategy {
 	s := &RustStrategy{reader: reader}
-	s.coverage = ci.CoverageThresholds{Lines: 90}
+	s.coverage = core.CoverageThresholds{Lines: 90}
 	if cfg != nil {
 		if v, ok := cfg["require-cargo-test-lint"].(bool); ok {
 			s.requireCargoTestLint = v
@@ -26,29 +26,29 @@ func NewRustStrategy(reader ci.FileReader, cfg map[string]interface{}) *RustStra
 	return s
 }
 
-func (s *RustStrategy) ProjectType() ci.ProjectType { return ci.Rust }
-func (s *RustStrategy) RequiredCoverage() ci.CoverageThresholds { return s.coverage }
-func (s *RustStrategy) RequiredCIGates() []ci.CIGate {
-	gates := []ci.CIGate{
+func (s *RustStrategy) ProjectType() core.ProjectType { return core.Rust }
+func (s *RustStrategy) RequiredCoverage() core.CoverageThresholds { return s.coverage }
+func (s *RustStrategy) RequiredCIGates() []core.CIGate {
+	gates := []core.CIGate{
 		{Name: "cargo clippy", Required: true, Hint: "Add cargo clippy to CI"},
 		{Name: "cargo fmt --check", Required: true, Hint: "Add cargo fmt --check to CI"},
 		{Name: "cargo test", Required: true, Hint: "Add cargo test to CI"},
 		{Name: "coverage", Required: true, Hint: "Add cargo llvm-cov or tarpaulin for coverage"},
 	}
 	if s.requireCargoTestLint {
-		gates = append(gates, ci.CIGate{Name: "cargo test-lint", Required: true, Hint: "Add cargo-test-lint to CI"})
+		gates = append(gates, core.CIGate{Name: "cargo test-lint", Required: true, Hint: "Add cargo-test-lint to CI"})
 	}
 	return gates
 }
-func (s *RustStrategy) RequiredLinters() []ci.LinterTool {
-	return []ci.LinterTool{
+func (s *RustStrategy) RequiredLinters() []core.LinterTool {
+	return []core.LinterTool{
 		{Name: "clippy", Required: true, Hint: "Configure clippy in Cargo.toml"},
 		{Name: "rustfmt", Required: true, Hint: "Configure rustfmt"},
 	}
 }
-func (s *RustStrategy) CheckProjectConfig(files []ci.FileInfo, reader ci.FileReader) []ci.CheckResult { return nil }
-func (s *RustStrategy) CheckWorkflowSteps(jobs map[string]ci.JobInfo) []ci.CheckResult {
-	var results []ci.CheckResult
+func (s *RustStrategy) CheckProjectConfig(files []core.FileInfo, reader core.FileReader) []core.CheckResult { return nil }
+func (s *RustStrategy) CheckWorkflowSteps(jobs map[string]core.JobInfo) []core.CheckResult {
+	var results []core.CheckResult
 	foundClippy := false
 	foundFmt := false
 	foundTest := false
@@ -76,20 +76,20 @@ func (s *RustStrategy) CheckWorkflowSteps(jobs map[string]ci.JobInfo) []ci.Check
 		}
 	}
 	if !foundClippy {
-		results = append(results, ci.CheckResult{Message: "Missing cargo clippy in CI", Fix: "Add cargo clippy to CI workflow."})
+		results = append(results, core.CheckResult{Message: "Missing cargo clippy in CI", Fix: "Add cargo clippy to CI workflow."})
 	}
 	if !foundFmt {
-		results = append(results, ci.CheckResult{Message: "Missing cargo fmt --check in CI", Fix: "Add cargo fmt --check to CI."})
+		results = append(results, core.CheckResult{Message: "Missing cargo fmt --check in CI", Fix: "Add cargo fmt --check to CI."})
 	}
 	if !foundTest {
-		results = append(results, ci.CheckResult{Message: "Missing cargo test in CI", Fix: "Add cargo test to CI."})
+		results = append(results, core.CheckResult{Message: "Missing cargo test in CI", Fix: "Add cargo test to CI."})
 	}
 	if !foundCoverage {
-		results = append(results, ci.CheckResult{Message: "Missing coverage gate in CI", Fix: "Add cargo llvm-cov or tarpaulin."})
+		results = append(results, core.CheckResult{Message: "Missing coverage gate in CI", Fix: "Add cargo llvm-cov or tarpaulin."})
 	}
 	if s.requireCargoTestLint && !foundTestLint {
-		results = append(results, ci.CheckResult{Message: "Missing cargo test-lint in CI", Fix: "Add cargo-test-lint to CI."})
+		results = append(results, core.CheckResult{Message: "Missing cargo test-lint in CI", Fix: "Add cargo-test-lint to CI."})
 	}
 	return results
 }
-func (s *RustStrategy) CheckSuppressions(files []ci.FileInfo, reader ci.FileReader) []ci.CheckResult { return nil }
+func (s *RustStrategy) CheckSuppressions(files []core.FileInfo, reader core.FileReader) []core.CheckResult { return nil }
