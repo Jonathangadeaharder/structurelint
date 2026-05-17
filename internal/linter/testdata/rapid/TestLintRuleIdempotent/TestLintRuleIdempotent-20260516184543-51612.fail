@@ -1,0 +1,40 @@
+# 2026/05/16 18:45:43.346969 [TestLintRuleIdempotent] [rapid] draw fileCount: 1
+# 2026/05/16 18:45:43.346993 [TestLintRuleIdempotent] [rapid] draw depth: 0
+# 2026/05/16 18:45:43.346995 [TestLintRuleIdempotent] [rapid] draw ext: ".ts"
+# 2026/05/16 18:45:43.346997 [TestLintRuleIdempotent] [rapid] draw filename: "a00"
+# 2026/05/16 18:45:43.346998 [TestLintRuleIdempotent] [rapid] draw ruleType: 5
+# 2026/05/16 18:45:43.346999 [TestLintRuleIdempotent] [rapid] draw namingPatternCount: 1
+# 2026/05/16 18:45:43.347000 [TestLintRuleIdempotent] [rapid] draw namingPat_0: "*.ts"
+# 2026/05/16 18:45:43.347000 [TestLintRuleIdempotent] [rapid] draw namingConv_0: "camelCase"
+# 
+v0.4.8#15098018090935901321
+0x0
+0x0
+0x1
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x1f2b5a0e61c3a6
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
