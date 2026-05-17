@@ -19,5 +19,4 @@ func TestCountLeadingParents(t *testing.T) {
 			t.Errorf("countLeadingParents(%q) = %d, want %d", c.in, got, c.want)
 		}
 	}
-	}
 }
