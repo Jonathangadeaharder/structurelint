@@ -1,0 +1,180 @@
+# 2026/05/16 18:45:43.625151 [TestLintRuleDeterminism] [rapid] draw fileCount: 8
+# 2026/05/16 18:45:43.625154 [TestLintRuleDeterminism] [rapid] draw depth: 0
+# 2026/05/16 18:45:43.625155 [TestLintRuleDeterminism] [rapid] draw ext: ".ts"
+# 2026/05/16 18:45:43.625157 [TestLintRuleDeterminism] [rapid] draw filename: "a00"
+# 2026/05/16 18:45:43.625157 [TestLintRuleDeterminism] [rapid] draw depth: 0
+# 2026/05/16 18:45:43.625158 [TestLintRuleDeterminism] [rapid] draw ext: ".ts"
+# 2026/05/16 18:45:43.625158 [TestLintRuleDeterminism] [rapid] draw filename: "a00"
+# 2026/05/16 18:45:43.625159 [TestLintRuleDeterminism] [rapid] draw depth: 0
+# 2026/05/16 18:45:43.625159 [TestLintRuleDeterminism] [rapid] draw ext: ".ts"
+# 2026/05/16 18:45:43.625160 [TestLintRuleDeterminism] [rapid] draw filename: "a00"
+# 2026/05/16 18:45:43.625160 [TestLintRuleDeterminism] [rapid] draw depth: 0
+# 2026/05/16 18:45:43.625160 [TestLintRuleDeterminism] [rapid] draw ext: ".ts"
+# 2026/05/16 18:45:43.625161 [TestLintRuleDeterminism] [rapid] draw filename: "a00"
+# 2026/05/16 18:45:43.625161 [TestLintRuleDeterminism] [rapid] draw depth: 0
+# 2026/05/16 18:45:43.625161 [TestLintRuleDeterminism] [rapid] draw ext: ".ts"
+# 2026/05/16 18:45:43.625162 [TestLintRuleDeterminism] [rapid] draw filename: "a00"
+# 2026/05/16 18:45:43.625162 [TestLintRuleDeterminism] [rapid] draw depth: 0
+# 2026/05/16 18:45:43.625163 [TestLintRuleDeterminism] [rapid] draw ext: ".ts"
+# 2026/05/16 18:45:43.625164 [TestLintRuleDeterminism] [rapid] draw filename: "a00"
+# 2026/05/16 18:45:43.625164 [TestLintRuleDeterminism] [rapid] draw depth: 0
+# 2026/05/16 18:45:43.625164 [TestLintRuleDeterminism] [rapid] draw ext: ".ts"
+# 2026/05/16 18:45:43.625165 [TestLintRuleDeterminism] [rapid] draw filename: "a00"
+# 2026/05/16 18:45:43.625165 [TestLintRuleDeterminism] [rapid] draw depth: 0
+# 2026/05/16 18:45:43.625165 [TestLintRuleDeterminism] [rapid] draw ext: ".ts"
+# 2026/05/16 18:45:43.625166 [TestLintRuleDeterminism] [rapid] draw filename: "a00"
+# 2026/05/16 18:45:43.625166 [TestLintRuleDeterminism] [rapid] draw ruleType: 5
+# 2026/05/16 18:45:43.625167 [TestLintRuleDeterminism] [rapid] draw namingPatternCount: 1
+# 2026/05/16 18:45:43.625167 [TestLintRuleDeterminism] [rapid] draw namingPat_0: "*.ts"
+# 2026/05/16 18:45:43.625167 [TestLintRuleDeterminism] [rapid] draw namingConv_0: "camelCase"
+# 
+v0.4.8#12175254209345376840
+0x0
+0x9867f1f40f739
+0x8
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x6b74f03291620
+0x5
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
