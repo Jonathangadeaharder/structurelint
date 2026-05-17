@@ -21,7 +21,10 @@ func FuzzMatchesPattern(f *testing.F) {
 	}
 
 	f.Fuzz(func(t *testing.T, path, pattern string) {
-		_ = walker.MatchesPattern(path, pattern)
+		result := walker.MatchesPattern(path, pattern)
+		if pattern == "" && result {
+			t.Errorf("MatchesPattern(%q, %q) = true, want false", path, pattern)
+		}
 	})
 }
 
@@ -40,6 +43,9 @@ func FuzzMatchesPatternGlob(f *testing.F) {
 		if strings.Contains(path, "\x00") || strings.Contains(pattern, "\x00") {
 			t.Skip()
 		}
-		_ = walker.MatchesPattern(path, pattern)
+		result := walker.MatchesPattern(path, pattern)
+		if pattern == "" && result {
+			t.Errorf("MatchesPattern(%q, %q) = true, want false", path, pattern)
+		}
 	})
 }

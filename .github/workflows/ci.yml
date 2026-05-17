@@ -221,13 +221,13 @@ jobs:
         run: go mod download
 
       - name: Fuzz smoke test — FuzzParse
-        run: go test ./fuzz/ -fuzz=FuzzParse -fuzztime=30s
+        run: go test ./fuzz/ -fuzz=^FuzzParse$ -fuzztime=30s
 
       - name: Fuzz smoke test — FuzzLintRule
-        run: go test ./fuzz/ -fuzz=FuzzLintRule -fuzztime=30s
+        run: go test ./fuzz/ -fuzz=^FuzzLintRule$ -fuzztime=30s
 
       - name: Fuzz smoke test — FuzzJSONOutput
-        run: go test ./fuzz/ -fuzz=FuzzJSONOutput -fuzztime=30s
+        run: go test ./fuzz/ -fuzz=^FuzzJSONOutput$ -fuzztime=30s
 
   # NOTE: Mutation testing via go-mutesting is NOT compatible with Go 1.26 (StdSizes nil pointer).
   # Re-enable when go-mutesting is updated or switch to a maintained alternative.
