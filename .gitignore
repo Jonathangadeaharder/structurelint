@@ -22,6 +22,7 @@ node_modules/
 /structurelint
 dist/
 build/
+target/
 
 # IDE
 .idea/
@@ -43,3 +44,5 @@ repomix-output.txt
 # Test output files
 test-results.txt
 coverage.out
+coverage/
+*.lcov
