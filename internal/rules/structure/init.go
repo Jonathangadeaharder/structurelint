@@ -106,6 +106,10 @@ func init() {
 		}
 		return NewDeepRelativeImportsRule(max), nil
 	})
+
+	rules.Register("linter-config", func(ctx *rules.RuleContext) (rules.Rule, error) {
+		return NewLinterConfigRule(ctx.RootDir), nil
+	})
 }
 
 // parseMaxDepthOverrides accepts:
