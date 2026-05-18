@@ -4,7 +4,7 @@ builds:
   - main: ./cmd/structurelint
     binary: structurelint
     env:
-      - CGO_ENABLED=0
+      - CGO_ENABLED=1
     goos:
       - darwin
       - linux
@@ -27,5 +27,5 @@ checksum:
 
 release:
   github:
-    owner: Jonathangadeaharder
+    owner: VidiomTM
     name: structurelint

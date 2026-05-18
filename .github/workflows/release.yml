@@ -9,14 +9,15 @@ permissions:
 
 jobs:
   release:
-    runs-on: ["self-hosted", "macos", "arm64", "VidiomTM"]
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Install goreleaser
-        run: brew install goreleaser
+      - name: Install tree-sitter + goreleaser
+        run: |
+          brew install tree-sitter goreleaser
 
       - name: Run goreleaser
         run: goreleaser release --clean
