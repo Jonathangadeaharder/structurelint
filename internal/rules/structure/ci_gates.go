@@ -62,7 +62,12 @@ func hasPrefixFile(dir, prefix string) bool {
 		return false
 	}
 	for _, e := range entries {
-		if !e.IsDir() && strings.HasPrefix(e.Name(), prefix) {
+		if e.IsDir() {
+			continue
+		}
+		name := e.Name()
+		ext := filepath.Ext(name)
+		if (ext == ".yml" || ext == ".yaml") && strings.HasPrefix(name, prefix) {
 			return true
 		}
 	}
