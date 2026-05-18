@@ -2,8 +2,8 @@
 
 ## Goal
 
-Every VidiomTM project gets a standardized set of 10 CI gates in its PR and
-merge workflows. structurelint enforces that the required config files and
+Every VidiomTM project gets a standardized set of 10 PR gates + 1 merge-only
+gate in its CI workflows. structurelint enforces that the required config files and
 workflows exist with correct settings.
 
 ## Project Types
@@ -167,7 +167,7 @@ All types: `semgrep --config=auto .` (or `returntocorp/semgrep-action@v1` with `
 
 Semgrep config at `.semgrep.yml` in repo root.
 
-### Gate 10: Integration Tests + E2E
+### Gate 11: Integration Tests + E2E
 
 Cross-service/in-browser tests. Run only when service deps change or on merge.
 
@@ -393,13 +393,13 @@ settings. This rule was previously removed — it's being revived and enhanced.
 For Python projects:
 - `pyproject.toml` contains `[tool.pyright]` with `typeCheckingMode = "strict"`
 - `pyproject.toml` contains `[tool.ruff]` section
-- `.pre-commit-config.yaml` (if exists) contains `ty` hook
 - `.semgrep.yml` exists
+- `.pre-commit-config.yaml` (if exists) contains `ty` hook — **not yet implemented**
 
 For SvelteKit projects:
 - `tsconfig.json` has `"strict": true`
-- `package.json` has `"check"` script
 - `.semgrep.yml` exists
+- `package.json` has `"check"` script — **not yet implemented**
 
 For JS/TS projects:
 - `tsconfig.json` has `"strict": true` (if tsconfig exists)
@@ -412,9 +412,9 @@ exist and contain the required jobs for the project's language.
 
 Checks:
 - Gate files exist
-- Each required gate has a job
-- `runs-on` uses org runner labels
-- Merge gate includes E2E for SvelteKit
+- Each required gate has a job — **not yet implemented**
+- `runs-on` uses org runner labels — **not yet implemented**
+- Merge gate includes E2E for SvelteKit — **not yet implemented**
 
 ### Preset updates
 
