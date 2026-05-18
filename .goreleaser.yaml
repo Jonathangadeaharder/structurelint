@@ -22,20 +22,6 @@ archives:
       {{- else }}{{ .Arch }}
       {{- end }}
 
-brews:
-  - name: structurelint
-    repository:
-      owner: VidiomTM
-      name: homebrew-tap
-      branch: main
-    directory: Formula
-    homepage: https://github.com/Jonathangadeaharder/structurelint
-    description: Lint repository structure against a YAML schema
-    test: |
-      system "#{bin}/structurelint --version"
-    install: |
-      bin.install "structurelint"
-
 checksum:
   name_template: checksums.txt
 
