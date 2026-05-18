@@ -32,7 +32,8 @@ on:
 jobs:
   repomix:
     name: Generate Repomixed Codebase
-    runs-on: self-hosted
+    runs-on: ["self-hosted", "macos", "arm64", "VidiomTM"]
+    if: github.event.pull_request == null || github.event.pull_request.head.repo.full_name == github.repository
 
     steps:
       - name: Checkout code
