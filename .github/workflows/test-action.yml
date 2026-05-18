@@ -10,7 +10,8 @@ on:
 jobs:
   lint-self:
     name: Lint Structurelint Project
-    runs-on: self-hosted
+    runs-on: ["self-hosted", "macos", "arm64", "VidiomTM"]
+    if: github.event.pull_request == null || github.event.pull_request.head.repo.full_name == github.repository
 
     steps:
       - name: Checkout code
@@ -39,7 +40,8 @@ jobs:
 
   test-commands:
     name: Test All Commands
-    runs-on: ["self-hosted", "go", "macos"]
+    runs-on: ["self-hosted", "macos", "arm64", "VidiomTM"]
+    if: github.event.pull_request == null || github.event.pull_request.head.repo.full_name == github.repository
 
     steps:
       - name: Checkout code
@@ -73,7 +75,8 @@ jobs:
 
   integration-test:
     name: Integration Test
-    runs-on: ["self-hosted", "go", "macos"]
+    runs-on: ["self-hosted", "macos", "arm64", "VidiomTM"]
+    if: github.event.pull_request == null || github.event.pull_request.head.repo.full_name == github.repository
 
     steps:
       - name: Checkout code

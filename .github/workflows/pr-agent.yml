@@ -12,7 +12,8 @@ concurrency:
 
 jobs:
   pr-agent:
-    runs-on: ["self-hosted", "python", "macos"]
+    runs-on: ["self-hosted", "macos", "arm64", "VidiomTM"]
+    if: github.event.pull_request == null || github.event.pull_request.head.repo.full_name == github.repository
     permissions:
       contents: read
       pull-requests: write
