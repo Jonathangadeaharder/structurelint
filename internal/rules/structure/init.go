@@ -110,6 +110,10 @@ func init() {
 	rules.Register("linter-config", func(ctx *rules.RuleContext) (rules.Rule, error) {
 		return NewLinterConfigRule(ctx.RootDir), nil
 	})
+
+	rules.Register("ci-gates", func(ctx *rules.RuleContext) (rules.Rule, error) {
+		return NewCIGatesRule(ctx.RootDir), nil
+	})
 }
 
 // parseMaxDepthOverrides accepts:
