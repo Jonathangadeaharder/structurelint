@@ -7,11 +7,14 @@ import (
 	"github.com/Jonathangadeaharder/structurelint/internal/rules"
 )
 
+const errMissingMaxParam = "missing 'max' parameter"
+const errInvalidConfig = "invalid configuration"
+
 func init() {
 	rules.Register("max-depth", func(ctx *rules.RuleContext) (rules.Rule, error) {
 		max, ok := ctx.GetInt("max")
 		if !ok {
-			return nil, fmt.Errorf("missing 'max' parameter")
+			return nil, fmt.Errorf(errMissingMaxParam)
 		}
 		overrides := parseMaxDepthOverrides(ctx.Config["overrides"])
 		if len(overrides) == 0 {
@@ -24,14 +27,14 @@ func init() {
 		if max, ok := ctx.GetInt("max"); ok {
 			return NewMaxFilesRule(max), nil
 		}
-		return nil, fmt.Errorf("missing 'max' parameter")
+		return nil, fmt.Errorf(errMissingMaxParam)
 	})
 
 	rules.Register("max-subdirs", func(ctx *rules.RuleContext) (rules.Rule, error) {
 		if max, ok := ctx.GetInt("max"); ok {
 			return NewMaxSubdirsRule(max), nil
 		}
-		return nil, fmt.Errorf("missing 'max' parameter")
+		return nil, fmt.Errorf(errMissingMaxParam)
 	})
 
 	rules.Register("file-existence", func(ctx *rules.RuleContext) (rules.Rule, error) {
@@ -49,42 +52,32 @@ func init() {
 		if patterns, ok := ctx.GetStringMap(""); ok {
 			return NewRegexMatchRule(patterns), nil
 		}
-		return nil, fmt.Errorf("invalid configuration")
+		return nil, fmt.Errorf(errInvalidConfig)
 	})
 
 	rules.Register("disallowed-patterns", func(ctx *rules.RuleContext) (rules.Rule, error) {
-		var patterns []string
-		if list, ok := ctx.Config["patterns"].([]interface{}); ok {
-			for _, item := range list {
-				if s, ok := item.(string); ok {
-					patterns = append(patterns, s)
-				}
-			}
-		} else if list, ok := ctx.Config[""].([]interface{}); ok {
-			for _, item := range list {
-				if s, ok := item.(string); ok {
-					patterns = append(patterns, s)
-				}
-			}
+		patterns := extractStringList(ctx.Config, "patterns")
+		if len(patterns) == 0 {
+			patterns = extractStringList(ctx.Config, "")
 		}
 		if len(patterns) > 0 {
 			return NewDisallowedPatternsRule(patterns), nil
 		}
-		return nil, fmt.Errorf("invalid configuration")
+		return nil, fmt.Errorf(errInvalidConfig)
 	})
 
 	rules.Register("naming-convention", func(ctx *rules.RuleContext) (rules.Rule, error) {
 		if patterns, ok := ctx.GetStringMap(""); ok {
 			return NewNamingConventionRule(patterns), nil
 		}
-		return nil, fmt.Errorf("invalid configuration")
+		return nil, fmt.Errorf(errInvalidConfig)
 	})
 
 	rules.Register("uniqueness-constraints", func(ctx *rules.RuleContext) (rules.Rule, error) {
 		if constraints, ok := ctx.GetStringMap(""); ok {
 			return NewUniquenessConstraintsRule(constraints), nil
 		}
-		return nil, fmt.Errorf("invalid configuration")
+		return nil, fmt.Errorf(errInvalidConfig)
 	})
 
 	rules.Register("case-conflicts", func(_ *rules.RuleContext) (rules.Rule, error) {
@@ -119,6 +112,21 @@ func init() {
 //	overrides:
 //	  - pattern: "src/routes/**"
 //	    max: 8
+// extractStringList extracts a list of strings from ctx.Config[key]
+func extractStringList(config map[string]interface{}, key string) []string {
+	list, ok := config[key].([]interface{})
+	if !ok {
+		return nil
+	}
+	var result []string
+	for _, item := range list {
+		if s, ok := item.(string); ok {
+			result = append(result, s)
+		}
+	}
+	return result
+}
+
 func parseMaxDepthOverrides(raw interface{}) []MaxDepthOverride {
 	if raw == nil {
 		return nil

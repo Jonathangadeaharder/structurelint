@@ -6,6 +6,8 @@ import (
 	"github.com/Jonathangadeaharder/structurelint/internal/rules/ci/core"
 )
 
+const vitestLinterGate = "vitest-linter"
+
 type SvelteKitStrategy struct {
 	reader             core.FileReader
 	coverage           core.CoverageThresholds
@@ -48,7 +50,7 @@ func (s *SvelteKitStrategy) RequiredCIGates() []core.CIGate {
 		{Name: "build", Required: true, Hint: "Add pnpm build"},
 	}
 	if s.requireVitestLinter {
-		gates = append(gates, core.CIGate{Name: "vitest-linter", Required: true, Hint: "Add vitest-linter CI gate"})
+		gates = append(gates, core.CIGate{Name: vitestLinterGate, Required: true, Hint: "Add vitest-linter CI gate"})
 	}
 	if s.requireSvelteuml {
 		gates = append(gates, core.CIGate{Name: "svelteuml", Required: true, Hint: "Add svelteuml diagram generation to CI"})
@@ -85,8 +87,8 @@ func (s *SvelteKitStrategy) CheckWorkflowSteps(jobs map[string]core.JobInfo) []c
 							})
 						}
 					}
-				case strings.Contains(gate.Name, "vitest-linter"):
-					if strings.Contains(combined, "vitest-linter") {
+				case strings.Contains(gate.Name, vitestLinterGate):
+					if strings.Contains(combined, vitestLinterGate) {
 						found = true
 					}
 				case strings.Contains(gate.Name, "svelteuml"):
