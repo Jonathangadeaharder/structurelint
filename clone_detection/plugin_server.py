@@ -39,6 +39,9 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Constants
+DEFAULT_MODEL_NAME = "microsoft/graphcodebert-base"
+
 # Create FastAPI app
 app = FastAPI(
     title="Structurelint Semantic Clone Detection Plugin",
@@ -94,7 +97,7 @@ class SemanticCloneStats(BaseModel):
     files_analyzed: int
     functions_analyzed: int
     duration_ms: int
-    model_used: str = "microsoft/graphcodebert-base"
+    model_used: str = DEFAULT_MODEL_NAME
 
 
 class SemanticCloneResponse(BaseModel):
@@ -141,7 +144,7 @@ async def health_check() -> HealthResponse:
                 try:
                     # Try to initialize embedder (this can fail if model not downloaded)
                     embedder = GraphCodeBERTEmbedder(
-                        model_name="microsoft/graphcodebert-base",
+                        model_name=DEFAULT_MODEL_NAME,
                         device="cpu"  # Use CPU for health check
                     )
                     return HealthResponse(
@@ -186,12 +189,13 @@ async def detect_clones(request: SemanticCloneRequest) -> SemanticCloneResponse:
                 if embedder is None:
                     logger.info("Initializing GraphCodeBERT embedder...")
                     embedder = GraphCodeBERTEmbedder(
-                        model_name="microsoft/graphcodebert-base",
+                        model_name=DEFAULT_MODEL_NAME,
                         device="cpu"  # TODO: Support GPU via config
                     )
 
         # Parse source files
-        logger.info(f"Parsing source directory: {request.source_dir}")
+        safe_path = str(Path(request.source_dir).resolve())
+        logger.info("Parsing source directory: %s", safe_path)
         parser = TreeSitterParser(languages=request.languages)
 
         functions = parser.parse_directory(
