@@ -77,6 +77,8 @@ rules:
       - "internal/ptest/**"
       - "fuzz/**"
 
+  ci-gates: true
+  fallow-gate: true
   disallow-import-cycles: true
 
 layers:
