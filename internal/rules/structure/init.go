@@ -106,6 +106,14 @@ func init() {
 		}
 		return NewDeepRelativeImportsRule(max), nil
 	})
+
+	rules.Register("ci-gates", func(ctx *rules.RuleContext) (rules.Rule, error) {
+		return NewCIGatesRule(ctx.RootDir), nil
+	})
+
+	rules.Register("fallow-gate", func(ctx *rules.RuleContext) (rules.Rule, error) {
+		return NewFallowGateRule(ctx.RootDir), nil
+	})
 }
 
 // parseMaxDepthOverrides accepts:
