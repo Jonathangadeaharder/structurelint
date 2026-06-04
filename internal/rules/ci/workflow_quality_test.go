@@ -61,7 +61,11 @@ jobs:
       - "non-mapping-step"
 `}
 	jobs = parseWorkflowJobs(file, nonMappingStepReader)
-	if len(jobs["job1"].Steps) != 0 {
-		t.Errorf("expected 0 steps for non-mapping step list, got %v", jobs["job1"].Steps)
+	job1, ok := jobs["job1"]
+	if !ok {
+		t.Fatal("expected job1 to exist in parsed jobs")
+	}
+	if len(job1.Steps) != 0 {
+		t.Errorf("expected 0 steps for non-mapping step list, got %v", job1.Steps)
 	}
 }

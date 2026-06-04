@@ -73,11 +73,16 @@ jobs:
 
       - name: Apply auto-fixes
         run: |
-          if ! structurelint fix --dry-run | grep -q "No fixable violations found"; then
+          dry_output=$(structurelint fix --dry-run 2>&1) || {
+            echo "::error::structurelint fix --dry-run failed"
+            echo "fixes_applied=false" >> $GITHUB_OUTPUT
+            exit 1
+          }
+          if echo "$dry_output" | grep -q "No fixable violations found"; then
+            echo "fixes_applied=false" >> $GITHUB_OUTPUT
+          else
             structurelint fix --auto
             echo "fixes_applied=true" >> $GITHUB_OUTPUT
-          else
-            echo "fixes_applied=false" >> $GITHUB_OUTPUT
           fi
         id: autofix
 

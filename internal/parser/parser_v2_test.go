@@ -51,9 +51,21 @@ func ExportedFunc() {}
 		t.Fatalf("ParseExports() error = %v", err)
 	}
 
-	// We might get empty exports or not, depending on parser configuration,
-	// but let's test it runs without errors.
-	_ = exports
+	if len(exports) == 0 {
+		t.Fatalf("expected at least one export, got 0")
+	}
+	found := false
+	for _, e := range exports {
+		for _, n := range e.Names {
+			if n == "ExportedFunc" {
+				found = true
+				break
+			}
+		}
+	}
+	if !found {
+		t.Fatalf("expected export %q not found in %+v", "ExportedFunc", exports)
+	}
 }
 
 func TestParserV2_CGO_UnsupportedExtension(t *testing.T) {
