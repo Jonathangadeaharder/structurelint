@@ -65,6 +65,7 @@ jobs:
       - name: Test init command
         run: |
           cd /tmp
+          rm -rf test-project
           mkdir test-project
           cd test-project
           echo 'module example.com/test' > go.mod
