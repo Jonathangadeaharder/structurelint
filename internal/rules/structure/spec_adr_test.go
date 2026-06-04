@@ -246,6 +246,7 @@ func TestSpecADRRule_ADRTemplateEnforcement(t *testing.T) {
 		setupFiles        func(dir string) ([]walker.FileInfo, error)
 		wantViolationMsgs []string
 		description       string
+		customRule        *SpecADRRule
 	}{
 		{
 			name: "Valid ADR",
@@ -312,6 +313,81 @@ date: 2026-06-04
 			wantViolationMsgs: []string{"ADR is missing required sections"},
 			description:       "Should fail when required headings are missing",
 		},
+		{
+			name: "Status only in body",
+			setupFiles: func(dir string) ([]walker.FileInfo, error) {
+				adrPath := filepath.Join(dir, "ADR-004-status-in-body.md")
+				content := `---
+date: 2026-06-04
+---
+# ADR-004: Status in body
+status: accepted
+
+## Context and Problem Statement
+Context description.
+## Considered Options
+Options description.
+## Decision Outcome
+Outcome description.
+`
+				if err := os.WriteFile(adrPath, []byte(content), 0644); err != nil {
+					return nil, err
+				}
+				return []walker.FileInfo{{Path: adrPath, ParentPath: dir, IsDir: false}}, nil
+			},
+			wantViolationMsgs: []string{"ADR must include a 'status' field"},
+			description:       "Should fail when status metadata is in the body instead of frontmatter",
+		},
+		{
+			name: "Pattern with directories",
+			setupFiles: func(dir string) ([]walker.FileInfo, error) {
+				nestedDir := filepath.Join(dir, "dir/subdir")
+				if err := os.MkdirAll(nestedDir, 0755); err != nil {
+					return nil, err
+				}
+				adrPath := filepath.Join(nestedDir, "ADR-005.md")
+				specPath := filepath.Join(nestedDir, "spec-001.md")
+				
+				adrContent := `---
+status: accepted
+date: 2026-06-04
+---
+# ADR-005: Valid
+## Context and Problem Statement
+Context description.
+## Considered Options
+Options description.
+## Decision Outcome
+Outcome description.
+`
+				specContent := `# Feature Specification: Missing Stuff
+`
+				if err := os.WriteFile(adrPath, []byte(adrContent), 0644); err != nil {
+					return nil, err
+				}
+				if err := os.WriteFile(specPath, []byte(specContent), 0644); err != nil {
+					return nil, err
+				}
+				return []walker.FileInfo{
+					{Path: adrPath, ParentPath: dir, IsDir: false},
+					{Path: specPath, ParentPath: dir, IsDir: false},
+				}, nil
+			},
+			wantViolationMsgs: []string{"Feature specification is missing required sections"},
+			description:       "Should match files in nested directories using custom patterns with directory segments and run validation",
+			customRule: func() *SpecADRRule {
+				requireFalse := false
+				requireTrue := true
+				return NewSpecADRRule(SpecADRRule{
+					RequireSpecFolder:   &requireFalse,
+					RequireADRFolder:    &requireFalse,
+					EnforceADRTemplate:  &requireTrue,
+					EnforceSpecTemplate: &requireTrue,
+					ADRFilePatterns:     []string{"subdir/**/*.md"},
+					SpecFilePatterns:    []string{"subdir/**/*.md"},
+				})
+			}(),
+		},
 	}
 
 	for _, tt := range tests {
@@ -322,12 +398,15 @@ date: 2026-06-04
 				t.Fatalf("Failed to setup test files: %v", err)
 			}
 
-			requireFalse := false
-			rule := NewSpecADRRule(SpecADRRule{
-				RequireSpecFolder:   &requireFalse,
-				RequireADRFolder:    &requireFalse,
-				EnforceADRTemplate: &requireTrue,
-			})
+			rule := tt.customRule
+			if rule == nil {
+				requireFalse := false
+				rule = NewSpecADRRule(SpecADRRule{
+					RequireSpecFolder:   &requireFalse,
+					RequireADRFolder:    &requireFalse,
+					EnforceADRTemplate: &requireTrue,
+				})
+			}
 
 			violations := rule.Check(files, make(map[string]*walker.DirInfo))
 

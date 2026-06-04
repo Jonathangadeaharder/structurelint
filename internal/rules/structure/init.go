@@ -105,7 +105,12 @@ func init() {
 	})
 
 	rules.Register("spec-adr-enforcement", func(ctx *rules.RuleContext) (rules.Rule, error) {
-		return ParseSpecADRRule(ctx.Config)
+		rule, err := ParseSpecADRRule(ctx.Config)
+		if err != nil {
+			return nil, err
+		}
+		rule.ruleName = "spec-adr-enforcement"
+		return rule, nil
 	})
 }
 

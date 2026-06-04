@@ -9,10 +9,12 @@ import (
 
 	"github.com/Jonathangadeaharder/structurelint/internal/rules"
 	"github.com/Jonathangadeaharder/structurelint/internal/walker"
+	yaml "gopkg.in/yaml.v3"
 )
 
 // SpecADRRule validates feature specifications and architecture decision records.
 type SpecADRRule struct {
+	ruleName             string
 	RequireSpecFolder    *bool    `json:"require-spec-folder"`
 	RequireADRFolder     *bool    `json:"require-adr-folder"`
 	EnforceSpecTemplate  *bool    `json:"enforce-spec-template"`
@@ -28,6 +30,9 @@ type SpecADRRule struct {
 
 // Name returns the rule name.
 func (r *SpecADRRule) Name() string {
+	if r.ruleName != "" {
+		return r.ruleName
+	}
 	return "spec-adr"
 }
 
@@ -99,7 +104,7 @@ func (r *SpecADRRule) validateSpecFiles(files []walker.FileInfo) []rules.Violati
 		}
 
 		// Check if file matches spec patterns
-		if !r.matchesPatterns(filepath.Base(file.Path), r.SpecFilePatterns) {
+		if !r.matchesPatterns(file.Path, r.SpecFilePatterns) {
 			continue
 		}
 
@@ -174,7 +179,7 @@ func (r *SpecADRRule) validateADRFiles(files []walker.FileInfo) []rules.Violatio
 		}
 
 		// Check if file matches ADR patterns
-		if !r.matchesPatterns(filepath.Base(file.Path), r.ADRFilePatterns) {
+		if !r.matchesPatterns(file.Path, r.ADRFilePatterns) {
 			continue
 		}
 
@@ -202,13 +207,22 @@ func (r *SpecADRRule) validateADRFiles(files []walker.FileInfo) []rules.Violatio
 			})
 		}
 
-		// Validate required metadata fields exist
+		// Validate required metadata fields exist in frontmatter
+		frontmatter, err := parseFrontmatter(contentStr)
+		if err != nil {
+			violations = append(violations, rules.Violation{
+				Rule:    r.Name(),
+				Path:    file.Path,
+				Message: "ADR must include valid YAML frontmatter (between '---' delimiters) containing required metadata fields.",
+			})
+			continue
+		}
+
 		for _, meta := range r.ADRRequiredMetadata {
-			lowerMeta := strings.ToLower(meta)
-			// check for case variations (e.g., "status:" or "Status:")
-			var found bool
-			for _, variant := range []string{meta, strings.Title(lowerMeta), strings.ToUpper(lowerMeta), lowerMeta} {
-				if strings.Contains(contentStr, variant) {
+			keyToFind := strings.ToLower(strings.TrimSuffix(meta, ":"))
+			found := false
+			for k := range frontmatter {
+				if strings.ToLower(k) == keyToFind {
 					found = true
 					break
 				}
@@ -226,17 +240,77 @@ func (r *SpecADRRule) validateADRFiles(files []walker.FileInfo) []rules.Violatio
 	return violations
 }
 
-// matchesPatterns checks if a filename matches any of the given patterns.
-func (r *SpecADRRule) matchesPatterns(filename string, patterns []string) bool {
+// parseFrontmatter extracts YAML frontmatter from markdown content.
+func parseFrontmatter(content string) (map[string]interface{}, error) {
+	trimmed := strings.TrimSpace(content)
+	if !strings.HasPrefix(trimmed, "---") {
+		return nil, fmt.Errorf("no frontmatter found")
+	}
+
+	lines := strings.Split(trimmed, "\n")
+	if len(lines) < 2 {
+		return nil, fmt.Errorf("too short for frontmatter")
+	}
+
+	if strings.TrimSpace(lines[0]) != "---" {
+		return nil, fmt.Errorf("first line is not frontmatter start")
+	}
+
+	closingLineIdx := -1
+	for i := 1; i < len(lines); i++ {
+		if strings.TrimSpace(lines[i]) == "---" {
+			closingLineIdx = i
+			break
+		}
+	}
+
+	if closingLineIdx == -1 {
+		return nil, fmt.Errorf("no closing frontmatter marker")
+	}
+
+	yamlBlock := strings.Join(lines[1:closingLineIdx], "\n")
+
+	var data map[string]interface{}
+	err := yaml.Unmarshal([]byte(yamlBlock), &data)
+	if err != nil {
+		return nil, err
+	}
+
+	return data, nil
+}
+
+// matchesPatterns checks if a file path matches any of the given patterns.
+func (r *SpecADRRule) matchesPatterns(path string, patterns []string) bool {
 	for _, pattern := range patterns {
-		matched, err := filepath.Match(pattern, filename)
-		if err == nil && matched {
+		if r.matchSubpath(path, pattern) {
 			return true
 		}
+		// Case-insensitive check
+		if r.matchSubpath(strings.ToLower(path), strings.ToLower(pattern)) {
+			return true
+		}
+		// Also match against basename for backward compatibility
+		base := filepath.Base(path)
+		if r.matchSubpath(base, pattern) {
+			return true
+		}
+		if r.matchSubpath(strings.ToLower(base), strings.ToLower(pattern)) {
+			return true
+		}
+	}
+	return false
+}
 
-		// Also check case-insensitive match
-		matched, err = filepath.Match(strings.ToLower(pattern), strings.ToLower(filename))
-		if err == nil && matched {
+func (r *SpecADRRule) matchSubpath(path, pattern string) bool {
+	path = filepath.ToSlash(path)
+	pattern = filepath.ToSlash(pattern)
+	if walker.MatchesPattern(path, pattern) {
+		return true
+	}
+	parts := strings.Split(path, "/")
+	for i := 1; i < len(parts); i++ {
+		subpath := strings.Join(parts[i:], "/")
+		if walker.MatchesPattern(subpath, pattern) {
 			return true
 		}
 	}
