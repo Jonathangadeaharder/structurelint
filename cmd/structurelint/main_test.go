@@ -409,11 +409,20 @@ func TestRunScaffold_Help(t *testing.T) {
 
 func TestExecuteLinter_ErrNoConfig(t *testing.T) {
 	tmpDir := t.TempDir()
-	origWd, _ := os.Getwd()
-	os.Chdir(tmpDir)
-	defer os.Chdir(origWd)
+	origWd, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("failed to get working dir: %v", err)
+	}
+	if err := os.Chdir(tmpDir); err != nil {
+		t.Fatalf("failed to change directory: %v", err)
+	}
+	defer func() {
+		if err := os.Chdir(origWd); err != nil {
+			t.Errorf("failed to restore directory: %v", err)
+		}
+	}()
 
-	err := executeLinter(tmpDir, "text")
+	err = executeLinter(tmpDir, "text")
 	if err == nil {
 		t.Error("expected error for no config")
 	}
@@ -680,11 +689,20 @@ func TestRunScaffold_MissingArgs(t *testing.T) {
 func TestRunScaffold_UnknownType(t *testing.T) {
 	dir := t.TempDir()
 	os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module test"), 0644)
-	origWd, _ := os.Getwd()
-	os.Chdir(dir)
-	defer os.Chdir(origWd)
+	origWd, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("failed to get working dir: %v", err)
+	}
+	if err := os.Chdir(dir); err != nil {
+		t.Fatalf("failed to change directory: %v", err)
+	}
+	defer func() {
+		if err := os.Chdir(origWd); err != nil {
+			t.Errorf("failed to restore directory: %v", err)
+		}
+	}()
 
-	err := runScaffold([]string{"unknown-type", "TestName"})
+	err = runScaffold([]string{"unknown-type", "TestName"})
 	if err == nil {
 		t.Error("expected error for unknown type")
 	}
@@ -692,11 +710,20 @@ func TestRunScaffold_UnknownType(t *testing.T) {
 
 func TestRunScaffold_UnsupportedLang(t *testing.T) {
 	dir := t.TempDir()
-	origWd, _ := os.Getwd()
-	os.Chdir(dir)
-	defer os.Chdir(origWd)
+	origWd, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("failed to get working dir: %v", err)
+	}
+	if err := os.Chdir(dir); err != nil {
+		t.Fatalf("failed to change directory: %v", err)
+	}
+	defer func() {
+		if err := os.Chdir(origWd); err != nil {
+			t.Errorf("failed to restore directory: %v", err)
+		}
+	}()
 
-	err := runScaffold([]string{"--lang", "rust", "service", "TestService"})
+	err = runScaffold([]string{"--lang", "rust", "service", "TestService"})
 	if err == nil {
 		t.Error("expected error for unsupported lang")
 	}
@@ -704,11 +731,20 @@ func TestRunScaffold_UnsupportedLang(t *testing.T) {
 
 func TestHandleSubcommands_NotFound(t *testing.T) {
 	dir := t.TempDir()
-	origWd, _ := os.Getwd()
-	os.Chdir(dir)
-	defer os.Chdir(origWd)
+	origWd, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("failed to get working dir: %v", err)
+	}
+	if err := os.Chdir(dir); err != nil {
+		t.Fatalf("failed to change directory: %v", err)
+	}
+	defer func() {
+		if err := os.Chdir(origWd); err != nil {
+			t.Errorf("failed to restore directory: %v", err)
+		}
+	}()
 
-	err := handleSubcommands([]string{"nonexistent"})
+	err = handleSubcommands([]string{"nonexistent"})
 	if err == nil {
 		t.Error("expected error for nonexistent path")
 	}

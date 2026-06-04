@@ -88,7 +88,7 @@ func TestCompleteVariables_CustomValues(t *testing.T) {
 func TestDetectPackage_GoMod(t *testing.T) {
 	dir := t.TempDir()
 	goMod := filepath.Join(dir, "go.mod")
-	os.WriteFile(goMod, []byte("module github.com/test/project\n\ngo 1.21"), 0644)
+	require.NoError(t, os.WriteFile(goMod, []byte("module github.com/test/project\n\ngo 1.21"), 0644))
 
 	g := NewGenerator(dir)
 	pkg := g.detectPackage()
@@ -105,7 +105,7 @@ func TestDetectPackage_NoGoMod(t *testing.T) {
 func TestDetectPackage_PackageJSON(t *testing.T) {
 	dir := t.TempDir()
 	pkgPath := filepath.Join(dir, "package.json")
-	os.WriteFile(pkgPath, []byte(`{"name": "my-package", "version": "1.0.0"}`), 0644)
+	require.NoError(t, os.WriteFile(pkgPath, []byte(`{"name": "my-package", "version": "1.0.0"}`), 0644))
 
 	g := NewGenerator(dir)
 	pkg := g.detectPackage()
@@ -142,7 +142,7 @@ func TestWriteFile(t *testing.T) {
 func TestWriteFile_AlreadyExists(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "exists.go")
-	os.WriteFile(path, []byte("original"), 0644)
+	require.NoError(t, os.WriteFile(path, []byte("original"), 0644))
 
 	g := NewGenerator(dir)
 	err := g.writeFile(path, "new content")

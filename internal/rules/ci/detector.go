@@ -26,14 +26,14 @@ func (d *ProjectDetector) Detect(files []core.FileInfo) []core.ProjectType {
 	for _, f := range files {
 		base := filepath.Base(f.Path)
 		path := filepath.ToSlash(f.Path)
-		switch {
-		case base == "go.mod":
+		switch base {
+		case "go.mod":
 			hasGo = true
-		case base == "Cargo.toml":
+		case "Cargo.toml":
 			hasRust = true
-		case base == "pyproject.toml" || base == "setup.py" || base == "setup.cfg":
+		case "pyproject.toml", "setup.py", "setup.cfg":
 			hasPython = true
-		case base == "package.json":
+		case "package.json":
 			isSK, _ := d.isSvelteKit(f)
 			if isSK {
 				hasSvelteKit = true

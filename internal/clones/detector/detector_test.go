@@ -70,11 +70,21 @@ func TestNewDetector_NegativeMinLines(t *testing.T) {
 
 func TestFindGoFiles_Basic(t *testing.T) {
 	dir := t.TempDir()
-	os.WriteFile(filepath.Join(dir, "main.go"), []byte("package main"), 0644)
-	os.WriteFile(filepath.Join(dir, "util.go"), []byte("package util"), 0644)
-	os.WriteFile(filepath.Join(dir, "README.md"), []byte("# readme"), 0644)
-	os.MkdirAll(filepath.Join(dir, "sub"), 0755)
-	os.WriteFile(filepath.Join(dir, "sub", "helper.go"), []byte("package helper"), 0644)
+	if err := os.WriteFile(filepath.Join(dir, "main.go"), []byte("package main"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "util.go"), []byte("package util"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "README.md"), []byte("# readme"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(filepath.Join(dir, "sub"), 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "sub", "helper.go"), []byte("package helper"), 0644); err != nil {
+		t.Fatal(err)
+	}
 
 	d := NewDetector(DefaultConfig())
 	files, err := d.findGoFiles(dir)

@@ -444,7 +444,7 @@ func BenchmarkExport(b *testing.B) {
 	var buf bytes.Buffer
 	for i := 0; i < b.N; i++ {
 		buf.Reset()
-		e.Export(&buf)
+		_ = e.Export(&buf)
 	}
 }
 

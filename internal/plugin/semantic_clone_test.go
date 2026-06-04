@@ -48,7 +48,7 @@ func TestHTTPPluginClient_DetectClones_Success(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assert.Equal(t, "/api/v1/detect", r.URL.Path)
 		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte(`{"clones":[{"source_file":"a.go","target_file":"b.go","similarity":0.95}],"stats":{"files_analyzed":2}}`))
+		_, _ = w.Write([]byte(`{"clones":[{"source_file":"a.go","target_file":"b.go","similarity":0.95}],"stats":{"files_analyzed":2}}`))
 	}))
 	defer server.Close()
 

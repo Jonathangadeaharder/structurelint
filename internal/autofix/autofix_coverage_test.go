@@ -26,9 +26,11 @@ func TestMoveFileAction_WriteTargetFail(t *testing.T) {
 	require.NoError(t, os.WriteFile(src, []byte("content"), 0644))
 
 	targetDir := filepath.Join(dir, "sub")
-	os.MkdirAll(targetDir, 0755)
-	os.Chmod(targetDir, 0444)
-	defer os.Chmod(targetDir, 0755)
+	require.NoError(t, os.MkdirAll(targetDir, 0755))
+	require.NoError(t, os.Chmod(targetDir, 0444))
+	defer func() {
+		_ = os.Chmod(targetDir, 0755)
+	}()
 
 	a := &MoveFileAction{
 		SourcePath: src,

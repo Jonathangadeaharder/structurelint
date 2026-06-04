@@ -25,9 +25,7 @@ jobs:
 
       - name: Install Structurelint
         run: |
-          go install github.com/Jonathangadeaharder/structurelint/cmd/structurelint@latest
-          # Or use a specific version:
-          # go install github.com/Jonathangadeaharder/structurelint/cmd/structurelint@v1.0.0
+          go install ./cmd/structurelint
 
       - name: Run Structurelint
         run: structurelint --format json > structurelint-results.json
@@ -71,7 +69,7 @@ jobs:
           go-version: '1.24'
 
       - name: Install Structurelint
-        run: go install github.com/Jonathangadeaharder/structurelint/cmd/structurelint@latest
+        run: go install ./cmd/structurelint
 
       - name: Apply auto-fixes
         run: |

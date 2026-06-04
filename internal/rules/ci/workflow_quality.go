@@ -139,9 +139,8 @@ func findJobs(workflow *yaml.Node) map[string]*yaml.Node {
 		if root.Content[i].Value == "jobs" && root.Content[i+1].Kind == yaml.MappingNode {
 			jobsNode := root.Content[i+1]
 			for j := 0; j < len(jobsNode.Content)-1; j += 2 {
-				if jobsNode.Content[j+1].Kind == yaml.MappingNode {
-					jobs[jobsNode.Content[j].Value] = jobsNode.Content[j+1]
-				} else if jobsNode.Content[j+1].Kind == yaml.SequenceNode {
+				switch jobsNode.Content[j+1].Kind {
+				case yaml.MappingNode, yaml.SequenceNode:
 					jobs[jobsNode.Content[j].Value] = jobsNode.Content[j+1]
 				}
 			}

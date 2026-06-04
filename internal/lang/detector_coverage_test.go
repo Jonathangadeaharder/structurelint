@@ -42,7 +42,9 @@ func TestDetector_DetectJavaScriptProject_ReadError(t *testing.T) {
 	// Create empty dir instead of file — NewDetector uses filepath.Walk which uses os.Stat
 	// Actually, we need an unreadable file or a broken read
 	require.NoError(t, os.WriteFile(packageJSON, []byte(""), 0000))
-	defer os.Chmod(packageJSON, 0644)
+	defer func() {
+		_ = os.Chmod(packageJSON, 0644)
+	}()
 
 	detector := NewDetector(tmpDir)
 	languages, err := detector.Detect()
