@@ -85,7 +85,7 @@ func TestExports_GoGroupedTypes(t *testing.T) {
 
 	dir := t.TempDir()
 	path := filepath.Join(dir, "main.go")
-	os.WriteFile(path, []byte(`package main
+	_ = os.WriteFile(path, []byte(`package main
 
 type (
 	ExportedType struct{}
@@ -108,7 +108,7 @@ func TestExports_EmptySource(t *testing.T) {
 
 	dir := t.TempDir()
 	path := filepath.Join(dir, "empty.go")
-	os.WriteFile(path, []byte{}, 0644)
+	_ = os.WriteFile(path, []byte{}, 0644)
 
 	exports, err := e.ExtractFromFile(path)
 	assert.NoError(t, err)

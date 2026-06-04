@@ -214,8 +214,8 @@ func TestSizeGreaterThan(t *testing.T) {
 	dir := t.TempDir()
 	smallFile := filepath.Join(dir, "small.go")
 	largeFile := filepath.Join(dir, "large.go")
-	os.WriteFile(smallFile, []byte("small"), 0644)
-	os.WriteFile(largeFile, []byte("this is a larger file with more content"), 0644)
+	_ = os.WriteFile(smallFile, []byte("small"), 0644)
+	_ = os.WriteFile(largeFile, []byte("this is a larger file with more content"), 0644)
 
 	p := SizeGreaterThan(10)
 	assert.True(t, p(testFile(largeFile, false), &Context{}))
