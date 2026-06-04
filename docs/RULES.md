@@ -378,18 +378,47 @@ rules:
 
 ### `spec-adr`
 
-Requires ADRs for decisions.
+Enforces folder presence and template structure for feature specifications and Architecture Decision Records (ADRs).
 
 **Configuration**:
 
 ```yaml
 rules:
   spec-adr:
-    adr-dir: "docs/adr"
-    require-adr: true
+    require-spec-folder: true          # Require spec folder to exist (default: true)
+    require-adr-folder: true           # Require ADR folder to exist (default: true)
+    enforce-spec-template: true        # Enforce specification templates (default: true)
+    enforce-adr-template: true         # Enforce ADR templates (default: true)
+    spec-folder-paths:                 # Folder paths accepted for specifications
+      - "docs/specs"
+      - "specifications"
+    adr-folder-paths:                  # Folder paths accepted for ADRs
+      - "docs/adr"
+      - "docs/decisions"
+    spec-file-patterns:                # Glob patterns for spec files
+      - "*-spec.md"
+      - "feature-*.md"
+    adr-file-patterns:                 # Glob patterns for ADR files
+      - "ADR-*.md"
+      - "adr-*.md"
+    spec-required-headings:            # Required Markdown headings in spec files
+      - "# Feature Specification:"
+      - "## User Scenarios & Testing"
+      - "## Requirements"
+      - "### Functional Requirements"
+      - "## Success Criteria"
+    adr-required-headings:             # Required Markdown headings in ADR files
+      - "## Context and Problem Statement"
+      - "## Considered Options"
+      - "## Decision Outcome"
+    adr-required-metadata:             # Required YAML frontmatter metadata fields in ADRs
+      - "status:"
+      - "date:"
 ```
 
-**Format**: ADR template with Context, Decision, Consequences
+**Template Validation Details**:
+- **Feature Specs**: Validates that required headings exist, user stories under `## User Scenarios & Testing` specify priorities (e.g. `(Priority: P1)`), functional requirements use `FR-###` format, and success criteria use `SC-###` format.
+- **ADRs**: Validates that required headings and YAML metadata exist.
 
 ---
 

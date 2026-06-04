@@ -16,21 +16,23 @@ type RuleConfigs struct {
 	DisallowOrphanedFiles  *DisallowOrphanedFilesConfig  `yaml:"disallow-orphaned-files,omitempty"`
 	DisallowImportCycles   *DisallowImportCyclesConfig   `yaml:"disallow-import-cycles,omitempty"`
 	PathBasedLayers        *PathBasedLayersConfig        `yaml:"path-based-layers,omitempty"`
+	SpecADR                *SpecADRConfig                `yaml:"spec-adr,omitempty"`
+	SpecADREnforcement     *SpecADRConfig                `yaml:"spec-adr-enforcement,omitempty"`
 }
 
 // MaxDepthConfig configures the max-depth rule.
 type MaxDepthConfig struct {
-	Max int `json:"max" yaml:"max"`
+	Max int `yaml:"max"`
 }
 
 // MaxFilesInDirConfig configures the max-files-in-dir rule.
 type MaxFilesInDirConfig struct {
-	Max int `json:"max" yaml:"max"`
+	Max int `yaml:"max"`
 }
 
 // MaxSubdirsConfig configures the max-subdirs rule.
 type MaxSubdirsConfig struct {
-	Max int `json:"max" yaml:"max"`
+	Max int `yaml:"max"`
 }
 
 // NamingConventionConfig configures the naming-convention rule.
@@ -51,18 +53,18 @@ type DisallowedPatternsConfig []string
 
 // TestAdjacencyConfig configures the test-adjacency rule.
 type TestAdjacencyConfig struct {
-	Pattern      string   `json:"pattern" yaml:"pattern"`
-	TestDir      string   `json:"test-dir" yaml:"test-dir,omitempty"`
-	FilePatterns []string `json:"file-patterns" yaml:"file-patterns,omitempty"`
-	Exemptions   []string `json:"exemptions" yaml:"exemptions,omitempty"`
+	Pattern      string   `yaml:"pattern" json:"pattern"`
+	TestDir      string   `yaml:"test-dir,omitempty" json:"test-dir,omitempty"`
+	FilePatterns []string `yaml:"file-patterns,omitempty" json:"file-patterns,omitempty"`
+	Exemptions   []string `yaml:"exemptions,omitempty" json:"exemptions,omitempty"`
 }
 
 // TestLocationConfig configures the test-location rule.
 type TestLocationConfig struct {
-	IntegrationTestDir string   `json:"integration-test-dir" yaml:"integration-test-dir,omitempty"`
-	AllowAdjacent      bool     `json:"allow-adjacent" yaml:"allow-adjacent,omitempty"`
-	FilePatterns       []string `json:"file-patterns" yaml:"file-patterns,omitempty"`
-	Exemptions         []string `json:"exemptions" yaml:"exemptions,omitempty"`
+	IntegrationTestDir string   `yaml:"integration-test-dir,omitempty" json:"integration-test-dir,omitempty"`
+	AllowAdjacent      bool     `yaml:"allow-adjacent,omitempty" json:"allow-adjacent,omitempty"`
+	FilePatterns       []string `yaml:"file-patterns,omitempty" json:"file-patterns,omitempty"`
+	Exemptions         []string `yaml:"exemptions,omitempty" json:"exemptions,omitempty"`
 }
 
 // EnforceLayerBoundariesConfig configures the enforce-layer-boundaries rule.
@@ -71,7 +73,7 @@ type EnforceLayerBoundariesConfig struct{}
 
 // DisallowOrphanedFilesConfig configures the disallow-orphaned-files rule.
 type DisallowOrphanedFilesConfig struct {
-	EntryPointPatterns []string `json:"entry-point-patterns" yaml:"entry-point-patterns,omitempty"`
+	EntryPointPatterns []string `yaml:"entry-point-patterns,omitempty" json:"entry-point-patterns,omitempty"`
 }
 
 // DisallowImportCyclesConfig configures the disallow-import-cycles rule.
@@ -80,13 +82,28 @@ type DisallowImportCyclesConfig struct{}
 
 // PathLayerConfig represents a single layer in the path-based-layers rule.
 type PathLayerConfig struct {
-	Name           string   `json:"name" yaml:"name"`
-	Patterns       []string `json:"patterns" yaml:"patterns,omitempty"`
-	CanDependOn    []string `json:"canDependOn" yaml:"canDependOn,omitempty"`
-	ForbiddenPaths []string `json:"forbiddenPaths" yaml:"forbiddenPaths,omitempty"`
+	Name           string   `yaml:"name" json:"name"`
+	Patterns       []string `yaml:"patterns,omitempty" json:"patterns,omitempty"`
+	CanDependOn    []string `yaml:"canDependOn,omitempty" json:"canDependOn,omitempty"`
+	ForbiddenPaths []string `yaml:"forbiddenPaths,omitempty" json:"forbiddenPaths,omitempty"`
 }
 
 // PathBasedLayersConfig configures the path-based-layers rule.
 type PathBasedLayersConfig struct {
-	Layers []PathLayerConfig `json:"layers" yaml:"layers,omitempty"`
+	Layers []PathLayerConfig `yaml:"layers,omitempty" json:"layers,omitempty"`
+}
+
+// SpecADRConfig configures the spec-adr rule.
+type SpecADRConfig struct {
+	RequireSpecFolder    *bool    `yaml:"require-spec-folder,omitempty" json:"require-spec-folder,omitempty"`
+	RequireADRFolder     *bool    `yaml:"require-adr-folder,omitempty" json:"require-adr-folder,omitempty"`
+	EnforceSpecTemplate  *bool    `yaml:"enforce-spec-template,omitempty" json:"enforce-spec-template,omitempty"`
+	EnforceADRTemplate   *bool    `yaml:"enforce-adr-template,omitempty" json:"enforce-adr-template,omitempty"`
+	SpecFolderPaths      []string `yaml:"spec-folder-paths,omitempty" json:"spec-folder-paths,omitempty"`
+	ADRFolderPaths       []string `yaml:"adr-folder-paths,omitempty" json:"adr-folder-paths,omitempty"`
+	SpecFilePatterns     []string `yaml:"spec-file-patterns,omitempty" json:"spec-file-patterns,omitempty"`
+	ADRFilePatterns      []string `yaml:"adr-file-patterns,omitempty" json:"adr-file-patterns,omitempty"`
+	SpecRequiredHeadings []string `yaml:"spec-required-headings,omitempty" json:"spec-required-headings,omitempty"`
+	ADRRequiredHeadings  []string `yaml:"adr-required-headings,omitempty" json:"adr-required-headings,omitempty"`
+	ADRRequiredMetadata  []string `yaml:"adr-required-metadata,omitempty" json:"adr-required-metadata,omitempty"`
 }
