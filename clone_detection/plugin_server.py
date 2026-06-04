@@ -204,7 +204,7 @@ async def detect_clones(request: SemanticCloneRequest) -> SemanticCloneResponse:
             )
 
         # Parse source files
-        logger.info(f"Parsing source directory: {source_path}")
+        logger.info("Parsing source directory...")
         parser = TreeSitterParser(languages=request.languages)
 
         functions = parser.parse_directory(
