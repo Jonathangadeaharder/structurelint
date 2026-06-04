@@ -52,3 +52,40 @@ func TestRustAllGatesPresent(t *testing.T) {
 		t.Fatalf("expected 0 violations, got %d: %v", len(results), results)
 	}
 }
+
+func TestRustStrategyMethods(t *testing.T) {
+	cfg := map[string]interface{}{
+		"require-cargo-test-lint": true,
+		"coverage": map[string]interface{}{
+			"lines": 85.0,
+		},
+	}
+	strat := NewRustStrategy(nil, cfg)
+
+	if strat.ProjectType() != core.Rust {
+		t.Errorf("expected core.Rust, got %v", strat.ProjectType())
+	}
+
+	cov := strat.RequiredCoverage()
+	if cov.Lines != 85.0 {
+		t.Errorf("expected lines coverage 85.0, got %f", cov.Lines)
+	}
+
+	gates := strat.RequiredCIGates()
+	if len(gates) != 5 {
+		t.Errorf("expected 5 gates, got %d", len(gates))
+	}
+
+	linters := strat.RequiredLinters()
+	if len(linters) != 2 {
+		t.Errorf("expected 2 linters, got %d", len(linters))
+	}
+
+	if res := strat.CheckProjectConfig(nil, nil); res != nil {
+		t.Errorf("expected nil check project config, got %v", res)
+	}
+
+	if res := strat.CheckSuppressions(nil, nil); res != nil {
+		t.Errorf("expected nil check suppressions, got %v", res)
+	}
+}

@@ -126,10 +126,11 @@ func (r *TestAdjacencyRule) checkAdjacentFile(file walker.FileInfo, filesByDir m
 
 	// Look for corresponding test file
 	testFileName := r.getTestFileName(file.Path)
+	expectedTestPath := filepath.Join(file.ParentPath, testFileName)
 	hasTest := false
 
 	for _, f := range filesByDir[file.ParentPath] {
-		if f.Path == testFileName {
+		if f.Path == expectedTestPath {
 			hasTest = true
 			break
 		}

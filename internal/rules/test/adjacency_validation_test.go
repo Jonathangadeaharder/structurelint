@@ -56,11 +56,11 @@ func TestTestAdjacencyRule_Check_Adjacent(t *testing.T) {
 			wantViolCount: 0,
 		},
 		{
-			name:         "TypeScript file with test - no violation",
+			name:         "TypeScript file with test in subdirectory - no violation",
 			filePatterns: []string{"**/*.ts"},
 			files: []walker.FileInfo{
-				{Path: "utils.ts", ParentPath: "src", IsDir: false},
-				{Path: "utils.test.ts", ParentPath: "src", IsDir: false},
+				{Path: "src/utils.ts", ParentPath: "src", IsDir: false},
+				{Path: "src/utils.test.ts", ParentPath: "src", IsDir: false},
 			},
 			wantViolCount: 0,
 		},
