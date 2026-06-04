@@ -12,7 +12,7 @@ import (
 )
 
 func runFix(args []string) error {
-	fs := flag.NewFlagSet("fix", flag.ExitOnError)
+	fs := flag.NewFlagSet("fix", flag.ContinueOnError)
 	dryRun := fs.Bool("dry-run", false, "Show what would be fixed without applying changes")
 	interactive := fs.Bool("interactive", false, "Prompt before applying each fix")
 	autoFlag := fs.Bool("auto", false, "Automatically apply all safe fixes without prompting")
@@ -31,6 +31,9 @@ func runFix(args []string) error {
 	}
 
 	if err := fs.Parse(args); err != nil {
+		if err == flag.ErrHelp {
+			return nil
+		}
 		return err
 	}
 

@@ -17,7 +17,9 @@ var Version = "dev"
 
 func main() {
 	if err := run(); err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		if !errors.Is(err, linter.ErrNoConfig) {
+			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		}
 		os.Exit(1)
 	}
 }
@@ -147,7 +149,7 @@ func executeLinter(path, format string) error {
 		if errors.Is(err, linter.ErrNoConfig) {
 			fmt.Fprintf(os.Stderr, "Error: no .structurelint.yml configuration file found.\n")
 			fmt.Fprintf(os.Stderr, "Create one with: structurelint --init\n")
-			os.Exit(1)
+			return err
 		}
 		return err
 	}

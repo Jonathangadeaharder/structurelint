@@ -10,7 +10,7 @@ import (
 )
 
 func runScaffold(args []string) error {
-	fs := flag.NewFlagSet("scaffold", flag.ExitOnError)
+	fs := flag.NewFlagSet("scaffold", flag.ContinueOnError)
 	lang := fs.String("lang", "", "Target language (go, typescript, python, java)")
 	includeTests := fs.Bool("tests", true, "Include test files")
 	listFlag := fs.Bool("list", false, "List available templates")
@@ -39,6 +39,9 @@ func runScaffold(args []string) error {
 	}
 
 	if err := fs.Parse(args); err != nil {
+		if err == flag.ErrHelp {
+			return nil
+		}
 		return err
 	}
 
