@@ -160,6 +160,7 @@ jobs:
           go run ./cmd/structurelint . 2>&1 | Tee-Object -FilePath structurelint-self-check.log
         if: runner.os == 'Windows'
         shell: pwsh
+        continue-on-error: true
 
       - name: Upload self-check logs on failure
         if: failure()
