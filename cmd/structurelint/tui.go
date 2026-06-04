@@ -11,7 +11,7 @@ import (
 )
 
 func runTUI(args []string) error {
-	fs := flag.NewFlagSet("tui", flag.ExitOnError)
+	fs := flag.NewFlagSet("tui", flag.ContinueOnError)
 	fixableOnly := fs.Bool("fixable-only", false, "Show only fixable violations")
 
 	fs.Usage = func() {
@@ -32,6 +32,9 @@ func runTUI(args []string) error {
 	}
 
 	if err := fs.Parse(args); err != nil {
+		if err == flag.ErrHelp {
+			return nil
+		}
 		return err
 	}
 

@@ -469,6 +469,12 @@ func (c *Config) TypedRules() *RuleConfigs {
 	if v, ok := GetRuleConfig[*PathBasedLayersConfig](c, "path-based-layers"); ok {
 		result.PathBasedLayers = v
 	}
+	if v, ok := GetRuleConfig[*SpecADRConfig](c, "spec-adr"); ok {
+		result.SpecADR = v
+	}
+	if v, ok := GetRuleConfig[*SpecADRConfig](c, "spec-adr-enforcement"); ok {
+		result.SpecADREnforcement = v
+	}
 
 	return result
 }

@@ -16,6 +16,9 @@ import (
 func runClones(args []string) error {
 	config, err := parseClonesFlags(args)
 	if err != nil {
+		if err == flag.ErrHelp {
+			return nil
+		}
 		return err
 	}
 
@@ -62,9 +65,14 @@ type clonesConfig struct {
 
 // parseClonesFlags parses command-line flags for clone detection
 func parseClonesFlags(args []string) (*clonesConfig, error) {
-	fs := flag.NewFlagSet("clones", flag.ExitOnError)
+	fs := flag.NewFlagSet("clones", flag.ContinueOnError)
+	fs.Usage = printClonesHelp
 
 	config := &clonesConfig{}
+
+	// Help options
+	helpFlag := fs.Bool("help", false, "Show help message")
+	helpFlagShort := fs.Bool("h", false, "Show help message (shorthand)")
 
 	// Clone detection modes
 	modeFlag := fs.String("mode", "syntactic", "Detection mode: syntactic, semantic, both")
@@ -84,7 +92,16 @@ func parseClonesFlags(args []string) (*clonesConfig, error) {
 	formatFlag := fs.String("format", "console", "Output format: console, json, sarif")
 
 	if err := fs.Parse(args); err != nil {
+		if err == flag.ErrHelp {
+			return nil, err
+		}
 		return nil, err
+	}
+
+	// Handle help flag
+	if *helpFlag || *helpFlagShort {
+		printClonesHelp()
+		return nil, flag.ErrHelp
 	}
 
 	// Get path argument
@@ -174,6 +191,9 @@ func runSemanticDetection(config *clonesConfig) (int, error) {
 
 // resolveAbsolutePath resolves the absolute path for semantic detection
 func resolveAbsolutePath(path string) string {
+	if path == "" {
+		return ""
+	}
 	absPath, err := filepath.Abs(path)
 	if err != nil {
 		// If we can't resolve to absolute path, return original

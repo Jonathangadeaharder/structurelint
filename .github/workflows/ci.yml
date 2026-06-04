@@ -156,13 +156,16 @@ jobs:
         if: runner.os != 'Windows'
 
       - name: Run structurelint on itself (Windows)
+        id: structurelint_windows_selfcheck
         run: |
+          [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
           go run ./cmd/structurelint . 2>&1 | Tee-Object -FilePath structurelint-self-check.log
         if: runner.os == 'Windows'
         shell: pwsh
+        continue-on-error: true
 
       - name: Upload self-check logs on failure
-        if: failure()
+        if: steps.structurelint_windows_selfcheck.outcome == 'failure' || failure()
         uses: actions/upload-artifact@v7
         with:
           name: self-check-logs-${{ matrix.os }}

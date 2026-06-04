@@ -56,7 +56,6 @@ func (f *RuleFactory) checkBreakingChanges() error {
 		"linter-config":             "Linter presence checks are out of scope. Use a presence rule via file-existence.",
 		"contract-framework":        "Dependency-presence checks are out of scope. Encode requirements in a presence rule via file-existence.",
 		"api-spec":                  "Replace with file-existence: `api/openapi.yaml: exists:1`.",
-		"spec-adr-enforcement":      "Replace with file-existence + naming-convention.",
 		"file-content":              "Template enforcement is out of scope. Use copier / cookiecutter.",
 		"disallow-unused-exports":   "Cannot be done correctly without per-language symbol resolution. Use ts-prune / knip / ruff F401 / deadcode.",
 		"property-enforcement":      "Replaced by 'disallow-import-cycles' (cycle detection only). max_dependencies_per_file / max_dependency_depth dropped — arbitrary metrics. forbidden_patterns is covered by 'path-based-layers' forbiddenPaths.",
