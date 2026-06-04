@@ -1,6 +1,8 @@
 package treesitter
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -191,3 +193,23 @@ func TestResolveImportPath(t *testing.T) {
 	result2 := ResolveImportPath("src/main.go", "../lib/helper")
 	assert.Equal(t, "lib/helper", result2)
 }
+
+func TestParseFile(t *testing.T) {
+	p, err := New(LanguageGo)
+	if err != nil {
+		t.Skip("tree-sitter Go grammar not available")
+	}
+
+	tmp := t.TempDir()
+	path := filepath.Join(tmp, "test.go")
+	require.NoError(t, os.WriteFile(path, []byte("package main"), 0644))
+
+	tree, err := p.ParseFile(path)
+	require.NoError(t, err)
+	require.NotNil(t, tree)
+	defer tree.Close()
+
+	_, err = p.ParseFile(filepath.Join(tmp, "nonexistent.go"))
+	assert.Error(t, err)
+}
+

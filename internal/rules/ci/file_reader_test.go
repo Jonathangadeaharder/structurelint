@@ -20,3 +20,15 @@ func TestMockFileReader(t *testing.T) {
 		t.Fatal("expected error for missing file")
 	}
 }
+
+func TestOSFileReader(t *testing.T) {
+	r := OSFileReader{}
+	data, err := r.ReadFile("file_reader_test.go")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(data) == 0 {
+		t.Fatal("expected non-empty data from reading own file")
+	}
+}
+

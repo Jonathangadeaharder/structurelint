@@ -53,7 +53,7 @@ func init() {
 		if patterns, ok := ctx.GetStringMap(""); ok {
 			return NewRegexMatchRule(patterns), nil
 		}
-		return nil, fmt.Errorf(errInvalidConfig)
+		return nil, errors.New(errInvalidConfig)
 	})
 
 	rules.Register("disallowed-patterns", func(ctx *rules.RuleContext) (rules.Rule, error) {
@@ -64,21 +64,21 @@ func init() {
 		if len(patterns) > 0 {
 			return NewDisallowedPatternsRule(patterns), nil
 		}
-		return nil, fmt.Errorf(errInvalidConfig)
+		return nil, errors.New(errInvalidConfig)
 	})
 
 	rules.Register("naming-convention", func(ctx *rules.RuleContext) (rules.Rule, error) {
 		if patterns, ok := ctx.GetStringMap(""); ok {
 			return NewNamingConventionRule(patterns), nil
 		}
-		return nil, fmt.Errorf(errInvalidConfig)
+		return nil, errors.New(errInvalidConfig)
 	})
 
 	rules.Register("uniqueness-constraints", func(ctx *rules.RuleContext) (rules.Rule, error) {
 		if constraints, ok := ctx.GetStringMap(""); ok {
 			return NewUniquenessConstraintsRule(constraints), nil
 		}
-		return nil, fmt.Errorf(errInvalidConfig)
+		return nil, errors.New(errInvalidConfig)
 	})
 
 	rules.Register("case-conflicts", func(_ *rules.RuleContext) (rules.Rule, error) {

@@ -1,6 +1,8 @@
 package treesitter
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -81,3 +83,23 @@ func TestIsGoExported(t *testing.T) {
 	assert.False(t, isGoExported("_private"))
 	assert.False(t, isGoExported(""))
 }
+
+func TestCalculateFromFile(t *testing.T) {
+	calc, err := NewMetricsCalculator(LanguageGo)
+	if err != nil {
+		t.Skip("tree-sitter Go grammar not available")
+	}
+
+	tmp := t.TempDir()
+	path := filepath.Join(tmp, "test.go")
+	require.NoError(t, os.WriteFile(path, []byte("package main\nfunc main() {}"), 0644))
+
+	metrics, err := calc.CalculateFromFile(path)
+	require.NoError(t, err)
+	require.NotNil(t, metrics)
+	assert.Equal(t, path, metrics.FilePath)
+
+	_, err = calc.CalculateFromFile(filepath.Join(tmp, "nonexistent.go"))
+	assert.Error(t, err)
+}
+

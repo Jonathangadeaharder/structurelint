@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"gopkg.in/yaml.v3"
 )
@@ -213,25 +212,14 @@ func resolveExtendPath(extendPath, baseDir string) (string, error) {
 		return extendPath, nil
 	}
 
-	// If it starts with ./ or ../, or is not an absolute path, treat as relative
-	if strings.HasPrefix(extendPath, "./") ||
-		strings.HasPrefix(extendPath, "../") ||
-		(!filepath.IsAbs(extendPath) && filepath.VolumeName(extendPath) == "") {
-		absPath := filepath.Join(baseDir, extendPath)
-		if _, err := os.Stat(absPath); err != nil {
-			return "", fmt.Errorf("extended config not found: %w", err)
-		}
-		return absPath, nil
-	}
-
-	// Future: Handle package names (e.g., @structurelint/preset-go)
-	// For now, treat as a relative path
+	// Treat all non-absolute paths as relative to baseDir
 	absPath := filepath.Join(baseDir, extendPath)
 	if _, err := os.Stat(absPath); err != nil {
-		return "", fmt.Errorf("extended config not found (package resolution not yet implemented): %w", err)
+		return "", fmt.Errorf("extended config not found: %w", err)
 	}
 	return absPath, nil
 }
+
 
 // FindConfigs finds all .structurelint.yml files from the given path up to the root
 func FindConfigs(startPath string) ([]*Config, error) {

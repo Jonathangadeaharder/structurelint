@@ -422,6 +422,46 @@ func TestResolveExtendPathNotFound(t *testing.T) {
 	assert.Error(t, err)
 }
 
+func TestResolveExtendPathRelativeSpecialCases(t *testing.T) {
+	tmpDir := t.TempDir()
+	
+	// Test relative path starting with ./
+	subDir := filepath.Join(tmpDir, "sub")
+	require.NoError(t, os.Mkdir(subDir, 0755))
+	extPath := filepath.Join(subDir, "ext.yml")
+	require.NoError(t, os.WriteFile(extPath, []byte("rules: {}"), 0644))
+	
+	res, err := resolveExtendPath("./sub/ext.yml", tmpDir)
+	require.NoError(t, err)
+	assert.Equal(t, extPath, res)
+
+	// Test relative path starting with ../
+	extPathParent := filepath.Join(tmpDir, "ext.yml")
+	require.NoError(t, os.WriteFile(extPathParent, []byte("rules: {}"), 0644))
+	res, err = resolveExtendPath("../ext.yml", subDir)
+	require.NoError(t, err)
+	assert.Equal(t, extPathParent, res)
+
+
+	// Test missing relative path
+	_, err = resolveExtendPath("./nonexistent.yml", tmpDir)
+	assert.Error(t, err)
+
+	// Test "package" format that is treated as relative
+	pkgPath := filepath.Join(tmpDir, "@scope", "preset.yml")
+	require.NoError(t, os.MkdirAll(filepath.Join(tmpDir, "@scope"), 0755))
+	require.NoError(t, os.WriteFile(pkgPath, []byte("rules: {}"), 0644))
+
+	res, err = resolveExtendPath("@scope/preset.yml", tmpDir)
+	require.NoError(t, err)
+	assert.Equal(t, pkgPath, res)
+
+	// Test missing package format
+	_, err = resolveExtendPath("@scope/nonexistent.yml", tmpDir)
+	assert.Error(t, err)
+}
+
+
 func TestFindConfigsWithGitignore(t *testing.T) {
 	tmpDir := t.TempDir()
 
