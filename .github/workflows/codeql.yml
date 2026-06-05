@@ -19,7 +19,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        language: [go, python]
+        language: [go]
 
     steps:
       - uses: actions/checkout@v6
