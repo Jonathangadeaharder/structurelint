@@ -205,13 +205,11 @@ func resolveAbsolutePath(path string) string {
 // handlePluginUnavailable handles the case when the plugin is not available
 func handlePluginUnavailable(mode string) (int, error) {
 	fmt.Fprintf(os.Stderr, "⚠ Warning: Semantic clone detection plugin not available\n")
-	fmt.Fprintf(os.Stderr, "  To enable semantic detection:\n")
-	fmt.Fprintf(os.Stderr, "    1. cd clone_detection\n")
-	fmt.Fprintf(os.Stderr, "    2. pip install -r requirements.txt\n")
-	fmt.Fprintf(os.Stderr, "    3. python plugin_server.py\n\n")
+	fmt.Fprintf(os.Stderr, "  The Python clone_detection plugin has been removed.\n")
+	fmt.Fprintf(os.Stderr, "  Only syntactic detection is available.\n\n")
 
 	if mode == "semantic" {
-		return 0, fmt.Errorf("semantic clone detection plugin required but not available")
+		return 0, fmt.Errorf("semantic clone detection is no longer supported (Python plugin removed)")
 	}
 
 	fmt.Println("Continuing with syntactic detection only...")
@@ -342,23 +340,6 @@ Output Formats:
   json     - Machine-readable JSON
   sarif    - SARIF format for IDE integration
 
-Semantic Plugin Setup (Optional):
-  The semantic clone detection plugin provides advanced ML-based
-  clone detection but requires Python dependencies:
-
-  1. Install dependencies:
-     cd clone_detection
-     pip install -r requirements.txt
-
-  2. Start the plugin server:
-     python plugin_server.py
-
-  3. Run semantic detection:
-     structurelint clones --mode semantic
-
-  The plugin is completely optional. If not available, the tool
-  gracefully degrades to syntactic detection only.
-
 Detection Algorithms:
   Syntactic:
     1. Parse and normalize source files (AST-based)
@@ -368,23 +349,14 @@ Detection Algorithms:
     5. Expand matches greedily (forward/backward)
     6. Filter by minimum size and report
 
-  Semantic (Plugin):
-    1. Parse code into functions using tree-sitter
-    2. Generate embeddings using GraphCodeBERT
-    3. Build FAISS similarity index
-    4. Find semantically similar code via cosine similarity
-    5. Filter by similarity threshold and report
-
 Configuration:
   Clone detection settings can be added to .structurelint.yml:
 
   clone-detection:
-    mode: syntactic  # or semantic, or both
+    mode: syntactic
     min-tokens: 20
     min-lines: 3
     k-gram-size: 20
-    similarity-threshold: 0.85
-    plugin-url: http://localhost:8765
     exclude-patterns:
       - "**/*_test.go"
       - "**/*_gen.go"`)
