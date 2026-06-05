@@ -303,7 +303,7 @@ async def detect_clones(request: SemanticCloneRequest) -> SemanticCloneResponse:
         )
 
     except Exception as e:
-        logger.error("Clone detection failed", exc_info=True)
+        logger.exception("Clone detection failed")
         duration_ms = int((time.time() - start_time) * 1000)
 
         return SemanticCloneResponse(
