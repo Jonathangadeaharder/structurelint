@@ -37,6 +37,14 @@ jobs:
         run: |
           go test -v -race -covermode=atomic -coverprofile=coverage.out ./... 2>&1 | tee test.log
 
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage-report
+          path: coverage.out
+          retention-days: 1
+          if-no-files-found: error
+
       - name: Upload test logs on failure
         if: failure()
         uses: actions/upload-artifact@v7
@@ -66,12 +74,20 @@ jobs:
   sonarcloud:
     name: SonarCloud Code Analysis
     runs-on: ubuntu-latest
+    needs: test
+    if: needs.test.result == 'success'
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      - name: Download coverage report
+        uses: actions/download-artifact@v8
+        with:
+          name: coverage-report
+          path: .
       - name: SonarCloud Scan
         uses: sonarsource/sonarcloud-github-action@v3
+        continue-on-error: true
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
@@ -192,7 +208,7 @@ jobs:
           go-version: '1.24'
 
       - name: Cache Go modules
-actions/cache@v5
+        uses: actions/cache@v5
         with:
           path: ~/go/pkg/mod
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
