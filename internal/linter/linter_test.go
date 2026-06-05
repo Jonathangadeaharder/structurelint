@@ -211,7 +211,9 @@ func TestLint_NoConfig(t *testing.T) {
 func TestLint_WithConfig_NoViolations(t *testing.T) {
 	tmpDir, err := os.MkdirTemp("", "linter-test-withconfig")
 	require.NoError(t, err)
-	defer os.RemoveAll(tmpDir)
+	defer func() {
+		_ = os.RemoveAll(tmpDir)
+	}()
 
 	configContent := `
 root: true

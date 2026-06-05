@@ -2,8 +2,10 @@ root: true
 
 exclude:
   - testdata/**
+  - "**/testdata/**"
   - internal/ptest/testdata/**
   - .git
+  - .github/scripts/**
   - docs/**
   - examples/**
 
@@ -76,6 +78,11 @@ rules:
       - "internal/rules/structure/language_aware_naming_test.go"
       - "internal/ptest/**"
       - "fuzz/**"
+      - "**/*_coverage_test.go"
+      - "**/*coverage*_test.go"
+      - "internal/rules/ci/integration_test.go"
+      - "internal/linter/pbt_test.go"
+      - "internal/metrics/cognitive_extra_test.go"
 
   ci-gates: true
   fallow-gate: true

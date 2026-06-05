@@ -409,11 +409,20 @@ func TestRunScaffold_Help(t *testing.T) {
 
 func TestExecuteLinter_ErrNoConfig(t *testing.T) {
 	tmpDir := t.TempDir()
-	origWd, _ := os.Getwd()
-	os.Chdir(tmpDir)
-	defer os.Chdir(origWd)
+	origWd, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("failed to get working dir: %v", err)
+	}
+	if err := os.Chdir(tmpDir); err != nil {
+		t.Fatalf("failed to change directory: %v", err)
+	}
+	defer func() {
+		if err := os.Chdir(origWd); err != nil {
+			t.Errorf("failed to restore directory: %v", err)
+		}
+	}()
 
-	err := executeLinter(tmpDir, "text")
+	err = executeLinter(tmpDir, "text")
 	if err == nil {
 		t.Error("expected error for no config")
 	}
@@ -572,7 +581,7 @@ func TestDetectLanguage(t *testing.T) {
 
 	t.Run("go.mod detected", func(t *testing.T) {
 		dir := t.TempDir()
-		os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module test"), 0644)
+		_ = os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module test"), 0644)
 		got := detectLanguage(dir)
 		if got != "go" {
 			t.Errorf("expected go, got %s", got)
@@ -581,8 +590,8 @@ func TestDetectLanguage(t *testing.T) {
 
 	t.Run("tsconfig.json overrides package.json", func(t *testing.T) {
 		dir := t.TempDir()
-		os.WriteFile(filepath.Join(dir, "package.json"), []byte("{}"), 0644)
-		os.WriteFile(filepath.Join(dir, "tsconfig.json"), []byte("{}"), 0644)
+		_ = os.WriteFile(filepath.Join(dir, "package.json"), []byte("{}"), 0644)
+		_ = os.WriteFile(filepath.Join(dir, "tsconfig.json"), []byte("{}"), 0644)
 		got := detectLanguage(dir)
 		if got != "typescript" {
 			t.Errorf("expected typescript, got %s", got)
@@ -591,7 +600,7 @@ func TestDetectLanguage(t *testing.T) {
 
 	t.Run("package.json only defaults to typescript", func(t *testing.T) {
 		dir := t.TempDir()
-		os.WriteFile(filepath.Join(dir, "package.json"), []byte("{}"), 0644)
+		_ = os.WriteFile(filepath.Join(dir, "package.json"), []byte("{}"), 0644)
 		got := detectLanguage(dir)
 		if got != "typescript" {
 			t.Errorf("expected typescript, got %s", got)
@@ -600,7 +609,7 @@ func TestDetectLanguage(t *testing.T) {
 
 	t.Run("requirements.txt detected", func(t *testing.T) {
 		dir := t.TempDir()
-		os.WriteFile(filepath.Join(dir, "requirements.txt"), []byte(""), 0644)
+		_ = os.WriteFile(filepath.Join(dir, "requirements.txt"), []byte(""), 0644)
 		got := detectLanguage(dir)
 		if got != "python" {
 			t.Errorf("expected python, got %s", got)
@@ -609,7 +618,7 @@ func TestDetectLanguage(t *testing.T) {
 
 	t.Run("pom.xml detected", func(t *testing.T) {
 		dir := t.TempDir()
-		os.WriteFile(filepath.Join(dir, "pom.xml"), []byte(""), 0644)
+		_ = os.WriteFile(filepath.Join(dir, "pom.xml"), []byte(""), 0644)
 		got := detectLanguage(dir)
 		if got != "java" {
 			t.Errorf("expected java, got %s", got)
@@ -618,7 +627,7 @@ func TestDetectLanguage(t *testing.T) {
 
 	t.Run("build.gradle detected", func(t *testing.T) {
 		dir := t.TempDir()
-		os.WriteFile(filepath.Join(dir, "build.gradle"), []byte(""), 0644)
+		_ = os.WriteFile(filepath.Join(dir, "build.gradle"), []byte(""), 0644)
 		got := detectLanguage(dir)
 		if got != "java" {
 			t.Errorf("expected java, got %s", got)
@@ -627,7 +636,7 @@ func TestDetectLanguage(t *testing.T) {
 
 	t.Run("setup.py detected", func(t *testing.T) {
 		dir := t.TempDir()
-		os.WriteFile(filepath.Join(dir, "setup.py"), []byte(""), 0644)
+		_ = os.WriteFile(filepath.Join(dir, "setup.py"), []byte(""), 0644)
 		got := detectLanguage(dir)
 		if got != "python" {
 			t.Errorf("expected python, got %s", got)
@@ -679,12 +688,21 @@ func TestRunScaffold_MissingArgs(t *testing.T) {
 
 func TestRunScaffold_UnknownType(t *testing.T) {
 	dir := t.TempDir()
-	os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module test"), 0644)
-	origWd, _ := os.Getwd()
-	os.Chdir(dir)
-	defer os.Chdir(origWd)
+	_ = os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module test"), 0644)
+	origWd, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("failed to get working dir: %v", err)
+	}
+	if err := os.Chdir(dir); err != nil {
+		t.Fatalf("failed to change directory: %v", err)
+	}
+	defer func() {
+		if err := os.Chdir(origWd); err != nil {
+			t.Errorf("failed to restore directory: %v", err)
+		}
+	}()
 
-	err := runScaffold([]string{"unknown-type", "TestName"})
+	err = runScaffold([]string{"unknown-type", "TestName"})
 	if err == nil {
 		t.Error("expected error for unknown type")
 	}
@@ -692,11 +710,20 @@ func TestRunScaffold_UnknownType(t *testing.T) {
 
 func TestRunScaffold_UnsupportedLang(t *testing.T) {
 	dir := t.TempDir()
-	origWd, _ := os.Getwd()
-	os.Chdir(dir)
-	defer os.Chdir(origWd)
+	origWd, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("failed to get working dir: %v", err)
+	}
+	if err := os.Chdir(dir); err != nil {
+		t.Fatalf("failed to change directory: %v", err)
+	}
+	defer func() {
+		if err := os.Chdir(origWd); err != nil {
+			t.Errorf("failed to restore directory: %v", err)
+		}
+	}()
 
-	err := runScaffold([]string{"--lang", "rust", "service", "TestService"})
+	err = runScaffold([]string{"--lang", "rust", "service", "TestService"})
 	if err == nil {
 		t.Error("expected error for unsupported lang")
 	}
@@ -704,11 +731,20 @@ func TestRunScaffold_UnsupportedLang(t *testing.T) {
 
 func TestHandleSubcommands_NotFound(t *testing.T) {
 	dir := t.TempDir()
-	origWd, _ := os.Getwd()
-	os.Chdir(dir)
-	defer os.Chdir(origWd)
+	origWd, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("failed to get working dir: %v", err)
+	}
+	if err := os.Chdir(dir); err != nil {
+		t.Fatalf("failed to change directory: %v", err)
+	}
+	defer func() {
+		if err := os.Chdir(origWd); err != nil {
+			t.Errorf("failed to restore directory: %v", err)
+		}
+	}()
 
-	err := handleSubcommands([]string{"nonexistent"})
+	err = handleSubcommands([]string{"nonexistent"})
 	if err == nil {
 		t.Error("expected error for nonexistent path")
 	}

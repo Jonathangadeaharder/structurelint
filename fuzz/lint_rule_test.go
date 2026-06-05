@@ -21,7 +21,9 @@ func FuzzLintRule(f *testing.F) {
 		result, err := jsonF.Format(violations)
 		if err == nil {
 			var parsed output.JSONOutput
-			json.Unmarshal([]byte(result), &parsed)
+			if err := json.Unmarshal([]byte(result), &parsed); err != nil {
+				t.Fatalf("failed to unmarshal: %v", err)
+			}
 		}
 	})
 }

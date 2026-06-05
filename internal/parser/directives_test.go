@@ -10,7 +10,7 @@ func TestParseDirectives(t *testing.T) {
 	t.Run("no directives", func(t *testing.T) {
 		dir := t.TempDir()
 		f := filepath.Join(dir, "test.go")
-		os.WriteFile(f, []byte("package main\n"), 0644)
+		_ = os.WriteFile(f, []byte("package main\n"), 0644)
 		directives := ParseDirectives(f)
 		if len(directives) != 0 {
 			t.Errorf("expected 0 directives, got %d", len(directives))
@@ -20,7 +20,7 @@ func TestParseDirectives(t *testing.T) {
 	t.Run("ignore directive - all rules", func(t *testing.T) {
 		dir := t.TempDir()
 		f := filepath.Join(dir, "test.go")
-		os.WriteFile(f, []byte("// @structurelint:ignore Legacy code\npackage main\n"), 0644)
+		_ = os.WriteFile(f, []byte("// @structurelint:ignore Legacy code\npackage main\n"), 0644)
 		directives := ParseDirectives(f)
 		if len(directives) != 1 {
 			t.Fatalf("expected 1 directive, got %d", len(directives))
@@ -36,7 +36,7 @@ func TestParseDirectives(t *testing.T) {
 	t.Run("ignore directive - specific rules", func(t *testing.T) {
 		dir := t.TempDir()
 		f := filepath.Join(dir, "test.go")
-		os.WriteFile(f, []byte("// @structurelint:ignore max-depth max-files-in-dir Legacy code\npackage main\n"), 0644)
+		_ = os.WriteFile(f, []byte("// @structurelint:ignore max-depth max-files-in-dir Legacy code\npackage main\n"), 0644)
 		directives := ParseDirectives(f)
 		if len(directives) != 1 {
 			t.Fatalf("expected 1 directive, got %d", len(directives))
@@ -49,7 +49,7 @@ func TestParseDirectives(t *testing.T) {
 	t.Run("no-test directive", func(t *testing.T) {
 		dir := t.TempDir()
 		f := filepath.Join(dir, "test.go")
-		os.WriteFile(f, []byte("// @structurelint:no-test Interface definitions\npackage main\n"), 0644)
+		_ = os.WriteFile(f, []byte("// @structurelint:no-test Interface definitions\npackage main\n"), 0644)
 		directives := ParseDirectives(f)
 		if len(directives) != 1 {
 			t.Fatalf("expected 1 directive, got %d", len(directives))
@@ -74,7 +74,7 @@ func TestParseDirectives(t *testing.T) {
 			content = append(content, []byte("// line\n")...)
 		}
 		content = append(content, []byte("// @structurelint:ignore test-rule\n")...)
-		os.WriteFile(f, content, 0644)
+		_ = os.WriteFile(f, content, 0644)
 		directives := ParseDirectives(f)
 		if len(directives) != 0 {
 			t.Errorf("expected 0 directives (past 100 lines), got %d", len(directives))
@@ -341,7 +341,7 @@ func TestParseDirectives_MultipleDirectives(t *testing.T) {
 	dir := t.TempDir()
 	f := filepath.Join(dir, "test.go")
 	content := "// @structurelint:ignore max-depth Legacy\n// @structurelint:no-test Interface\npackage main\n"
-	os.WriteFile(f, []byte(content), 0644)
+	_ = os.WriteFile(f, []byte(content), 0644)
 	directives := ParseDirectives(f)
 	if len(directives) != 2 {
 		t.Fatalf("expected 2 directives, got %d", len(directives))

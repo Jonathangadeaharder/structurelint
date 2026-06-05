@@ -29,6 +29,8 @@ func FuzzJSONOutput(f *testing.F) {
 			return
 		}
 		var parsed output.JSONOutput
-		json.Unmarshal([]byte(result), &parsed)
+		if err := json.Unmarshal([]byte(result), &parsed); err != nil {
+			t.Fatalf("failed to unmarshal: %v", err)
+		}
 	})
 }

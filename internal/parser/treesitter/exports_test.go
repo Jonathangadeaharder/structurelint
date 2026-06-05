@@ -16,7 +16,7 @@ func TestExports_ExtractGoExports(t *testing.T) {
 
 	dir := t.TempDir()
 	path := filepath.Join(dir, "main.go")
-	os.WriteFile(path, []byte(`package main
+	_ = os.WriteFile(path, []byte(`package main
 
 func ExportedFunc() {}
 func unexportedFunc() {}
@@ -41,7 +41,7 @@ func TestExports_ExtractPythonExports(t *testing.T) {
 
 	dir := t.TempDir()
 	path := filepath.Join(dir, "main.py")
-	os.WriteFile(path, []byte(`def public_function():
+	_ = os.WriteFile(path, []byte(`def public_function():
     pass
 
 def _private_function():
@@ -65,7 +65,7 @@ func TestExports_ExtractJSExports(t *testing.T) {
 
 	dir := t.TempDir()
 	path := filepath.Join(dir, "main.js")
-	os.WriteFile(path, []byte(`export function foo() {}`), 0644)
+	_ = os.WriteFile(path, []byte(`export function foo() {}`), 0644)
 	exports, err := e.ExtractFromFile(path)
 	assert.NoError(t, err)
 	assert.Empty(t, exports)
@@ -85,7 +85,7 @@ func TestExports_GoGroupedTypes(t *testing.T) {
 
 	dir := t.TempDir()
 	path := filepath.Join(dir, "main.go")
-	os.WriteFile(path, []byte(`package main
+	_ = os.WriteFile(path, []byte(`package main
 
 type (
 	ExportedType struct{}
@@ -108,7 +108,7 @@ func TestExports_EmptySource(t *testing.T) {
 
 	dir := t.TempDir()
 	path := filepath.Join(dir, "empty.go")
-	os.WriteFile(path, []byte{}, 0644)
+	_ = os.WriteFile(path, []byte{}, 0644)
 
 	exports, err := e.ExtractFromFile(path)
 	assert.NoError(t, err)

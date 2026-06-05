@@ -1,6 +1,7 @@
 package structure
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
@@ -14,7 +15,7 @@ func init() {
 	rules.Register("max-depth", func(ctx *rules.RuleContext) (rules.Rule, error) {
 		max, ok := ctx.GetInt("max")
 		if !ok {
-			return nil, fmt.Errorf(errMissingMaxParam)
+			return nil, errors.New(errMissingMaxParam)
 		}
 		overrides := parseMaxDepthOverrides(ctx.Config["overrides"])
 		if len(overrides) == 0 {
@@ -27,14 +28,14 @@ func init() {
 		if max, ok := ctx.GetInt("max"); ok {
 			return NewMaxFilesRule(max), nil
 		}
-		return nil, fmt.Errorf(errMissingMaxParam)
+		return nil, errors.New(errMissingMaxParam)
 	})
 
 	rules.Register("max-subdirs", func(ctx *rules.RuleContext) (rules.Rule, error) {
 		if max, ok := ctx.GetInt("max"); ok {
 			return NewMaxSubdirsRule(max), nil
 		}
-		return nil, fmt.Errorf(errMissingMaxParam)
+		return nil, errors.New(errMissingMaxParam)
 	})
 
 	rules.Register("file-existence", func(ctx *rules.RuleContext) (rules.Rule, error) {
@@ -52,7 +53,7 @@ func init() {
 		if patterns, ok := ctx.GetStringMap(""); ok {
 			return NewRegexMatchRule(patterns), nil
 		}
-		return nil, fmt.Errorf(errInvalidConfig)
+		return nil, errors.New(errInvalidConfig)
 	})
 
 	rules.Register("disallowed-patterns", func(ctx *rules.RuleContext) (rules.Rule, error) {
@@ -63,21 +64,21 @@ func init() {
 		if len(patterns) > 0 {
 			return NewDisallowedPatternsRule(patterns), nil
 		}
-		return nil, fmt.Errorf(errInvalidConfig)
+		return nil, errors.New(errInvalidConfig)
 	})
 
 	rules.Register("naming-convention", func(ctx *rules.RuleContext) (rules.Rule, error) {
 		if patterns, ok := ctx.GetStringMap(""); ok {
 			return NewNamingConventionRule(patterns), nil
 		}
-		return nil, fmt.Errorf(errInvalidConfig)
+		return nil, errors.New(errInvalidConfig)
 	})
 
 	rules.Register("uniqueness-constraints", func(ctx *rules.RuleContext) (rules.Rule, error) {
 		if constraints, ok := ctx.GetStringMap(""); ok {
 			return NewUniquenessConstraintsRule(constraints), nil
 		}
-		return nil, fmt.Errorf(errInvalidConfig)
+		return nil, errors.New(errInvalidConfig)
 	})
 
 	rules.Register("case-conflicts", func(_ *rules.RuleContext) (rules.Rule, error) {

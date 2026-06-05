@@ -70,11 +70,21 @@ func TestNewDetector_NegativeMinLines(t *testing.T) {
 
 func TestFindGoFiles_Basic(t *testing.T) {
 	dir := t.TempDir()
-	os.WriteFile(filepath.Join(dir, "main.go"), []byte("package main"), 0644)
-	os.WriteFile(filepath.Join(dir, "util.go"), []byte("package util"), 0644)
-	os.WriteFile(filepath.Join(dir, "README.md"), []byte("# readme"), 0644)
-	os.MkdirAll(filepath.Join(dir, "sub"), 0755)
-	os.WriteFile(filepath.Join(dir, "sub", "helper.go"), []byte("package helper"), 0644)
+	if err := os.WriteFile(filepath.Join(dir, "main.go"), []byte("package main"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "util.go"), []byte("package util"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "README.md"), []byte("# readme"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(filepath.Join(dir, "sub"), 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "sub", "helper.go"), []byte("package helper"), 0644); err != nil {
+		t.Fatal(err)
+	}
 
 	d := NewDetector(DefaultConfig())
 	files, err := d.findGoFiles(dir)
@@ -88,8 +98,8 @@ func TestFindGoFiles_Basic(t *testing.T) {
 
 func TestFindGoFiles_WithExclude(t *testing.T) {
 	dir := t.TempDir()
-	os.WriteFile(filepath.Join(dir, "main.go"), []byte("package main"), 0644)
-	os.WriteFile(filepath.Join(dir, "main_test.go"), []byte("package main"), 0644)
+	_ = os.WriteFile(filepath.Join(dir, "main.go"), []byte("package main"), 0644)
+	_ = os.WriteFile(filepath.Join(dir, "main_test.go"), []byte("package main"), 0644)
 
 	d := NewDetector(DefaultConfig())
 	files, err := d.findGoFiles(dir)
@@ -296,8 +306,8 @@ func divide(x, y int) int {
 	return result
 }
 `
-	os.WriteFile(filepath.Join(dir, "main.go"), []byte(code), 0644)
-	os.WriteFile(filepath.Join(dir, "utils.go"), []byte(code2), 0644)
+	_ = os.WriteFile(filepath.Join(dir, "main.go"), []byte(code), 0644)
+	_ = os.WriteFile(filepath.Join(dir, "utils.go"), []byte(code2), 0644)
 
 	d := NewDetector(Config{MinTokens: 5, MinLines: 2, KGramSize: 12, NumWorkers: 2, CrossFileOnly: false})
 	clones, err := d.DetectClones(dir)
@@ -318,8 +328,8 @@ func sub(a, b int) int { return a - b }
 func add(a, b int) int { return a + b }
 func mul(a, b int) int { return a * b }
 `
-	os.WriteFile(filepath.Join(dir, "main.go"), []byte(code), 0644)
-	os.WriteFile(filepath.Join(dir, "utils.go"), []byte(code2), 0644)
+	_ = os.WriteFile(filepath.Join(dir, "main.go"), []byte(code), 0644)
+	_ = os.WriteFile(filepath.Join(dir, "utils.go"), []byte(code2), 0644)
 
 	d := NewDetector(Config{MinTokens: 3, MinLines: 1, KGramSize: 8, NumWorkers: 2, CrossFileOnly: true})
 	clones, err := d.DetectClones(dir)
@@ -331,10 +341,10 @@ func mul(a, b int) int { return a * b }
 
 func TestNormalizeFiles_WithRealFiles(t *testing.T) {
 	dir := t.TempDir()
-	os.WriteFile(filepath.Join(dir, "f1.go"), []byte(`package main
+	_ = os.WriteFile(filepath.Join(dir, "f1.go"), []byte(`package main
 func hello() string { return "hello" }
 `), 0644)
-	os.WriteFile(filepath.Join(dir, "f2.go"), []byte(`package main
+	_ = os.WriteFile(filepath.Join(dir, "f2.go"), []byte(`package main
 func world() string { return "world" }
 `), 0644)
 

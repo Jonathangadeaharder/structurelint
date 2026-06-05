@@ -22,7 +22,9 @@ func TestProcessPlugin_Check_ExecFailure(t *testing.T) {
 func TestProcessPlugin_Check_BadOutput(t *testing.T) {
 	dir := t.TempDir()
 	script := filepath.Join(dir, "badplugin.sh")
-	os.WriteFile(script, []byte("#!/bin/sh\necho 'not valid json'\n"), 0755)
+	if err := os.WriteFile(script, []byte("#!/bin/sh\necho 'not valid json'\n"), 0755); err != nil {
+		t.Fatal(err)
+	}
 
 	p := NewProcessPlugin("test", "/bin/sh", "-c", "echo 'not valid json'")
 	files := []walker.FileInfo{{AbsPath: "test.go"}}
@@ -33,7 +35,7 @@ func TestProcessPlugin_Check_BadOutput(t *testing.T) {
 func TestNewHTTPPluginClient_Available(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte(`{"status":"healthy"}`))
+		_, _ = w.Write([]byte(`{"status":"healthy"}`))
 	}))
 	defer server.Close()
 

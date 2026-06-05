@@ -25,9 +25,7 @@ jobs:
 
       - name: Install Structurelint
         run: |
-          go install github.com/Jonathangadeaharder/structurelint/cmd/structurelint@latest
-          # Or use a specific version:
-          # go install github.com/Jonathangadeaharder/structurelint/cmd/structurelint@v1.0.0
+          go install ./cmd/structurelint
 
       - name: Run Structurelint
         run: structurelint --format json > structurelint-results.json
@@ -43,7 +41,7 @@ jobs:
       - name: Check for violations
         run: |
           if [ -s structurelint-results.json ]; then
-            violations=$(jq '. | length' structurelint-results.json)
+            violations=$(jq '.violations' structurelint-results.json)
             if [ "$violations" -gt 0 ]; then
               echo "❌ Found $violations architectural violation(s)"
               structurelint  # Re-run for human-readable output
@@ -71,15 +69,20 @@ jobs:
           go-version: '1.24'
 
       - name: Install Structurelint
-        run: go install github.com/Jonathangadeaharder/structurelint/cmd/structurelint@latest
+        run: go install ./cmd/structurelint
 
       - name: Apply auto-fixes
         run: |
-          if structurelint fix --dry-run | grep -q "fixable"; then
+          dry_output=$(structurelint fix --dry-run 2>&1) || {
+            echo "::error::structurelint fix --dry-run failed"
+            echo "fixes_applied=false" >> $GITHUB_OUTPUT
+            exit 1
+          }
+          if echo "$dry_output" | grep -q "No fixable violations found"; then
+            echo "fixes_applied=false" >> $GITHUB_OUTPUT
+          else
             structurelint fix --auto
             echo "fixes_applied=true" >> $GITHUB_OUTPUT
-          else
-            echo "fixes_applied=false" >> $GITHUB_OUTPUT
           fi
         id: autofix
 

@@ -26,9 +26,11 @@ func FuzzParse(f *testing.F) {
 		for _, ext := range []string{".ts", ".go", ".py", ".java", ".cpp", ".cs"} {
 			tmpDir := t.TempDir()
 			fpath := filepath.Join(tmpDir, "test"+ext)
-			os.WriteFile(fpath, []byte(content), 0644)
+			if err := os.WriteFile(fpath, []byte(content), 0644); err != nil {
+				return
+			}
 			p := parser.New(tmpDir)
-			p.ParseFile(fpath)
+			_, _ = p.ParseFile(fpath)
 		}
 	})
 }
