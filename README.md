@@ -34,16 +34,14 @@ As projects grow, their directory structures often degrade into chaos:
 - **Test location validation** - Prevent orphaned tests and enforce test directory structure
 - **Multi-language support** - Go, Python, TypeScript, JavaScript, Java, C++, C#, Rust, Ruby
 
-**Phase 4 - File Content Templates:** ✨ NEW
-- **Template system** - Define required file structures (READMEs, design docs, etc.)
-- **Section validation** - Ensure documentation has required sections
-- **Pattern enforcement** - Require or forbid specific content patterns
-
-**Phase 8 - GitHub Workflow Enforcement:** ✨ NEW
-- **Test execution workflows** - Ensure CI/CD runs tests on PRs and pushes
-- **Security scanning** - Require CodeQL, dependency scanning, secret detection
-- **Code quality checks** - Enforce linting, formatting, coverage requirements
-- **Workflow validation** - Validate workflow structure, jobs, triggers, and steps
+**Additional Rules:**
+- **Uniqueness constraints** - Prevent dual-implementation anti-patterns (e.g., `index.ts` + `index.js`)
+- **Case conflict detection** - Warn about case-insensitive filesystem collisions
+- **Empty directory detection** - Flag directories with no files
+- **Symlink detection** - Disallow symbolic links in the project
+- **Deep relative import detection** - Flag imports with excessive `../` segments
+- **Import cycle detection** - Detect circular dependencies between packages
+- **Path-based layer validation** - Declarative layer rules without import graph parsing
 
 ## ✨ Evaluation-Driven Improvements (v2.0)
 
@@ -135,25 +133,20 @@ rules:
 
 ## ⚠️ Breaking Changes (v2.0+)
 
-This version includes breaking changes for cleaner, more maintainable code:
+This version includes breaking changes for cleaner, more maintainable code. Using any removed rule causes an immediate error with migration advice.
 
-### 1. **Removed: `max-cyclomatic-complexity` Rule** ❌
+### Removed Rules
 
-**Why**: Cyclomatic Complexity is scientifically inferior to Cognitive Complexity (weak correlation with maintainability).
-
-**Migration**: Replace with `max-cognitive-complexity`:
-
-```yaml
-# OLD (will now fail with clear error)
-rules:
-  max-cyclomatic-complexity: { max: 10 }
-
-# NEW (scientifically superior)
-rules:
-  max-cognitive-complexity: { max: 15 }
-```
-
-**Evidence**: Cognitive Complexity has r=0.54 correlation with comprehension time vs Cyclomatic's weak/unsatisfactory correlation.
+| Removed Rule | Migration |
+|---|---|
+| `max-cyclomatic-complexity` | Use `max-cognitive-complexity` instead, or a language-specific tool (gocognit, ruff, eslint complexity) |
+| `github-workflows` | CI YAML linting is out of scope. Use actionlint, zizmor, or yamllint |
+| `linter-config` | Linter presence checks are out of scope. Use `file-existence` to require config files |
+| `contract-framework` | Dependency-presence checks are out of scope. Encode requirements via `file-existence` |
+| `api-spec` | Replace with `file-existence: { "api/openapi.yaml": "exists:1" }` |
+| `spec-adr-enforcement` | Replace with `file-existence` + `naming-convention` |
+| `file-content` | Template enforcement is out of scope. Use copier / cookiecutter |
+| `property-enforcement` | Replaced by `disallow-import-cycles` (cycle detection only). `max_dependencies_per_file` / `max_dependency_depth` dropped. Forbidden patterns covered by `path-based-layers` `forbiddenPaths` |
 
 ### 2. **Pure Go Implementation** 🚀
 
@@ -710,502 +703,9 @@ See complete examples:
 - `examples/evidence-based-go.yml`
 - `examples/evidence-based-typescript.yml`
 
-## Phase 8: GitHub Workflow Enforcement
+> ⚠️ **REMOVED**: The `github-workflows` rule has been removed. CI YAML linting is out of scope for structurelint. Use [actionlint](https://github.com/rhysd/actionlint), [zizmor](https://github.com/woodruffw/zizmor), or [yamllint](https://github.com/adrienverge/yamllint) instead.
 
-### Overview
-
-Phase 8 ensures your project has proper CI/CD pipelines configured through GitHub Actions workflows. It validates the presence and configuration of workflows for:
-
-1. **Test Execution** - Automated testing on pull requests and pushes
-2. **Security Scanning** - CodeQL, dependency scanning, secret detection
-3. **Code Quality** - Linting, formatting, static analysis
-
-### Why Enforce GitHub Workflows?
-
-Many projects lack proper CI/CD configuration, leading to:
-- ❌ Security vulnerabilities undetected in dependencies
-- ❌ Code quality degradation without automated checks
-- ❌ Broken code merged without running tests
-- ❌ Compliance issues from missing security scans
-
-structurelint ensures:
-- ✅ Workflows exist in `.github/workflows/` directory
-- ✅ Test workflows run on PRs and pushes
-- ✅ Security scanning is configured (CodeQL, etc.)
-- ✅ Code quality checks are enforced (linting, formatting)
-- ✅ Workflows are properly structured with valid jobs and steps
-
-### Configuration
-
-```yaml
-root: true
-
-rules:
-  # Phase 8: GitHub Workflow Enforcement
-  github-workflows:
-    # Require a workflow that runs tests
-    require-tests: true
-
-    # Require a workflow that performs security scanning
-    require-security: true
-
-    # Require a workflow that checks code quality
-    require-quality: true
-
-    # Optionally require specific jobs
-    required-jobs:
-      - test
-      - security
-      - lint
-
-    # Optionally require specific triggers
-    required-triggers:
-      - pull_request
-      - push
-```
-
-### Example Workflows
-
-#### Test Workflow
-
-```yaml
-# .github/workflows/test.yml
-name: CI Tests
-on: [push, pull_request]
-jobs:
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v6
-        with:
-          go-version: '1.24'
-      - run: go test -v -race -coverprofile=coverage.txt ./...
-```
-
-#### Security Workflow
-
-```yaml
-# .github/workflows/security.yml
-name: Security Scan
-on: [push, pull_request, schedule]
-jobs:
-  security:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: github/codeql-action/init@v2
-      - uses: github/codeql-action/analyze@v2
-```
-
-#### Quality Workflow
-
-```yaml
-# .github/workflows/quality.yml
-name: Code Quality
-on: [push, pull_request]
-jobs:
-  lint:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: golangci/golangci-lint-action@v3
-```
-
-### Validation Checks
-
-structurelint validates:
-
-✅ **Workflow Presence**
-- `.github/workflows/` directory exists
-- At least one workflow file (`.yml` or `.yaml`) is present
-
-✅ **Workflow Types**
-- Test workflows contain keywords: `test`, `ci`, `build`
-- Security workflows contain: `security`, `scan`, `codeql`
-- Quality workflows contain: `quality`, `lint`, `format`, `coverage`
-
-✅ **Workflow Structure**
-- Workflows have `name` field
-- Workflows have `on` triggers
-- Workflows have at least one job
-- Jobs have `runs-on` specified
-- Jobs have steps defined
-
-✅ **Optional Requirements**
-- Specific triggers are present (e.g., `pull_request`)
-- Specific jobs are present (e.g., `test`, `security`)
-
-### Example Violations
-
-```
-.github/workflows: GitHub workflows directory not found.
-Add CI/CD workflows for testing, security, and code quality.
-
-.github/workflows: No test/CI workflow found.
-Add a workflow that runs tests on pull requests and pushes.
-
-.github/workflows: No security scanning workflow found.
-Add CodeQL, dependency scanning, or other security checks.
-
-.github/workflows: No code quality workflow found.
-Add linting, formatting, or coverage checks.
-
-.github/workflows/test.yml: Workflow missing 'name' field.
-Add a descriptive name for the workflow.
-
-.github/workflows/test.yml: Job 'test' missing 'runs-on' field.
-Specify the runner environment.
-```
-
-### Complete Examples
-
-See complete working examples:
-- [examples/github-workflows/](examples/github-workflows/) - Complete setup with test, security, and quality workflows
-- [docs/GITHUB_WORKFLOWS.md](docs/GITHUB_WORKFLOWS.md) - Comprehensive guide
-
-### Best Practices
-
-#### Test Workflows
-- ✅ Run on `pull_request` and `push` events
-- ✅ Use matrix testing for multiple versions
-- ✅ Cache dependencies for faster builds
-- ✅ Report coverage to Codecov/Coveralls
-- ✅ Separate unit tests from integration tests
-
-#### Security Workflows
-- ✅ Run CodeQL analysis weekly
-- ✅ Scan dependencies with govulncheck/Snyk
-- ✅ Scan for secrets with Trivy
-- ✅ Upload SARIF results to GitHub Security tab
-- ✅ Fail builds on critical vulnerabilities
-
-#### Quality Workflows
-- ✅ Enforce linting with golangci-lint/ESLint
-- ✅ Check formatting with gofmt/prettier
-- ✅ Require minimum test coverage
-- ✅ Run static analysis
-- ✅ Fail builds on quality violations
-
-## Linter Configuration Enforcement
-
-### Overview
-
-The `linter-config` rule ensures your project has proper linter configurations set up for Python, TypeScript, and Go. This helps maintain code quality by enforcing the use of industry-standard linting tools.
-
-### Why Enforce Linter Configuration?
-
-Many projects lack proper linter setup, leading to:
-- ❌ Inconsistent code style across the team
-- ❌ Type errors and bugs that could be caught early
-- ❌ Code quality degradation over time
-- ❌ Difficult code reviews due to style inconsistencies
-
-structurelint ensures:
-- ✅ Linter configuration files exist (e.g., `pyproject.toml`, `.eslintrc`, `.golangci.yml`)
-- ✅ GitHub workflows run linters automatically
-- ✅ Multi-language projects have appropriate linters for each language
-
-### Configuration
-
-```yaml
-root: true
-
-rules:
-  # Enforce linter configuration
-  linter-config:
-    # Require Python linters (mypy, black, ruff, pylint, flake8)
-    require-python: true
-
-    # Require TypeScript linters (ESLint, Prettier, TSC)
-    require-typescript: true
-
-    # Require Go linters (golangci-lint, gofmt, go vet)
-    require-go: true
-
-    # Require HTML linters (HTMLHint, html-validate, prettier)
-    require-html: true
-
-    # Require CSS linters (stylelint, prettier)
-    require-css: true
-
-    # Require SQL linters (sqlfluff, sqlfmt)
-    require-sql: true
-
-    # Require Rust linters (clippy, rustfmt)
-    require-rust: true
-```
-
-### Supported Linters
-
-#### Python
-- **mypy** - Static type checker
-- **black** - Code formatter
-- **ruff** - Fast Python linter (Rust-based)
-- **pylint** - Comprehensive code analyzer
-- **flake8** - Style guide enforcement
-
-**Expected config files:**
-- `pyproject.toml` (modern, recommended)
-- `.flake8`
-- `setup.cfg`
-- `.pylintrc`
-- `mypy.ini`
-- `ruff.toml`
-
-#### TypeScript/JavaScript
-- **ESLint** - Linting utility
-- **Prettier** - Code formatter
-- **TSC** - TypeScript compiler
-
-**Expected config files:**
-- `.eslintrc`, `.eslintrc.json`, `.eslintrc.js`, `.eslintrc.yml`
-- `eslint.config.js` (flat config)
-- `.prettierrc`, `.prettierrc.json`, `.prettierrc.js`
-- `prettier.config.js`
-- `tsconfig.json`
-
-#### Go
-- **golangci-lint** - Fast Go linters runner
-- **gofmt** - Go code formatter
-- **go vet** - Go static analysis tool
-
-**Expected config files:**
-- `.golangci.yml`, `.golangci.yaml`
-- `golangci.yml`, `golangci.yaml`
-
-#### HTML
-- **HTMLHint** - HTML linter
-- **html-validate** - HTML validator
-- **prettier** - Code formatter (also handles HTML)
-
-**Expected config files:**
-- `.htmlhintrc`
-- `.htmlvalidate.json`
-- `.prettierrc`, `.prettierrc.json`, `.prettierrc.js`
-- `prettier.config.js`
-
-#### CSS
-- **stylelint** - CSS linter
-- **prettier** - Code formatter (also handles CSS)
-
-**Expected config files:**
-- `.stylelintrc`, `.stylelintrc.json`, `.stylelintrc.js`
-- `stylelint.config.js`
-- `.prettierrc`, `.prettierrc.json`, `.prettierrc.js`
-- `prettier.config.js`
-
-#### SQL
-- **sqlfluff** - SQL linter and formatter
-- **sqlfmt** - SQL formatter
-
-**Expected config files:**
-- `.sqlfluff`
-- `setup.cfg` (sqlfluff can use this)
-- `pyproject.toml` (sqlfluff can use this)
-
-#### Rust
-- **clippy** - Rust linter
-- **rustfmt** - Rust code formatter
-
-**Expected config files:**
-- `rustfmt.toml`, `.rustfmt.toml`
-- `clippy.toml`
-
-### How It Works
-
-The rule checks for linter configuration in two ways:
-
-1. **Configuration Files**: Looks for standard linter config files in the project root
-2. **GitHub Workflows**: Checks if any workflow runs the linters (e.g., `run: black --check .`)
-
-If either condition is met, the rule passes. This allows flexibility:
-- Projects can have local config files for developer use
-- Projects can enforce linting only in CI/CD
-- Projects can have both (recommended)
-
-### Example Violations
-
-**Missing Python linter configuration:**
-```
-.: No Python linter configuration found. Expected one of: pyproject.toml, .flake8, setup.cfg, .pylintrc, mypy.ini, or a GitHub workflow running: mypy, black, ruff, pylint, flake8
-```
-
-**Missing TypeScript linter configuration:**
-```
-.: No TypeScript linter configuration found. Expected one of: .eslintrc, .eslintrc.json, .eslintrc.js, .eslintrc.yml, eslint.config.js, or a GitHub workflow running: eslint, prettier, tsc
-```
-
-**Missing Go linter configuration:**
-```
-.: No Go linter configuration found. Expected one of: .golangci.yml, .golangci.yaml, golangci.yml, golangci.yaml, or a GitHub workflow running: golangci-lint, gofmt, go vet, go fmt
-```
-
-**Missing HTML linter configuration:**
-```
-.: No HTML linter configuration found. Expected one of: .htmlhintrc, .htmlvalidate.json, .prettierrc, .prettierrc.json, or a GitHub workflow running: htmlhint, html-validate, prettier
-```
-
-**Missing CSS linter configuration:**
-```
-.: No CSS linter configuration found. Expected one of: .stylelintrc, .stylelintrc.json, .stylelintrc.js, stylelint.config.js, or a GitHub workflow running: stylelint, prettier
-```
-
-**Missing SQL linter configuration:**
-```
-.: No SQL linter configuration found. Expected one of: .sqlfluff, setup.cfg, pyproject.toml, or a GitHub workflow running: sqlfluff, sqlfmt, sql-lint
-```
-
-**Missing Rust linter configuration:**
-```
-.: No Rust linter configuration found. Expected one of: rustfmt.toml, .rustfmt.toml, clippy.toml, or a GitHub workflow running: clippy, rustfmt, cargo clippy, cargo fmt
-```
-
-### Complete Example
-
-```yaml
-root: true
-
-rules:
-  # Enforce linter configuration for all languages
-  linter-config:
-    require-python: true
-    require-typescript: true
-    require-go: true
-    require-html: true
-    require-css: true
-    require-sql: true
-    require-rust: true
-
-  # Also enforce GitHub workflows
-  github-workflows:
-    require-quality: true
-```
-
-This configuration ensures:
-1. Linter configs exist for all supported languages
-2. A GitHub workflow runs code quality checks
-
-### Example Configurations
-
-#### Python Project with pyproject.toml
-
-```toml
-# pyproject.toml
-[tool.black]
-line-length = 100
-target-version = ['py39']
-
-[tool.mypy]
-python_version = "3.9"
-strict = true
-
-[tool.ruff]
-line-length = 100
-select = ["E", "F", "I"]
-
-[tool.pylint.messages_control]
-max-line-length = 100
-```
-
-#### TypeScript Project with ESLint and Prettier
-
-```json
-// .eslintrc.json
-{
-  "extends": ["eslint:recommended", "plugin:@typescript-eslint/recommended"],
-  "parser": "@typescript-eslint/parser",
-  "plugins": ["@typescript-eslint"],
-  "rules": {
-    "no-console": "error"
-  }
-}
-```
-
-```json
-// .prettierrc.json
-{
-  "semi": true,
-  "singleQuote": true,
-  "tabWidth": 2
-}
-```
-
-#### Go Project with golangci-lint
-
-```yaml
-# .golangci.yml
-linters:
-  enable:
-    - gofmt
-    - golint
-    - govet
-    - errcheck
-    - staticcheck
-
-linters-settings:
-  gofmt:
-    simplify: true
-```
-
-#### HTML Project with HTMLHint
-
-```json
-// .htmlhintrc
-{
-  "tagname-lowercase": true,
-  "attr-lowercase": true,
-  "attr-value-double-quotes": true,
-  "doctype-first": true,
-  "tag-pair": true,
-  "spec-char-escape": true,
-  "id-unique": true,
-  "src-not-empty": true,
-  "attr-no-duplication": true
-}
-```
-
-#### CSS Project with stylelint
-
-```json
-// .stylelintrc.json
-{
-  "extends": "stylelint-config-standard",
-  "rules": {
-    "indentation": 2,
-    "color-hex-case": "lower",
-    "selector-max-id": 0
-  }
-}
-```
-
-#### SQL Project with SQLFluff
-
-```ini
-# .sqlfluff
-[sqlfluff]
-dialect = postgres
-templater = jinja
-
-[sqlfluff:rules]
-max_line_length = 120
-indent_unit = space
-```
-
-#### Rust Project with rustfmt and clippy
-
-```toml
-# rustfmt.toml
-max_width = 100
-hard_tabs = false
-tab_spaces = 4
-edition = "2021"
-```
-
-```toml
-# clippy.toml
-cognitive-complexity-threshold = 30
-```
+> ⚠️ **REMOVED**: The `linter-config` rule has been removed. Linter presence checks are out of scope. Use `file-existence` to require config files (e.g., `"pyproject.toml": "exists:1"`).
 
 ### Metric Comparison Table
 
@@ -1257,19 +757,26 @@ cognitive-complexity-threshold = 30
 ## Roadmap
 
 ### Phase 0 - Core Filesystem Linting ✅ COMPLETE
-- ✅ Metric rules (max-depth, max-files, max-subdirs)
+- ✅ Metric rules (max-depth, max-files-in-dir, max-subdirs)
 - ✅ Naming conventions
 - ✅ File existence validation
-- ✅ Pattern matching and disallowing
+- ✅ Pattern matching (regex-match) and disallowing (disallowed-patterns)
+- ✅ Uniqueness constraints
+- ✅ Case conflict detection
+- ✅ Empty directory detection
+- ✅ Symlink detection
+- ✅ Deep relative import detection
 
 ### Phase 1 - Architectural Layer Enforcement ✅ COMPLETE
 - ✅ Import graph analysis
-- ✅ Layer boundary enforcement
+- ✅ Layer boundary enforcement (`enforce-layer-boundaries`)
+- ✅ Path-based layer validation (`path-based-layers`)
+- ✅ Import cycle detection (`disallow-import-cycles`)
 - ✅ Dependency rules
 
 ### Phase 2 - Dead Code Detection ✅ COMPLETE
-- ✅ Orphaned file detection
-- ✅ Unused export identification
+- ✅ Orphaned file detection (`disallow-orphaned-files`)
+- ✅ Unused export identification (`disallow-unused-exports`)
 - ✅ Entrypoint configuration
 
 ### Phase 3 - Test Validation ✅ COMPLETE
@@ -1277,47 +784,38 @@ cognitive-complexity-threshold = 30
 - ✅ Test location validation
 - ✅ Multi-language support (Go, Python, TypeScript, JavaScript, Java, C++, C#, Rust, Ruby)
 - ✅ Language-specific test naming conventions
+- ✅ `@structurelint:no-test` directive for self-documenting exemptions
 
-### Phase 4 - File Content Templates ✅ COMPLETE
-- ✅ Template system for file structure validation
-- ✅ Section validation (required sections)
-- ✅ Pattern enforcement (required/forbidden patterns)
-- ✅ Content structure validation (must-start-with, must-end-with)
+### Phase 4 - File Content Templates ❌ REMOVED
+- ❌ `file-content` rule removed — template enforcement is out of scope. Use copier/cookiecutter.
 
 ### Phase 5 - Evidence-Based Quality Metrics ✅ COMPLETE
-- ✅ Cognitive Complexity (replaces Cyclomatic Complexity)
-- ✅ Halstead Metrics (Volume, Difficulty, Effort)
+- ✅ Cognitive Complexity (`max-cognitive-complexity`, replaces Cyclomatic Complexity)
+- ✅ Halstead Metrics (`max-halstead-effort`)
 - ✅ Scientific evidence documentation
-- ✅ Example configurations
 
 ### Phase 6 - Automatic Configuration ✅ COMPLETE
 - ✅ `--init` command for automatic configuration generation
-- ✅ Language detection (9 languages: Go, Python, TypeScript, JavaScript, Java, C++, C#, Rust, Ruby)
+- ✅ `--preset` flag for known project shapes (sveltekit, nextjs-app-router, go-stdlayout, python-monorepo)
+- ✅ `--list-presets` flag
+- ✅ Language detection (9 languages)
 - ✅ Test pattern recognition
 - ✅ Smart defaults based on project structure
-- ✅ Project metrics analysis
 
-### Phase 8 - GitHub Workflow Enforcement ✅ COMPLETE
-- ✅ GitHub Actions workflow detection and validation
-- ✅ Test workflow enforcement (CI/CD for testing)
-- ✅ Security workflow enforcement (CodeQL, scanning)
-- ✅ Quality workflow enforcement (linting, formatting)
-- ✅ Workflow structure validation (name, triggers, jobs, steps)
-- ✅ Required trigger validation (pull_request, push, etc.)
-- ✅ Required job validation
-- ✅ Comprehensive documentation and examples
+### Phase 8 - GitHub Workflow Enforcement ❌ REMOVED
+- ❌ `github-workflows` rule removed — CI YAML linting is out of scope. Use actionlint/zizmor/yamllint.
 
-### Linter Configuration Enforcement ✅ COMPLETE
-- ✅ Python linter detection (mypy, black, ruff, pylint, flake8)
-- ✅ TypeScript linter detection (ESLint, Prettier, TSC)
-- ✅ Go linter detection (golangci-lint, gofmt, go vet)
-- ✅ HTML linter detection (HTMLHint, html-validate, prettier)
-- ✅ CSS linter detection (stylelint, prettier)
-- ✅ SQL linter detection (sqlfluff, sqlfmt)
-- ✅ Rust linter detection (clippy, rustfmt)
-- ✅ Configuration file validation
-- ✅ GitHub workflow linter step detection
-- ✅ Multi-language support
+### Linter Configuration Enforcement ❌ REMOVED
+- ❌ `linter-config` rule removed — linter presence checks are out of scope. Use `file-existence`.
+
+### CLI Commands ✅ COMPLETE
+- ✅ `structurelint` — lint project structure
+- ✅ `structurelint graph` — visualize dependency graphs (DOT, Mermaid, HTML)
+- ✅ `structurelint fix` — auto-fix violations (dry-run, interactive, auto modes)
+- ✅ `structurelint tui` — interactive terminal UI
+- ✅ `structurelint scaffold` — generate code from templates
+- ✅ `structurelint clones` — detect code clones
+- ✅ `--format text|json|junit` — output format selection
 
 ### Future Enhancements
 - 🔮 CK Suite metrics (CBO, RFC, LCOM5) for OO languages
@@ -1327,7 +825,6 @@ cognitive-complexity-threshold = 30
 - 🔮 Monorepo support with per-package configurations
 - 🔮 Framework-specific detection (pytest, Jest, JUnit)
 - 🔮 Integration test directory detection
-- 🔮 Compiler plugin system for non-standard files
 - 🔮 Advanced dead code detection with call graph analysis
 
 ## Contributing
@@ -1832,215 +1329,85 @@ See [docs/TEST_VALIDATION.md](docs/TEST_VALIDATION.md) for complete documentatio
 
 ## Phase 4: File Content Templates
 
-### Overview
-
-Phase 4 enables validation of file contents using templates. This ensures documentation and configuration files follow consistent structures.
-
-### Features
-
-**1. Section Validation**
-- Require specific sections in markdown files (e.g., "## Overview", "## Installation")
-- Enforce consistent documentation structure
-
-**2. Pattern Matching**
-- Require specific patterns (e.g., must start with heading)
-- Forbid unwanted patterns (e.g., no TODO comments in production)
-
-**3. Content Structure**
-- Validate file must start/end with specific content
-- Ensure proper formatting
-
-**4. Test Pattern Enforcement**
-- Enforce Arrange-Act-Assert (AAA) pattern in test files
+> ⚠️ **REMOVED**: The `file-content` rule has been removed. Template enforcement is out of scope for structurelint. Use [copier](https://copier-project.github.io/) or [cookiecutter](https://github.com/cookiecutter/cookiecutter) for project templating instead.
 - Improve test readability and consistency across teams
 - Support for Go, TypeScript/JavaScript, Python tests
 
-### Configuration
+## Additional Rules
 
-Define templates in `.structurelint/templates/`:
+### `uniqueness-constraints`
 
-**.structurelint/templates/readme.yml:**
-```yaml
-# Template for README.md files
-required-sections:
-  - "# "              # Must have a main heading
-  - "## Overview"     # Must have Overview section
-
-required-patterns:
-  - "^#\\s+\\w+"      # Must start with heading
-
-must-start-with: "# " # Must start with main heading
-```
-
-**Reference templates in .structurelint.yml:**
-```yaml
-rules:
-  file-content:
-    templates:
-      "**/README.md": "readme"
-      "docs/design/*.md": "design-doc"
-      "CONTRIBUTING.md": "contributing"
-```
-
-### Example Templates
-
-#### README Template
-
-```yaml
-required-sections:
-  - "# "
-  - "## Overview"
-  - "⬆️ **[Parent Directory]"  # Building lobby pattern
-
-required-patterns:
-  - "^#\\s+\\w+"                # Starts with heading
-```
-
-#### Design Document Template
-
-```yaml
-required-sections:
-  - "# "
-  - "## Problem Statement"
-  - "## Proposed Solution"
-  - "## Alternatives Considered"
-
-forbidden-patterns:
-  - "TODO"     # No TODOs in final design docs
-  - "FIXME"
-```
-
-#### Contributing Guide Template
-
-```yaml
-required-sections:
-  - "# Contributing"
-  - "## Code of Conduct"
-  - "## How to Contribute"
-  - "## Development Setup"
-
-must-end-with: "## License"
-```
-
-#### Test File Templates (AAA Pattern)
-
-Enforce the Arrange-Act-Assert pattern for better test readability:
+Prevents dual-implementation anti-patterns (e.g., both `index.ts` and `index.js` in the same directory).
 
 ```yaml
 rules:
-  file-content:
-    templates:
-      # Go tests
-      "**/*_test.go": "test-go"
-
-      # TypeScript/JavaScript tests
-      "**/*.test.ts": "test-typescript"
-      "**/*.spec.js": "test-typescript"
-
-      # Python tests
-      "**/test_*.py": "test-python"
+  uniqueness-constraints:
+    "index.ts|index.js": "exists:1"  # Only one index file allowed
+    "*.go|*.ts": "exists:1"          # No dual Go/TS implementations
 ```
 
-**Example compliant Go test:**
-```go
-func TestCalculator_Add_ReturnsSum(t *testing.T) {
-    // Arrange
-    calc := NewCalculator()
-    a, b := 2, 3
+### `case-conflicts`
 
-    // Act
-    result := calc.Add(a, b)
-
-    // Assert
-    assert.Equal(t, 5, result)
-}
-```
-
-Available test templates:
-
-**AAA Pattern** (structure only):
-- `test-go.yml` - Lenient AAA enforcement for Go
-- `test-typescript.yml` - Lenient AAA enforcement for TypeScript/JavaScript
-- `test-python.yml` - Lenient AAA enforcement for Python
-- `test-strict-aaa.yml` - Strict AAA enforcement (all languages)
-
-**Given-When-Then** (naming + structure):
-- `test-gwt-go.yml` - GWT naming + AAA for Go
-- `test-gwt-typescript.yml` - GWT naming + AAA for TypeScript/JavaScript
-- `test-gwt-python.yml` - GWT naming + AAA for Python
-- `test-gwt-strict.yml` - Ultra-strict GWT + AAA (all languages)
-
-See [docs/TEST_AAA_PATTERN.md](docs/TEST_AAA_PATTERN.md) and [docs/TEST_GWT_NAMING.md](docs/TEST_GWT_NAMING.md) for complete guides.
-
-### Example Violations
-
-**Missing Required Section:**
-```
-docs/api.md: missing required section "## Installation" (template: readme)
-```
-
-**Forbidden Pattern:**
-```
-docs/design/auth.md: contains forbidden pattern "TODO" (template: design-doc)
-```
-
-**Invalid Structure:**
-```
-README.md: must start with "# " (template: readme)
-```
-
-### Building Lobby Pattern
-
-Enforce that every directory has a README serving as a navigation guide:
+Detects filename case collisions that work on case-sensitive systems but break on case-insensitive ones (macOS, Windows).
 
 ```yaml
 rules:
-  # Every directory must have exactly one README
-  file-existence:
-    "README.md": "exists:1"
-
-  # READMEs must follow template
-  file-content:
-    templates:
-      "**/README.md": "readme"
+  case-conflicts: {}
 ```
 
-**.structurelint/templates/readme.yml:**
-```yaml
-required-sections:
-  - "# "                              # Directory name
-  - "⬆️ **[Parent Directory]"         # Link to parent
-  - "## Overview"                     # Description
+### `disallow-empty-dirs`
 
-required-patterns:
-  - "⬆️ \\*\\*\\[Parent Directory\\]\\(.*README\\.md\\)\\*\\*"  # Parent link
-```
-
-This creates a "building lobby" where each directory's README guides you through the codebase.
-
-### Complete Example
+Flags directories that contain no files (directly or recursively).
 
 ```yaml
-root: true
-
 rules:
-  # Require READMEs everywhere
-  file-existence:
-    "README.md": "exists:1"
-
-  # Validate README content
-  file-content:
-    templates:
-      "**/README.md": "readme"
-      "docs/**/*.md": "documentation"
-      "docs/design/*.md": "design-doc"
-
-exclude:
-  - node_modules/**
-  - .git/**
+  disallow-empty-dirs: {}
 ```
 
-See [docs/FILE_CONTENT_TEMPLATES.md](docs/FILE_CONTENT_TEMPLATES.md) for complete documentation.
+### `disallow-symlinks`
+
+Disallows symbolic links in the project.
+
+```yaml
+rules:
+  disallow-symlinks: {}
+```
+
+### `disallow-deep-relative-imports`
+
+Flags imports with excessive `../` segments. Default: max 3 parent traversals.
+
+```yaml
+rules:
+  disallow-deep-relative-imports:
+    max-parents: 3
+```
+
+### `disallow-import-cycles`
+
+Detects circular dependencies between packages.
+
+```yaml
+rules:
+  disallow-import-cycles: true
+```
+
+### `path-based-layers`
+
+Declarative layer validation without import graph parsing. 50x faster than import-graph-based `enforce-layer-boundaries`.
+
+```yaml
+rules:
+  path-based-layers:
+    layers:
+      - name: domain
+        patterns: ["internal/domain/**"]
+        canDependOn: []
+      - name: infrastructure
+        patterns: ["internal/infrastructure/**"]
+        canDependOn: ["domain"]
+        forbiddenPaths: ["**/http/**", "**/sql/**"]
+```
 
 ## Documentation & Resources
 

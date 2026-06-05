@@ -8,8 +8,26 @@ Complete reference for all available rules in structurelint.
 - [Naming Convention Rules](#naming-convention-rules)
 - [File Organization Rules](#file-organization-rules)
 - [Code Quality Rules](#code-quality-rules)
-- [Documentation Rules](#documentation-rules)
+- [Structural Integrity Rules](#structural-integrity-rules)
 - [Testing Rules](#testing-rules)
+- [Rule Types (Advanced)](#rule-types-advanced)
+
+---
+
+## ⚠️ Removed Rules
+
+The following rules have been removed. Using them causes an error with migration advice:
+
+| Removed Rule | Migration |
+|---|---|
+| `max-cyclomatic-complexity` | Use `max-cognitive-complexity` or a language-specific tool |
+| `github-workflows` | Use actionlint, zizmor, or yamllint |
+| `linter-config` | Use `file-existence` to require config files |
+| `contract-framework` | Use `file-existence` to encode requirements |
+| `api-spec` | Replace with `file-existence: { "api/openapi.yaml": "exists:1" }` |
+| `spec-adr-enforcement` | Replace with `file-existence` + `naming-convention` |
+| `file-content` | Use copier / cookiecutter for templating |
+| `property-enforcement` | Use `disallow-import-cycles` + `path-based-layers` `forbiddenPaths` |
 
 ---
 
@@ -24,15 +42,14 @@ Enforces that layers only depend on allowed layers.
 ```yaml
 layers:
   - name: domain
-    paths: ["internal/domain/**"]
+    path: "internal/domain/**"
 
   - name: application
-    paths: ["internal/application/**"]
-    depends_on: [domain]
+    path: "internal/application/**"
+    dependsOn: [domain]
 
 rules:
-  enforce-layer-boundaries:
-    enabled: true
+  enforce-layer-boundaries: true
 ```
 
 **Detects**:
@@ -60,45 +77,52 @@ type UserRepository interface { ... }
 
 ### `disallowed-patterns`
 
-Prevents specified import patterns in certain paths.
+Blocks specific file or directory patterns from existing in the project.
 
 **Configuration**:
 
 ```yaml
 rules:
   disallowed-patterns:
-    "internal/domain/**":
-      - "database/sql"
-      - "net/http"
-      - "**/infrastructure"
-    message: "Domain layer must not depend on infrastructure"
+    - "src/utils/**"        # Disallow generic utils folder
+    - "*.tmp"               # No temp files
+    - ".DS_Store"           # No macOS metadata
+    - "**/__pycache__"      # No Python cache dirs
 ```
 
 **Use cases**:
-- Keep domain pure (no DB, no HTTP)
-- Prevent legacy code usage
-- Enforce architecture boundaries
+- Prevent anti-pattern directories (generic `utils/`, `helpers/`)
+- Block platform metadata files (`.DS_Store`, `Thumbs.db`)
+- Disallow generated artifacts in source directories
 
 ---
 
 ### `path-based-layers`
 
-Defines semantic meaning for directory structures.
+Declarative layer validation without import graph parsing. Much faster than `enforce-layer-boundaries`.
 
 **Configuration**:
 
 ```yaml
 rules:
   path-based-layers:
-    "internal/*/domain/**": "Domain layer"
-    "internal/*/application/**": "Application layer"
-    "internal/*/infrastructure/**": "Infrastructure layer"
+    layers:
+      - name: domain
+        patterns: ["internal/domain/**"]
+        canDependOn: []
+      - name: application
+        patterns: ["internal/application/**"]
+        canDependOn: ["domain"]
+      - name: infrastructure
+        patterns: ["internal/infrastructure/**"]
+        canDependOn: ["domain", "application"]
+        forbiddenPaths: ["**/http/**", "**/sql/**"]
 ```
 
 **Use cases**:
-- Document architecture
-- Enforce consistent structure
-- Enable better error messages
+- Enforce architecture without parsing source files
+- Works even when code doesn't compile
+- 50x faster than import-graph-based validation
 
 ---
 
@@ -133,11 +157,10 @@ rules:
 
 ---
 
-### `language-aware-naming`
+### `naming-convention` auto-language-naming
 
-Automatically applies language-specific conventions (enabled by default).
+When `autoLanguageNaming: true` (default) in the config, language-specific conventions are automatically applied:
 
-**Languages**:
 - **Go**: `snake_case.go`, `name_test.go`
 - **TypeScript**: `PascalCase.tsx`, `camelCase.ts`
 - **Python**: `snake_case.py`, `test_name.py`
@@ -146,7 +169,7 @@ Automatically applies language-specific conventions (enabled by default).
 **Disable**:
 
 ```yaml
-auto-language-naming: false
+autoLanguageNaming: false
 ```
 
 ---
@@ -303,9 +326,15 @@ Finds files not imported anywhere.
 
 ```yaml
 rules:
+  disallow-orphaned-files: true
+```
+
+With options:
+
+```yaml
+rules:
   disallow-orphaned-files:
-    enabled: true
-    exemptions:
+    entry-point-patterns:
       - "cmd/**"
       - "*_test.go"
 ```
@@ -322,93 +351,89 @@ Finds exported symbols never imported.
 
 ```yaml
 rules:
+  disallow-unused-exports: true
+```
+
+With options:
+
+```yaml
+rules:
   disallow-unused-exports:
-    enabled: true
-    exemptions:
+    exclude-patterns:
       - "internal/domain/*.go"  # Exports for extensibility
+    entry-point-patterns:
+      - "src/index.ts"          # Entry points can have unused exports
 ```
 
 ---
 
-## Documentation Rules
+## Structural Integrity Rules
 
-### `github-workflows`
+### `uniqueness-constraints`
 
-Requires CI/CD workflows.
-
-**Configuration**:
+Prevents dual-implementation anti-patterns.
 
 ```yaml
 rules:
-  github-workflows:
-    require-tests: true
-    require-security: true
-    require-quality: true
+  uniqueness-constraints:
+    "index.ts|index.js": "exists:1"
 ```
 
-**Auto-fix**: ✅ Generates workflow files
+### `case-conflicts`
 
-**Generated workflows**:
-- **Tests**: Run test suite on PR
-- **Security**: CodeQL, Trivy scanning
-- **Quality**: Linters, formatters
-
----
-
-### `openapi-asyncapi`
-
-Validates API contracts.
-
-**Configuration**:
+Detects filename case collisions on case-insensitive filesystems.
 
 ```yaml
 rules:
-  openapi-asyncapi:
-    openapi-paths: ["api/**/*.yaml"]
-    asyncapi-paths: ["events/**/*.yaml"]
-    require-openapi: true
+  case-conflicts: {}
 ```
 
-**Validates**:
-- Valid OpenAPI 3.0 spec
-- Valid AsyncAPI spec
-- Referenced schemas exist
+### `disallow-empty-dirs`
 
----
-
-### `spec-adr`
-
-Requires ADRs for decisions.
-
-**Configuration**:
+Flags directories with no files.
 
 ```yaml
 rules:
-  spec-adr:
-    adr-dir: "docs/adr"
-    require-adr: true
+  disallow-empty-dirs: {}
 ```
 
-**Format**: ADR template with Context, Decision, Consequences
+### `disallow-symlinks`
+
+Disallows symbolic links.
+
+```yaml
+rules:
+  disallow-symlinks: {}
+```
+
+### `disallow-deep-relative-imports`
+
+Flags imports with excessive `../` segments.
+
+```yaml
+rules:
+  disallow-deep-relative-imports:
+    max-parents: 3
+```
+
+### `disallow-import-cycles`
+
+Detects circular dependencies.
+
+```yaml
+rules:
+  disallow-import-cycles: true
+```
 
 ---
 
 ## Testing Rules
 
-### `test-coverage-threshold`
-
-(Coming soon) Requires minimum test coverage.
-
-```yaml
-rules:
-  test-coverage-threshold:
-    min-coverage: 80
-    per-package: true
-```
-
 ---
 
-## Advanced Rules
+## Rule Types (Advanced)
+
+structurelint supports advanced rule composition for custom validation logic.
 
 ### `predicate-rule`
 
@@ -484,7 +509,6 @@ Rules with auto-fix capability:
 |------|----------|------|
 | naming-convention | ✅ | ⚠️ |
 | file-existence | ✅ | ✅ |
-| github-workflows | ✅ | ✅ |
 | test-location | ✅ | ⚠️ |
 
 **Legend**:
@@ -502,6 +526,9 @@ structurelint fix --auto
 
 # Interactive review
 structurelint fix --interactive
+
+# Fix only a specific rule
+structurelint fix --rule naming-convention
 ```
 
 ---
@@ -555,10 +582,10 @@ rules:
 # Phase 2: Add layer boundaries
 layers:
   - name: domain
-    paths: ["internal/domain/**"]
+    path: "internal/domain/**"
   - name: application
-    paths: ["internal/application/**"]
-    depends_on: [domain]
+    path: "internal/application/**"
+    dependsOn: [domain]
 ```
 
 ### Customize for Your Team
@@ -611,7 +638,6 @@ rules:
 
 ## See Also
 
-- [GitHub Actions Integration](../.github/workflows/structurelint.yml)
 - [Example Configurations](../examples/)
-- [Architecture Patterns Guide](./PATTERNS.md)
-- [Migration Guide](./MIGRATION.md)
+- [Getting Started Guide](./GETTING_STARTED.md)
+- [GitHub Actions Integration](./GITHUB_ACTION.md)

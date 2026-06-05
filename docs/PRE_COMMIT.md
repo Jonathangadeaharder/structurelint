@@ -51,10 +51,10 @@ rules:
     max: 15
 
   naming-convention:
-    pattern: snake_case
+    "*.go": "snake_case"
+    "*.ts": "camelCase"
 
-  enforce-layer-boundaries:
-    enabled: true
+  enforce-layer-boundaries: true
 
 layers:
   - name: domain
@@ -124,7 +124,7 @@ repos:
     rev: v0.1.0
     hooks:
       - id: structurelint
-        args: ['--config', 'custom-config.yml']
+        args: ['--format', 'json']
 ```
 
 ### Running in CI
@@ -160,12 +160,6 @@ Make sure structurelint is built and available:
 ```bash
 # Manual installation
 go install github.com/Jonathangadeaharder/structurelint/cmd/structurelint@latest
-
-# Or build from source
-git clone https://github.com/Jonathangadeaharder/structurelint.git
-cd structurelint
-go build -o structurelint ./cmd/structurelint
-sudo cp structurelint /usr/local/bin/
 ```
 
 ### Hook is slow
@@ -186,7 +180,7 @@ structurelint analyzes the entire project structure, which can take time for lar
 
 ### Configuration not found
 
-Ensure `.structurelint.yml` is in your project root, or specify the path:
+Ensure `.structurelint.yml` is in your project root:
 
 ```yaml
 repos:
@@ -194,7 +188,6 @@ repos:
     rev: v0.1.0
     hooks:
       - id: structurelint
-        args: ['--config', 'path/to/config.yml']
 ```
 
 ## Best Practices

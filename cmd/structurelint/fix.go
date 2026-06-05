@@ -279,11 +279,10 @@ Description:
   prompting.
 
 Options:
-  --config <path>      Path to configuration file (default: .structurelint.yml)
-  --dry-run            Show what would be fixed without applying changes
-  --interactive        Prompt before applying each fix
-  --auto               Automatically apply all safe fixes without prompting
-  --rule <name>        Only fix violations from this rule
+   --dry-run            Show what would be fixed without applying changes
+   --interactive        Prompt before applying each fix
+   --auto               Automatically apply all safe fixes without prompting
+   --rule <name>        Only fix violations from this rule
 
 Modes:
   Default:      Apply safe fixes automatically, prompt for unsafe fixes
