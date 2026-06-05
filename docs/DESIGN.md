@@ -42,28 +42,55 @@ The implementation follows Go best practices with a modular architecture:
 structurelint/
 ├── cmd/
 │   └── structurelint/      # Main CLI entry point
-│       └── main.go
+│       ├── main.go         # CLI flags and subcommand routing
+│       ├── fix.go          # Auto-fix subcommand
+│       ├── graph.go        # Dependency graph visualization (DOT, Mermaid, HTML)
+│       ├── tui.go          # Interactive terminal UI
+│       ├── scaffold.go     # Code scaffolding from templates
+│       └── clones.go       # Code clone detection
 ├── internal/
 │   ├── config/             # Configuration system
-│   │   └── config.go       # YAML parsing and cascading
+│   │   ├── config.go       # YAML parsing, cascading, gitignore auto-load
+│   │   ├── rules.go        # Type-safe rule config structs
+│   │   └── gitignore.go    # .gitignore pattern merging
 │   ├── walker/             # Filesystem traversal
 │   │   └── walker.go       # Directory walking and metrics
-│   ├── rules/              # Rule implementations
-│   │   ├── rule.go         # Rule interface
-│   │   ├── max_depth.go    # Max depth rule
-│   │   ├── max_files.go    # Max files per directory
-│   │   ├── max_subdirs.go  # Max subdirectories
-│   │   ├── naming_convention.go
-│   │   ├── regex_match.go
-│   │   ├── file_existence.go
-│   │   └── disallowed_patterns.go
-│   └── linter/             # Linter orchestration
-│       └── linter.go       # Rule execution engine
+│   ├── rules/              # Rule engine
+│   │   ├── rule.go         # Rule interface + Violation type
+│   │   ├── registry.go     # Rule factory registry
+│   │   ├── predicate_rule.go    # Custom predicate rules
+│   │   ├── composite_rule.go    # Composite (all-of/any-of) rules
+│   │   ├── ast_query_rule.go    # Tree-sitter query rules
+│   │   ├── structure/      # Filesystem structure rules
+│   │   │   ├── max_depth.go, max_files.go, max_subdirs.go
+│   │   │   ├── naming_convention.go, regex_match.go
+│   │   │   ├── file_existence.go, disallowed_patterns.go
+│   │   │   ├── uniqueness_constraints.go, case_conflicts.go
+│   │   │   ├── empty_dirs.go, symlinks.go
+│   │   │   └── deep_relative_imports.go
+│   │   ├── graph/          # Import-graph-dependent rules
+│   │   │   ├── layer_boundaries.go
+│   │   │   ├── orphaned_files.go
+│   │   │   ├── import_cycles.go
+│   │   │   └── path_based_layers.go
+│   │   ├── quality/        # Code quality metric rules
+│   │   │   ├── max_cognitive_complexity.go
+│   │   │   ├── max_halstead_effort.go
+│   │   │   └── disallow_unused_exports.go
+│   │   ├── test/           # Test validation rules
+│   │   │   ├── adjacency_validation.go
+│   │   │   └── location_validation.go
+│   │   └── ci/             # CI workflow quality rules
+│   │       └── workflow_quality.go
+│   ├── linter/             # Linter orchestration
+│   │   ├── linter.go       # Rule execution engine
+│   │   └── factory.go      # Rule factory + breaking change checks
+│   ├── graph/              # Import graph builder + analysis
+│   ├── parser/             # Multi-language import/export parsing
+│   ├── autofix/            # Auto-fix engine
+│   ├── init/               # --init configuration generation + presets
+│   └── scaffold/           # Code scaffolding from templates
 └── examples/               # Example configurations
-    ├── react-project.yml
-    ├── go-project.yml
-    ├── python-project.yml
-    └── monorepo.yml
 ```
 
 ### Component Details
@@ -125,16 +152,13 @@ Each rule implements a common interface:
 ```go
 type Rule interface {
     Name() string
-    Check(files []FileInfo, dirs map[string]*DirInfo) []Violation
+    Check(files []walker.FileInfo, dirs map[string]*walker.DirInfo) []Violation
 }
 ```
 
-This design allows for:
-- Easy addition of new rules
-- Parallel rule execution (future optimization)
-- Consistent violation reporting
+Rules are created via a factory registry (`internal/rules/registry.go`). Each rule package registers its factory in an `init()` function. The `linter/factory.go` creates rule instances from config, and also enforces breaking changes (removed rules cause immediate errors).
 
-**Implemented Rules:**
+**Registered Rules:**
 
 1. **max-depth**: Enforces maximum directory nesting depth
 2. **max-files-in-dir**: Limits files per directory
@@ -143,6 +167,20 @@ This design allows for:
 5. **regex-match**: Validates filenames against regex patterns with substitution support
 6. **file-existence**: Requires specific files to exist (supports ranges like `exists:1-10`)
 7. **disallowed-patterns**: Blocks specific file or directory patterns
+8. **uniqueness-constraints**: Prevents dual-implementation anti-patterns
+9. **case-conflicts**: Detects case-insensitive filesystem collisions
+10. **disallow-empty-dirs**: Flags empty directories
+11. **disallow-symlinks**: Disallows symbolic links
+12. **disallow-deep-relative-imports**: Flags excessive `../` imports
+13. **enforce-layer-boundaries**: Validates architectural layer dependencies (import-graph-based)
+14. **disallow-orphaned-files**: Detects files never imported
+15. **disallow-import-cycles**: Detects circular dependencies
+16. **max-cognitive-complexity**: Enforces cognitive complexity limits
+17. **max-halstead-effort**: Enforces Halstead effort limits
+18. **test-adjacency**: Validates test file adjacency
+19. **test-location**: Validates test file placement
+20. **path-based-layers**: Declarative layer validation without import graphs
+21. **disallow-unused-exports**: Detects exports never imported
 
 #### 4. Linter Orchestration (`internal/linter`)
 

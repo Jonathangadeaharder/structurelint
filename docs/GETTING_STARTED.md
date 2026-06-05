@@ -148,11 +148,11 @@ rules:
   max-files-in-dir:
     max: 15
 
-  # Enforce naming convention
+  # Enforce naming convention (glob -> convention mapping)
   naming-convention:
-    pattern: snake_case  # or camelCase, PascalCase, kebab-case
-    paths:
-      - src/**
+    "*.ts": "camelCase"
+    "*.tsx": "PascalCase"
+    "*.py": "snake_case"
 ```
 
 ### Step 3: Define Required Files
@@ -167,13 +167,10 @@ rules:
     max: 5
 
   file-existence:
-    required:
-      - path: README.md
-      - path: LICENSE
-      - path: .gitignore
-    min_files:
-      - path: src/**/*.test.ts
-        count: 1
+    "README.md": "exists:1"
+    "LICENSE": "exists:1"
+    ".gitignore": "exists:1"
+    "*.test.ts": "exists:1-10"
 ```
 
 ### Step 4: Exclude Patterns
@@ -240,9 +237,9 @@ Enforces naming patterns.
 ```yaml
 rules:
   naming-convention:
-    pattern: snake_case  # Options: snake_case, camelCase, PascalCase, kebab-case
-    paths:
-      - src/**
+    "*.ts": "camelCase"      # Options: snake_case, camelCase, PascalCase, kebab-case, lowercase, UPPERCASE
+    "*.tsx": "PascalCase"
+    "*.py": "snake_case"
 ```
 
 #### disallowed-patterns
@@ -251,10 +248,9 @@ Prevents specific patterns.
 ```yaml
 rules:
   disallowed-patterns:
-    patterns:
-      - "**/*.backup"
-      - "**/TODO.txt"
-      - "**/.DS_Store"
+    - "**/*.backup"
+    - "**/TODO.txt"
+    - "**/.DS_Store"
 ```
 
 #### file-existence
@@ -263,15 +259,10 @@ Ensures files exist or have minimum counts.
 ```yaml
 rules:
   file-existence:
-    required:
-      - path: README.md
-      - path: package.json
-    min_files:
-      - path: src/**/*.test.ts
-        count: 5  # At least 5 test files
-    max_files:
-      - path: src/**/*.config.js
-        count: 3  # No more than 3 config files
+    "README.md": "exists:1"          # Exactly 1 README
+    "package.json": "exists:1"       # Exactly 1 package.json
+    "*.test.ts": "exists:1-10"       # 1-10 test files
+    ".dir": "exists:0"               # No subdirectories
 ```
 
 ### Phase 1: Architectural Rules
@@ -281,8 +272,7 @@ Validates architectural layer dependencies.
 
 ```yaml
 rules:
-  enforce-layer-boundaries:
-    enabled: true
+  enforce-layer-boundaries: true
 
 layers:
   - name: domain
@@ -300,13 +290,12 @@ layers:
 
 ### Phase 2: Code Quality Rules
 
-#### unused-exports
+#### disallow-unused-exports
 Detects exports that are never imported.
 
 ```yaml
 rules:
-  unused-exports:
-    enabled: true
+  disallow-unused-exports: true
 ```
 
 #### regex-match
@@ -315,9 +304,8 @@ Advanced pattern matching with wildcards.
 ```yaml
 rules:
   regex-match:
-    paths:
-      "src/*/models/*.ts": "^[A-Z][a-z]+Model$"
-      "src/*/services/*.ts": "^[A-Z][a-z]+Service$"
+    "src/*/models/*.ts": "regex:^[A-Z][a-z]+Model$"
+    "src/*/services/*.ts": "regex:^[A-Z][a-z]+Service$"
 ```
 
 ## Working with Layers
@@ -330,8 +318,7 @@ Layers help enforce clean architecture patterns.
 root: true
 
 rules:
-  enforce-layer-boundaries:
-    enabled: true
+  enforce-layer-boundaries: true
 
 layers:
   # Core domain (no external dependencies)
@@ -361,8 +348,7 @@ layers:
 root: true
 
 rules:
-  enforce-layer-boundaries:
-    enabled: true
+  enforce-layer-boundaries: true
 
 layers:
   # Shared utilities
@@ -407,10 +393,9 @@ rules:
     max: 6
 
   naming-convention:
-    pattern: kebab-case
+    "**/": "kebab-case"
 
-  enforce-layer-boundaries:
-    enabled: true
+  enforce-layer-boundaries: true
 
 layers:
   - name: shared
@@ -439,17 +424,14 @@ rules:
     max: 20
 
   naming-convention:
-    pattern: PascalCase
-    paths:
-      - src/components/**
+    "src/components/**/*.tsx": "PascalCase"
+    "src/**/*.ts": "camelCase"
 
   file-existence:
-    required:
-      - path: src/App.tsx
-      - path: src/index.tsx
+    "src/App.tsx": "exists:1"
+    "src/index.tsx": "exists:1"
 
-  enforce-layer-boundaries:
-    enabled: true
+  enforce-layer-boundaries: true
 
 layers:
   - name: components
@@ -478,10 +460,9 @@ rules:
     max: 4
 
   naming-convention:
-    pattern: snake_case
+    "*.go": "snake_case"
 
-  enforce-layer-boundaries:
-    enabled: true
+  enforce-layer-boundaries: true
 
 layers:
   - name: domain
@@ -540,9 +521,9 @@ Found a bug or want a new feature? See [CONTRIBUTING.md](../CONTRIBUTING.md).
 
 ### "Config file not found"
 
-Ensure `.structurelint.yml` exists in your project root, or specify the path:
+Ensure `.structurelint.yml` exists in your project root, or run init to create one:
 ```bash
-structurelint --config path/to/config.yml
+structurelint --init
 ```
 
 ### "Too many violations"
@@ -556,9 +537,9 @@ rules:
 
 ### "Layer violations I don't understand"
 
-Run with verbose mode (if available) or check the import graph:
+Run with JSON output for structured results:
 ```bash
-structurelint --verbose
+structurelint --format json .
 ```
 
 ### "Performance is slow"

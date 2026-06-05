@@ -47,7 +47,7 @@ rules:
     max: 5
 
   naming-convention:
-    pattern: snake_case
+    "*.py": "snake_case"
 ```
 
 ### Advanced Configuration
@@ -186,7 +186,9 @@ jobs:
         run: structurelint
 ```
 
-### Example 4: Custom Configuration Path
+### Example 4: Custom Configuration
+
+If your `.structurelint.yml` is not in the project root, use a subdirectory:
 
 ```yaml
 name: structurelint
@@ -206,8 +208,9 @@ jobs:
       - name: Install structurelint
         run: go install github.com/Jonathangadeaharder/structurelint/cmd/structurelint@latest
 
-      - name: Run structurelint with custom config
-        run: structurelint --config .structurelint.custom.yml
+      - name: Run structurelint on subdirectory
+        working-directory: ./packages/my-package
+        run: structurelint
 ```
 
 ### Example 5: Fail on Warnings
